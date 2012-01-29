@@ -58,9 +58,20 @@ class MsgBox:
     def OpenGeneral(self, file, write):
         path = User.OwnFile(self.name, file)
         if (write):
-            return open(path, 'r+b')
+            try:
+                return open(path, 'r+b')
+            except IOError:
+                try:
+                    return open(path, 'w+b')
+                except:
+                    return None
+            except:
+                return None
         else:
-            return open(path, 'rb')
+            try:
+                return open(path, 'rb')
+            except:
+                return None
 
     def OpenIn(self, write):
         self.fIn = self.OpenGeneral('msgindex2', write)
@@ -82,7 +93,6 @@ class MsgBox:
 
     def CloseContent(self):
         self.fContent.close()
-
 
     def SizeIn(self):
         return Util.SizeGeneral(self.fIn)
@@ -167,4 +177,80 @@ class MsgBox:
         self.UnlockGeneral(file)
         file.close()
         return ret
+
+    def SaveMsgText(self, msghead, msg):
+        if (not self.OpenAll(write = True)):
+            return -1;
+        if (not self.OpenContent(write = True)):
+            self.CloseAll();
+            return -1;
+        if (not self.LockAll(write = True)):
+            self.CloseAll();
+            self.CloseContent();
+            return -1;
+        content_size = self.sizeContent();
+        idx_size = self.sizeAll();
+        count = 0;
+        i = 0;
+        if (idx_size <= 0):
+            self.fAll.write('\0\0\0\0');
+        else:
+            count = (idx_size - 4) / MsgHead.size();
+
+        self.fAll.seek(count * MsgHead.size() + 4);
+        msglen = len(msg) + 1;
+        if (msglen >= MAX_MSG_SIZE):
+            msglen = MAX_MSG_SIZE - 1;
+        msghead.pos = content_size;
+        msghead.len = msglen;
+
+        self.fAll.write(msghead.pack);
+        self.fContent.seek(content_size);
+        if (msglen != len(msg) + 1):
+            self.fContent.write(msg[:msglen]);
+        else:
+            self.fContent.write(msg);
+            self.fContent.write('\0');
+
+        self.CloseContent();
+        self.UnlockAll();
+        self.CloseAll();
+
+        if (not msghead.sent):
+            if (not self.OpenIn(write = True)):
+                return -1;
+            if (not self.LockIn(write = True)):
+                self.CloseIn();
+                return -1;
+            inbox_size = self.SizeIn();
+            inbox_count = 0;
+            if (inbox_size <= 0):
+                self.fIn.write('\0\0\0\0');
+            else:
+                inbox_count = (inbox_size - 4) / MsgHead.size();
+
+            self.fIn.seek(inbox_count * MsgHead.size() + 4);
+            self.fIn.write(msghead.pack());
+            self.UnlockIn();
+            self.CloseIn();
+
+        return 0;
+
+    def LoadMsgText(self, msghead):
+        if (not self.OpenContent(write = False)):
+            return None
+        self.fContent.seek(msghead.pos);
+        msglen = msghead.len;
+        if (msglen >= MAX_MSG_SIZE):
+            msglen = MAX_MSG_SIZE - 1;
+        msg = self.fContent.read(msglen);
+        self.CloseContent();
+        return msg
+
+    def SendMsg(self, userinfo, msg, mode):
+        return None
+
+
+
+
 
