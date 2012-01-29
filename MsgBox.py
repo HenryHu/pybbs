@@ -81,7 +81,7 @@ class MsgBox:
         self.fAll = self.OpenGeneral('msgindex', write)
         return (self.fAll != None)
 
-    def OpenContent(self):
+    def OpenContent(self, write):
         self.fContent = self.OpenGeneral('msgcontent', write)
         return (self.fContent != None)
 
