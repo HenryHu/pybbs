@@ -2,6 +2,7 @@
 from Util import Util
 from User import User
 from MsgHead import MsgHead
+import Config
 import struct
 
 class MsgBox:
@@ -199,8 +200,8 @@ class MsgBox:
 
         self.fAll.seek(count * MsgHead.size() + 4);
         msglen = len(msg) + 1;
-        if (msglen >= MAX_MSG_SIZE):
-            msglen = MAX_MSG_SIZE - 1;
+        if (msglen >= Config.MAX_MSG_SIZE):
+            msglen = Config.MAX_MSG_SIZE - 1;
         msghead.pos = content_size;
         msghead.len = msglen;
 
@@ -241,8 +242,8 @@ class MsgBox:
             return None
         self.fContent.seek(msghead.pos);
         msglen = msghead.len;
-        if (msglen >= MAX_MSG_SIZE):
-            msglen = MAX_MSG_SIZE - 1;
+        if (msglen >= Config.MAX_MSG_SIZE):
+            msglen = Config.MAX_MSG_SIZE - 1;
         msg = self.fContent.read(msglen);
         self.CloseContent();
         return msg
