@@ -141,8 +141,8 @@ class MsgBox:
                 ret = -1
             else:
                 index = ret + 1
-                fIn.seek(0)
-                fIn.write(struct.pack('=i', index))
+                self.fIn.seek(0)
+                self.fIn.write(struct.pack('=i', index))
 
         self.UnlockIn()
         self.CloseIn()
