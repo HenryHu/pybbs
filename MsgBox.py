@@ -251,6 +251,20 @@ class MsgBox:
     def SendMsg(self, userinfo, msg, mode):
         return None
 
+    def GetMsgCount(self, all):
+        path = ""
+        if (all):
+            path = User.OwnFile(self.name, "msgindex")
+        else:
+            path = User.OwnFile(self.name, "msgindex2")
+
+        size = Util.GetSize(path)
+
+        if (size <= 0): return 0
+        return (size - 4) / MsgHead.size()
+
+
+
 
 
 

@@ -171,6 +171,13 @@ class Util:
         return os.fstat(file.fileno()).st_size
 
     @staticmethod
+    def GetSize(path):
+        try:
+            return os.stat(path).st_size
+        except:
+            return -1
+
+    @staticmethod
     def ReadInt(fd):
         return struct.unpack('=i', fd.read(4))[0]
 
