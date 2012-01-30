@@ -14,7 +14,7 @@ class UtmpHead:
 
     @staticmethod
     def GetInt(pos, idx = 0):
-        return struct.unpack('=i', UtmpHead.utmphead.read(4, pos + idx * 4))
+        return struct.unpack('=i', UtmpHead.utmphead.read(4, pos + idx * 4))[0]
 
     @staticmethod
     def SetInt(pos, idx, val):
