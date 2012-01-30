@@ -2,6 +2,7 @@ import Config
 from UserInfo import UserInfo
 from sysv_ipc import *
 from UtmpHead import UtmpHead
+from SemLock import SemLock
 
 UTMPFILE_SIZE = UserInfo.size() * Config.USHM_SIZE
 UTMPHEAD_SIZE = 4 * Config.USHM_SIZE + 4 * (Config.UTMP_HASHSIZE + 1) + 4 * 3 + 8 * Config.USHM_SIZE
