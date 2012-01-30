@@ -1,5 +1,6 @@
 import Config
 import os
+import struct
 from UserInfo import UserInfo
 from sysv_ipc import *
 from UtmpHead import UtmpHead
