@@ -1,7 +1,9 @@
 import Config
+import os
 from UserInfo import UserInfo
 from sysv_ipc import *
 from UtmpHead import UtmpHead
+from Log import Log
 # from SemLock import SemLock
 
 UTMPFILE_SIZE = UserInfo.size() * Config.USHM_SIZE
