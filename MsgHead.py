@@ -16,7 +16,7 @@ class MsgHead:
         Util.Unpack(self, MsgHead.parser.unpack(str))
 
     def pack(self):
-        return MsgHead.parser.pack(Util.Pack(self))
+        return MsgHead.parser.pack(*Util.Pack(self))
 
     def __init__(self, str):
         self.unpack(str)
