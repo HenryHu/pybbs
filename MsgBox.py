@@ -4,6 +4,7 @@ from User import User
 from MsgHead import MsgHead
 import Config
 import struct
+import time
 
 class MsgBox:
     name = ''
@@ -189,7 +190,7 @@ class MsgBox:
             self.CloseAll();
             self.CloseContent();
             return -1;
-        content_size = self.sizeContent();
+        content_size = self.SizeContent();
         idx_size = self.sizeAll();
         count = 0;
         i = 0;
