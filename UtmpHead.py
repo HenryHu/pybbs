@@ -1,4 +1,5 @@
 import Config
+import struct
 
 NEXT_POS = 0
 HASHHEAD_POS = NEXT_POS + Config.USHM_SIZE * 4
