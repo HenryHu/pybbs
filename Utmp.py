@@ -1,5 +1,6 @@
 from sysv_ipc import *
 from UserInfo import UserInfo
+from UtmpHead import UtmpHead
 import Config
 
 class Utmp:
