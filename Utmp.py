@@ -2,7 +2,7 @@ import Config
 from UserInfo import UserInfo
 from sysv_ipc import *
 from UtmpHead import UtmpHead
-from SemLock import SemLock
+# from SemLock import SemLock
 
 UTMPFILE_SIZE = UserInfo.size() * Config.USHM_SIZE
 UTMPHEAD_SIZE = 4 * Config.USHM_SIZE + 4 * (Config.UTMP_HASHSIZE + 1) + 4 * 3 + 8 * Config.USHM_SIZE
@@ -39,15 +39,22 @@ class Utmp:
 
     @staticmethod
     def Lock():
-        try:
-            SemLock.Lock(Config.UCACHE_SEMLOCK, timeout = 10);
-            return 0;
-        except BusyError:
-            return -1;
+        #try:
+            #SemLock.Lock(Config.UCACHE_SEMLOCK, timeout = 10);
+            #return 0;
+        #except BusyError:
+            #return -1;
+        lockf = os.open("UTMP", os.O_RDWR | OS.O_CREAT, 0600)
+        if (lockf < 0):
+            Log.error("Fail to lock file!")
+            raise Exception("fail to lock!")
+        Util.FLock(lockf, shared = False)
+        return lockf
 
     @staticmethod
-    def Unlock():
-        SemLock.Unlock(Config.UCACHE_SEMLOCK)
+    def Unlock(lockf):
+        #SemLock.Unlock(Config.UCACHE_SEMLOCK)
+        Util.FUnlock(lockf)
 
     @staticmethod
     def GetNewUtmpEntry(userinfo):

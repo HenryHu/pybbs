@@ -149,6 +149,14 @@ class Util:
         return ''.join(random.choice(string.digits) for x in range(len))
 
     @staticmethod
+    def FLock(file, shared = False, nonBlock = False):
+        fcntl.flock(file, (fcntl.LOCK_SH if shared else fcntl.LOCK_EX) | (fcntl.LOCK_NB if nonBlock else 0));
+
+    @staticmethod
+    def FUnlock(file):
+        fcntl.flock(file, fcntl.LOCK_UN)
+
+    @staticmethod
     def LockFile(file, op):
         lockdata = struct.pack('hhllhh', op, 0, 0, 0, 0, 0)
         ret = fcntl.fcntl(file, fcntl.F_SETLKW, lockdata)
