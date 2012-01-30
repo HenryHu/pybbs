@@ -100,7 +100,7 @@ class BCache:
             except:
                 # do initialization
                 print "Init SHM"
-                BCache.brdshm = SharedMemory(Config.Config.GetInt("BCACHE_SHMKEY", 3693), size = BCache.BRDSHM_SIZE, flags = IPC_CREAT)
+                BCache.brdshm = SharedMemory(Config.Config.GetInt("BCACHE_SHMKEY", 3693), size = BCache.BRDSHM_SIZE, flags = IPC_CREAT, mode = 0660)
                 fd = BCache.Lock()
                 for i in range(0, Config.MAXBOARD):
                     bh = BoardHeader(i)

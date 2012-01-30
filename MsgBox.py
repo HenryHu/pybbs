@@ -2,6 +2,7 @@
 from Util import Util
 from User import User
 from MsgHead import MsgHead
+from Log import Log
 import Config
 import struct
 import time
@@ -247,10 +248,7 @@ class MsgBox:
             msglen = Config.MAX_MSG_SIZE - 1;
         msg = self.fContent.read(msglen);
         self.CloseContent();
-        return msg
-
-    def SendMsg(self, userinfo, msg, mode):
-        return None
+        return CString(msg)
 
     def GetMsgCount(self, all):
         path = ""
@@ -264,8 +262,16 @@ class MsgBox:
         if (size <= 0): return 0
         return (size - 4) / MsgHead.size()
 
+    def ClearMsg(self):
+        files = ['msgindex', 'msgindex2', 'msgcontent'];
+        for file in files:
+            try:
+                path = User.OwnFile(self.name, file)
+                os.remove(path)
+            except:
+                Log.warn("remove %s for user %s failed" % (file, self.name))
 
-
+        return 0
 
 
 
