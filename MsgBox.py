@@ -191,7 +191,7 @@ class MsgBox:
             self.CloseContent();
             return -1;
         content_size = self.SizeContent();
-        idx_size = self.sizeAll();
+        idx_size = self.SizeAll();
         count = 0;
         i = 0;
         if (idx_size <= 0):
