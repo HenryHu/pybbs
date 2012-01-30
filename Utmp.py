@@ -13,17 +13,17 @@ class Utmp:
     def Init():
         if (Utmp.utmpshm == None):
             try:
-                Utmp.utmpshm = SharedMemory(Config.Config.GetInt("UTMP_SHMKEY", 3699), size = UTMPFILE_SIZE)
-                UtmpHead.utmphead = SharedMemory(Config.Config.GetInt("UTMPHEAD_SHMKEY", 3698), size = UTMPHEAD_SIZE);
+                Utmp.utmpshm = SharedMemory(Config.Config.GetInt("UTMP_SHMKEY", 3699), size = Utmp.UTMPFILE_SIZE)
+                UtmpHead.utmphead = SharedMemory(Config.Config.GetInt("UTMPHEAD_SHMKEY", 3698), size = Utmp.UTMPHEAD_SIZE);
             except ExistentialError:
-                Utmp.utmpshm = SharedMemory(Config.Config.GetInt("UTMP_SHMKEY", 3699), size = UTMPFILE_SIZE, flags = IPC_CREAT, mode = 0660, init_character='\0')
-                UtmpHead.utmphead = SharedMemory(Config.Config.GetInt("UTMPHEAD_SHMKEY", 3698), UTMPHEAD_SIZE, flags = IPC_CREAT, mode = 0660, init_character='\0')
+                Utmp.utmpshm = SharedMemory(Config.Config.GetInt("UTMP_SHMKEY", 3699), size = Utmp.UTMPFILE_SIZE, flags = IPC_CREAT, mode = 0660, init_character='\0')
+                UtmpHead.utmphead = SharedMemory(Config.Config.GetInt("UTMPHEAD_SHMKEY", 3698), Utmp.UTMPHEAD_SIZE, flags = IPC_CREAT, mode = 0660, init_character='\0')
                 fd = Utmp.Lock()
                 UtmpHead.SetNumber(0);
                 UtmpHead.SetHashHead(0, 1);
-                for i in range(USHM_SIZE - 1):
+                for i in range(Utmp.USHM_SIZE - 1):
                     UtmpHead.SetNext(i, i+2);
-                UtmpHead.SetNext(USHM_SIZE - 1, 0);
+                UtmpHead.SetNext(Utmp.USHM_SIZE - 1, 0);
                 Utmp.Unlock(fd);
 
     @staticmethod
@@ -39,14 +39,14 @@ class Utmp:
     @staticmethod
     def Lock():
         try:
-            SemLock.Lock(UCACHE_SEMLOCK, timeout = 10);
+            SemLock.Lock(Config.UCACHE_SEMLOCK, timeout = 10);
             return 0;
         except BusyError:
             return -1;
 
     @staticmethod
     def Unlock():
-        SemLock.Unlock(UCACHE_SEMLOCK)
+        SemLock.Unlock(Config.UCACHE_SEMLOCK)
 
     @staticmethod
     def GetNewUtmpEntry(userinfo):
