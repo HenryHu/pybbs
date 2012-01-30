@@ -248,7 +248,7 @@ class MsgBox:
             msglen = Config.MAX_MSG_SIZE - 1;
         msg = self.fContent.read(msglen);
         self.CloseContent();
-        return CString(msg)
+        return Util.CString(msg)
 
     def GetMsgCount(self, all):
         path = ""

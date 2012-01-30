@@ -21,7 +21,7 @@ class UserRecord:
 
     def pack(self):
         UCache.uidshm.write(self.parser.pack(Util.Pack(self)), 0x15ee44 + self.size() * self.uid)
-    
+
 class UCache:
     uidshm = None
     UIDSHM_SIZE = 0x15ee44 + Config.MAXUSERS * UserRecord.size()
@@ -44,7 +44,7 @@ class UCache:
             user = UserRecord(i)
             if (user.userid == name):
                 return i
-        
+
     @staticmethod
     def GetUser(name):
         for i in range(1, Config.MAXUSERS):

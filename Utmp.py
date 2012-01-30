@@ -49,7 +49,7 @@ class Utmp:
             #return -1;
         lockf = os.open("UTMP", os.O_RDWR | os.O_CREAT, 0600)
         if (lockf < 0):
-            Log.error("Fail to lock file!")
+            Log.error("Fail to open lock file!")
             raise Exception("fail to lock!")
         Util.FLock(lockf, shared = False)
         return lockf
