@@ -127,3 +127,23 @@ class Utmp:
         Utmp.Unlock(utmpfd)
         return pos + 1;
 
+    @staticmethod
+    def IsActive(login):
+        return Utmp.GetInt(login, UserInfo.ACTIVE_POS)
+
+    @staticmethod
+    def GetUid(login):
+        return Utmp.GetInt(login, UserInfo.UID_POS)
+
+    @staticmethod
+    def GetPid(login):
+        return Utmp.GetInt(login, UserInfo.PID_POS)
+
+    @staticmethod
+    def GetInt(login, offset):
+        return struct.unpack('=i', Utmp.utmpshm.read(4, login * UserInfo.size() + offset))
+
+    @staticmethod
+    def SetUserInfo(pos, userinfo):
+        Utmp.utmpshm.write(userinfo.pack(), pos * UserInfo.size())
+
