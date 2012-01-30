@@ -1,30 +1,29 @@
-from sysv_ipc import *
-from UserInfo import UserInfo
-from UtmpHead import UtmpHead
 import Config
+from UserInfo import UserInfo
+from sysv_ipc import *
+from UtmpHead import UtmpHead
+
+UTMPFILE_SIZE = UserInfo.size() * Config.USHM_SIZE
+UTMPHEAD_SIZE = 4 * Config.USHM_SIZE + 4 * (Config.UTMP_HASHSIZE + 1) + 4 * 3 + 8 * Config.USHM_SIZE
 
 class Utmp:
-    USHM_SIZE = Config.MAXACTIVE + 10
     utmpshm = None
-    UTMPFILE_SIZE = UserInfo.size() * USHM_SIZE
-    UTMP_HASHSIZE = USHM_SIZE * 4
-    UTMPHEAD_SIZE = 4 * USHM_SIZE + 4 * (UTMP_HASHSIZE + 1) + 4 * 3 + 8 * USHM_SIZE
 
     @staticmethod
     def Init():
         if (Utmp.utmpshm == None):
             try:
-                Utmp.utmpshm = SharedMemory(Config.Config.GetInt("UTMP_SHMKEY", 3699), size = Utmp.UTMPFILE_SIZE)
-                UtmpHead.utmphead = SharedMemory(Config.Config.GetInt("UTMPHEAD_SHMKEY", 3698), size = Utmp.UTMPHEAD_SIZE);
+                Utmp.utmpshm = SharedMemory(Config.Config.GetInt("UTMP_SHMKEY", 3699), size = UTMPFILE_SIZE)
+                UtmpHead.utmphead = SharedMemory(Config.Config.GetInt("UTMPHEAD_SHMKEY", 3698), size = UTMPHEAD_SIZE);
             except ExistentialError:
-                Utmp.utmpshm = SharedMemory(Config.Config.GetInt("UTMP_SHMKEY", 3699), size = Utmp.UTMPFILE_SIZE, flags = IPC_CREAT, mode = 0660, init_character='\0')
-                UtmpHead.utmphead = SharedMemory(Config.Config.GetInt("UTMPHEAD_SHMKEY", 3698), Utmp.UTMPHEAD_SIZE, flags = IPC_CREAT, mode = 0660, init_character='\0')
+                Utmp.utmpshm = SharedMemory(Config.Config.GetInt("UTMP_SHMKEY", 3699), size = UTMPFILE_SIZE, flags = IPC_CREAT, mode = 0660, init_character='\0')
+                UtmpHead.utmphead = SharedMemory(Config.Config.GetInt("UTMPHEAD_SHMKEY", 3698), UTMPHEAD_SIZE, flags = IPC_CREAT, mode = 0660, init_character='\0')
                 fd = Utmp.Lock()
                 UtmpHead.SetNumber(0);
                 UtmpHead.SetHashHead(0, 1);
-                for i in range(Utmp.USHM_SIZE - 1):
+                for i in range(Config.USHM_SIZE - 1):
                     UtmpHead.SetNext(i, i+2);
-                UtmpHead.SetNext(Utmp.USHM_SIZE - 1, 0);
+                UtmpHead.SetNext(Config.USHM_SIZE - 1, 0);
                 Utmp.Unlock(fd);
 
     @staticmethod
@@ -32,7 +31,7 @@ class Utmp:
         hash = UCache.Hash(userid)
         if (hash == 0):
             return 0
-        hash = (hash / 3) % Utmp.UTMP_HASHSIZE;
+        hash = (hash / 3) % Config.UTMP_HASHSIZE;
         if (hash == 0):
             return 1;
         return hash
@@ -79,7 +78,7 @@ class Utmp:
                 while ((Utmp.GetUserId(i-1).lower() < userinfo.userid.lower()) and (i != UtmpHead.GetListHead())):
                     i = UtmpHead.GetListNext(i-1)
                     count = count + 1;
-                    if (count > USHM_SIZE):
+                    if (count > Config.USHM_SIZE):
                         UtmpHead.SetListHead(0)
                         Utmp.RebuildList()
                         UtmpHead.SetReadOnly(1)
@@ -108,7 +107,7 @@ class Utmp:
         now = int(time.time())
         if ((now > UtmpHead.GetUptime() + 120) or (now < UtmpHead.GetUptime() - 120)):
             UtmpHead.SetUptime(now)
-            for n in range(USHM_SIZE):
+            for n in range(Config.USHM_SIZE):
                 if (Utmp.IsActive(n) and Utmp.GetPid(n) != 0 and os.kill(Utmp.GetPid(n), 0) != -1):
                     username = Utmp.GetUserId(n)
                     Utmp.Clear(n+1)
@@ -116,13 +115,4 @@ class Utmp:
         UtmpHead.SetReadOnly(1)
         Utmp.Unlock(utmpfd)
         return pos + 1;
-
-            
-
-
-
-
-
-
-
 
