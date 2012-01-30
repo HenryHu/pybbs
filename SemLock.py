@@ -10,7 +10,7 @@ class SemLock:
         try:
             sems = [Semaphore(semkey)]
         except ExistentialError:
-            sems = [Sempahore(semkey, flags = IPC_CREAT | IPC_EXCL, mode = 0700)];
+            sems = [Semaphore(semkey, flags = IPC_CREAT | IPC_EXCL, mode = 0700)];
             for i in range(len(sems)):
                 sems[i].release()
 
