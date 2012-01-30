@@ -142,7 +142,7 @@ class Utmp:
 
     @staticmethod
     def GetInt(login, offset):
-        return struct.unpack('=i', Utmp.utmpshm.read(4, login * UserInfo.size() + offset))
+        return struct.unpack('=i', Utmp.utmpshm.read(4, login * UserInfo.size() + offset))[0]
 
     @staticmethod
     def SetUserInfo(pos, userinfo):
