@@ -206,7 +206,7 @@ class MsgBox:
         msghead.pos = content_size;
         msghead.len = msglen;
 
-        self.fAll.write(msghead.pack);
+        self.fAll.write(msghead.pack());
         self.fContent.seek(content_size);
         if (msglen != len(msg) + 1):
             self.fContent.write(msg[:msglen]);
