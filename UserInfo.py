@@ -3,7 +3,7 @@ import Config
 from Util import Util
 
 class UserInfo:
-    _fields = ['active', 'uid', 'pid', 'invisible', 'sockactive', 'sockaddr', 'destuid', 'mode', 'pager', 'in_chat', 'chatid', ['from', 1], 'logintime', 'fill', 'freshtime', 'utmpkey', 'mailbox_prop', ['userid', 1], ['realname', 1], ['username', 1], 'friendsnum', ['friends_uid', 2, '=%di' % Config.MAXFRIENDS ], 'currentboard', 'mailcheck']
+    _fields = ['active', 'uid', 'pid', 'invisible', 'sockactive', 'sockaddr', 'destuid', 'mode', 'pager', 'in_chat', ['chatid', 1], ['from', 1], 'logintime', 'fill', 'freshtime', 'utmpkey', 'mailbox_prop', ['userid', 1], ['realname', 1], ['username', 1], 'friendsnum', ['friends_uid', 2, '=%di' % Config.MAXFRIENDS ], 'currentboard', 'mailcheck']
     _parser = struct.Struct('=iiiiiiiiii16s%dsi36siiI20s20s40si%dsiI' % (Config.IPLEN + 4, Config.MAXFRIENDS * 4))
 
     ACTIVE_POS = 0
