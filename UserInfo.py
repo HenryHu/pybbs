@@ -34,7 +34,7 @@ class UserInfo:
     def __init__(self, idx):
         self._index = idx - 1
         if (idx != 0):
-            self.unpack()
+            self.load()
 
     def GetIndex(self):
         return self._index + 1
