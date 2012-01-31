@@ -1,9 +1,9 @@
 import Config
 import os
 import struct
-from UserInfo import UserInfo
 from sysv_ipc import *
 from UtmpHead import UtmpHead
+from UserInfo import UserInfo
 from Log import Log
 from Util import Util
 # from SemLock import SemLock

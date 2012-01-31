@@ -1,5 +1,6 @@
 import struct
 import Config
+from Util import Util
 
 class UserInfo:
     _fields = ['active', 'uid', 'pid', 'invisible', 'sockactive', 'sockaddr', 'destuid', 'mode', 'pager', 'in_chat', 'chatid', 'from', 'logintime', 'fill', 'freshtime', 'utmpkey', 'mailbox_prop', 'userid', 'realname', 'username', 'friendsnum', ['friends_uid', 2, '=%di' % Config.MAXFRIENDS ], 'currentboard', 'mailcheck']
@@ -20,6 +21,7 @@ class UserInfo:
             if (self._index < 0):
                 raise Exception("Cannot unpack without index!")
             else:
+                from Utmp import Utmp
                 Util.Unpack(self, UserInfo._parser.unpack(Utmp.utmpshm.read(UserInfo._parser.size, self._index * UserInfo._parser.size)))
 
     def pack(self):
@@ -29,3 +31,4 @@ class UserInfo:
         self._index = idx - 1
         if (idx != 0):
             self.unpack()
+
