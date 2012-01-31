@@ -11,9 +11,7 @@ class BoardHeader:
     _fields = [['filename', 1], ['BM', 1], ['title', 1], 'level', 'nowid', 'clubnum', 'flag', 'adv_club', 'createtime', 'toptitle', ['ann_path',1], 'group', 'title_level', ['des',1]]
 
     # struct boardheader
-    @staticmethod
-    def size():
-        return BoardHeader.parser.size
+    size = parser.size
 
     def unpack(self):
         Util.Unpack(self, BoardHeader.parser.unpack(BCache.bcache[self.idx * BoardHeader.parser.size:(self.idx + 1) * BoardHeader.parser.size]))
@@ -31,16 +29,14 @@ class BoardStatus:
     _fields = ['total', 'lastpost', 'updatemark', 'updatetitle', 'updateorigin', 'currentusers']
 
     # struct boardheader
-    @staticmethod
-    def size():
-        return BoardStatus.parser.size
+    size = parser.size
 
     def unpack(self):
-        Util.Unpack(self, BoardStatus.parser.unpack(BCache.brdshm.read(self.size(), 4 + self.size() * self.idx)))
+        Util.Unpack(self, BoardStatus.parser.unpack(BCache.brdshm.read(self.size, 4 + self.size * self.idx)))
         return
 
     def pack(self):
-        BCache.brdshm.write(BoardStatus.parser.pack(Util.Pack(self)), 4 + self.size() * self.idx)
+        BCache.brdshm.write(BoardStatus.parser.pack(Util.Pack(self)), 4 + self.size * self.idx)
 
     def __init__(self, idx):
         self.idx = idx - 1 # we start from 0 here...
@@ -49,7 +45,7 @@ class BoardStatus:
 class BCache:
     bcache = None
     brdshm = None
-    BRDSHM_SIZE = 4 + Config.MAXBOARD * BoardStatus.size()
+    BRDSHM_SIZE = 4 + Config.MAXBOARD * BoardStatus.size
 
     @staticmethod
     def GetBoardCount():
@@ -80,7 +76,7 @@ class BCache:
             if (boardf == None):
                 print "Cannot open boards file"
                 return False
-            BCache.bcache = mmap.mmap(boardf.fileno(), Config.MAXBOARD * BoardHeader.size(), flags = mmap.MAP_SHARED, prot = mmap.PROT_READ)
+            BCache.bcache = mmap.mmap(boardf.fileno(), Config.MAXBOARD * BoardHeader.size, flags = mmap.MAP_SHARED, prot = mmap.PROT_READ)
             if (BCache.bcache == None):
                 print "Cannot map boards file"
                 boardf.close()
@@ -96,7 +92,7 @@ class BCache:
 #                    if (bh.filename != ''):
 #                        bs = BoardStatus(i)
 #                        print "Board: ", bh.filename, " lastpost: ", bs.lastpost, " total: ", bs.total, " curruser: ", bs.currentusers
-#                print BoardStatus.size()
+#                print BoardStatus.size
             except:
                 # do initialization
                 print "Init SHM"
@@ -120,9 +116,9 @@ class BCache:
             print "Cannot open boards file"
             return False
         if (readonly):
-            BCache.bcache = mmap.mmap(boardf.fileno(), Config.MAXBOARD * BoardHeader.size(), flags=mmap.MAP_SHARED, prot=mmap.PROT_READ)
+            BCache.bcache = mmap.mmap(boardf.fileno(), Config.MAXBOARD * BoardHeader.size, flags=mmap.MAP_SHARED, prot=mmap.PROT_READ)
         else:
-            BCache.bcache = mmap.mmap(boardf.fileno(), Config.MAXBOARD * BoardHeader.size(), flags=mmap.MAP_SHARED, prot=mmap.PROT_READ | mmap.PROT_WRITE)
+            BCache.bcache = mmap.mmap(boardf.fileno(), Config.MAXBOARD * BoardHeader.size, flags=mmap.MAP_SHARED, prot=mmap.PROT_READ | mmap.PROT_WRITE)
         boardf.close()
         return True
 

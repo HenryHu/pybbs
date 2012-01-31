@@ -113,7 +113,7 @@ class MsgBox:
             self.CloseIn()
             return -1
         size = self.SizeIn()
-        count = (size - 4) / MsgHead.size()
+        count = (size - 4) / MsgHead.size
         if (size <= 0):
             ret = 0
         else:
@@ -134,7 +134,7 @@ class MsgBox:
             self.CloseIn()
             return -1
         size = self.SizeIn()
-        count = (size - 4) / MsgHead.size()
+        count = (size - 4) / MsgHead.size
         if (size <= 0):
             ret = -1
         else:
@@ -168,14 +168,14 @@ class MsgBox:
             return None
         size = Util.SizeGeneral(file)
 
-        count = (size - 4) / MsgHead.size()
+        count = (size - 4) / MsgHead.size
         if (index < 0 or index >= count):
             self.UnlockGeneral(file)
             file.close()
             return None
 
-        file.seek(index * MsgHead.size() + 4)
-        ret = MsgHead(file.read(MsgHead.size()))
+        file.seek(index * MsgHead.size + 4)
+        ret = MsgHead(file.read(MsgHead.size))
 
         self.UnlockGeneral(file)
         file.close()
@@ -198,9 +198,9 @@ class MsgBox:
         if (idx_size <= 0):
             self.fAll.write('\0\0\0\0');
         else:
-            count = (idx_size - 4) / MsgHead.size();
+            count = (idx_size - 4) / MsgHead.size;
 
-        self.fAll.seek(count * MsgHead.size() + 4);
+        self.fAll.seek(count * MsgHead.size + 4);
         msglen = len(msg) + 1;
         if (msglen >= Config.MAX_MSG_SIZE):
             msglen = Config.MAX_MSG_SIZE - 1;
@@ -230,9 +230,9 @@ class MsgBox:
             if (inbox_size <= 0):
                 self.fIn.write('\0\0\0\0');
             else:
-                inbox_count = (inbox_size - 4) / MsgHead.size();
+                inbox_count = (inbox_size - 4) / MsgHead.size;
 
-            self.fIn.seek(inbox_count * MsgHead.size() + 4);
+            self.fIn.seek(inbox_count * MsgHead.size + 4);
             self.fIn.write(msghead.pack());
             self.UnlockIn();
             self.CloseIn();
@@ -260,7 +260,7 @@ class MsgBox:
         size = Util.GetSize(path)
 
         if (size <= 0): return 0
-        return (size - 4) / MsgHead.size()
+        return (size - 4) / MsgHead.size
 
     def ClearMsg(self):
         files = ['msgindex', 'msgindex2', 'msgcontent'];

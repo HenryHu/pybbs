@@ -39,6 +39,7 @@ class Session:
         self.username = user.name
         self.sessionid = Util.RandomStr(SESSIONID_LEN)
         self.user = UserManager.LoadUser(user.name)
+        self.utmpent = -1
         SessionManager.Insert(self)
 
 class SessionManager:
@@ -57,7 +58,7 @@ class SessionManager:
     @staticmethod
     def VerifySession(svc, session, params):
         if (session == None):
-            svc.return_error(404, "session not found or timeout")
+            svc.return_error(404, "session not found or session timed out")
         else:
             svc.send_response(200, 'OK')
             svc.end_headers()

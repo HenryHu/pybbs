@@ -65,6 +65,9 @@ class User:
     def OwnFile(userid, str):
         return "%s/home/%s/%s/%s" % (Config.BBS_ROOT, userid[0].upper(), userid, str)
 
+    def MyFile(self, str):
+        return User.OwnFile(self.name, str)
+
     @staticmethod
     def CacheFile(userid, str):
         return "%s/cache/home/%s/%s/%s" % (Config.BBS_ROOT, userid[0].upper(), userid, str)
@@ -104,5 +107,31 @@ class User:
         if (self.HasPerm(PERM_SYSOP)):
             return True
         return True
+
+    def GetFriends(self, userinfo, session):
+        userinfo.friendsnum = 0
+        path = self.MyFile("friends")
+        numFriends = Util.GetRecordCount(path, Friend.size)
+        if (numFriends <= 0):
+            return 0
+        if (numFriends > Config.MAXFRIENDS):
+            numFriends = Config.MAXFRIENDS
+
+        friends = map(Friend, Util.GetRecords(path, Friend.size, 1, numFriends))
+        for i in range(numFriends):
+            if (User.InvalidId(friends[i].id) or UCache.SearchUser(friends[i].id) == 0):
+                friends[i] = friends[numFriends - 1]
+                numFriends = numFriends - 1
+                friends.pop()
+
+        friends.sort(key = Friend.NCaseId)
+
+        session.topfriend = []
+        for i in range(numFriends):
+            userinfo.friends_uid[i] = UserManager.SearchUser(friends[i].id)
+            session.topfriend.append(friends[i].exp)
+
+        userinfo.friendsnum = numFriends
+        return 0
 
 from UserManager import UserManager

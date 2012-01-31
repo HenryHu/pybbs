@@ -8,9 +8,7 @@ class MsgHead:
     _fields = ['pos', 'len', 'sent', 'mode', ['id', 1], 'time', 'frompid', 'topid']
 
     #struct msghead
-    @staticmethod
-    def size():
-        return MsgHead.parser.size
+    size = parser.size
     
     def unpack(self, str):
         Util.Unpack(self, MsgHead.parser.unpack(str))

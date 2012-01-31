@@ -8,7 +8,7 @@ from Log import Log
 from Util import Util
 # from SemLock import SemLock
 
-UTMPFILE_SIZE = UserInfo.size() * Config.USHM_SIZE
+UTMPFILE_SIZE = UserInfo.size * Config.USHM_SIZE
 UTMPHEAD_SIZE = 4 * Config.USHM_SIZE + 4 * (Config.UTMP_HASHSIZE + 1) + 4 * 3 + 8 * Config.USHM_SIZE
 
 class Utmp:
@@ -122,7 +122,7 @@ class Utmp:
             for n in range(Config.USHM_SIZE):
                 if (Utmp.IsActive(n) and Utmp.GetPid(n) != 0 and os.kill(Utmp.GetPid(n), 0) != -1):
                     username = Utmp.GetUserId(n)
-                    Utmp.Clear(n+1)
+                    Utmp.Clear2(n+1)
                     User.RemoveMsgCount(username)
         UtmpHead.SetReadOnly(1)
         Utmp.Unlock(utmpfd)
@@ -142,9 +142,21 @@ class Utmp:
 
     @staticmethod
     def GetInt(login, offset):
-        return struct.unpack('=i', Utmp.utmpshm.read(4, login * UserInfo.size() + offset))[0]
+        return struct.unpack('=i', Utmp.utmpshm.read(4, login * UserInfo.size + offset))[0]
 
     @staticmethod
     def SetUserInfo(pos, userinfo):
-        Utmp.utmpshm.write(userinfo.pack(), pos * UserInfo.size())
+        Utmp.utmpshm.write(userinfo.pack(), pos * UserInfo.size)
+
+    @staticmethod
+    def Clear(uent, useridx, pid):
+        lock = Utmp.Lock()
+        Utmp.SetReadOnly(0)
+
+        if (((useridx == 0) or (Utmp.GetUid(uent - 1) == useridx)) and (pid == Utmp.GetPid(uent - 1))):
+            Utmp.Clear2(uent);
+
+        Utmp.SetReadOnly(1)
+        Utmp.Unlock(lock)
+
 

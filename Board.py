@@ -34,9 +34,7 @@ class PostEntry:
             'unsued2', 'rootcrc', 'eff_size', 'posttime', 'attachment',
             ['title',1], 'level', 'accessed']
 
-    @staticmethod
-    def size():
-        return PostEntry.parser.size
+    size = parser.size
 
     def unpack(self):
         Util.Unpack(self, PostEntry.parser.unpack(self.data))
@@ -155,12 +153,12 @@ class Board:
         pe = None
         if (fd == None):
             dirf = open(self.GetDirPath(mode), 'rb')
-            dirf.seek(postid * PostEntry.size())
-            pe = PostEntry(dirf.read(PostEntry.size()))
+            dirf.seek(postid * PostEntry.size)
+            pe = PostEntry(dirf.read(PostEntry.size))
             dirf.close()
         else:
-            fd.seek(postid * PostEntry.size())
-            pe = PostEntry(fd.read(PostEntry.size()))
+            fd.seek(postid * PostEntry.size)
+            pe = PostEntry(fd.read(PostEntry.size))
         return pe
 
     def GetPost(self, svc, session, params, id):

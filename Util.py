@@ -209,6 +209,23 @@ class Util:
             return None
         return mmap.mmap(fd.fileno(), fstat.st_size, flags = flag, prot = pro)
 
+    @staticmethod
+    def GetRecordCount(path, size):
+        try:
+            st = os.stat(path)
+            return st.st_size / size;
+        except Error:
+            return -1
+
+    @staticmethod
+    def GetRecords(path, size, index, count):
+        ret = []
+        file = open(path, 'r+b')
+        file.seek(size * (index - 1))
+        for i in range(count):
+            ret.append(file.read(size))
+        return ret
+
 def fixterm_handler(exc):
     if isinstance(exc, (UnicodeDecodeError)):
         s = u""

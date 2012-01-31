@@ -8,23 +8,22 @@ class UserRecord:
     _fields = [['userid', 1], 'flags', 'title', 'firstlogin', 'lasthost', 'numlogins', 'numposts', 'passwd', 'padding', ['username', 1], ['club_read_rights', 2, '=%dI' % (Config.MAXCLUB/32)], ['club_write_rights', 2, '=%dI' % (Config.MAXCLUB/32)], 'md5passwd', 'userlevel', 'lastlogin', 'stay', 'signature', 'userdef0', 'userdef1', 'notedate', 'noteline', 'notemode', 'exittime', 'usedspace']
     uid = 0
 
-    @staticmethod
-    def size():
-        return UserRecord.parser.size
+    # struct userec
+    size = parser.size
 
     def __init__(self, uid):
         self.uid = uid - 1 # 0 internal
         self.unpack()
 
     def unpack(self):
-        Util.Unpack(self, self.parser.unpack(UCache.uidshm.read(self.size(), 0x15ee44 + self.size() * self.uid)))
+        Util.Unpack(self, self.parser.unpack(UCache.uidshm.read(self.size, 0x15ee44 + self.size * self.uid)))
 
     def pack(self):
-        UCache.uidshm.write(self.parser.pack(Util.Pack(self)), 0x15ee44 + self.size() * self.uid)
+        UCache.uidshm.write(self.parser.pack(Util.Pack(self)), 0x15ee44 + self.size * self.uid)
 
 class UCache:
     uidshm = None
-    UIDSHM_SIZE = 0x15ee44 + Config.MAXUSERS * UserRecord.size()
+    UIDSHM_SIZE = 0x15ee44 + Config.MAXUSERS * UserRecord.size
 
     @staticmethod
     def Init():
@@ -44,6 +43,7 @@ class UCache:
             user = UserRecord(i)
             if (user.userid == name):
                 return i
+        return 0
 
     @staticmethod
     def GetUser(name):
