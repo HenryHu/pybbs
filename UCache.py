@@ -1,7 +1,7 @@
 import struct
 from Util import Util
 import Config
-from sysv_ipc import SharedMemory
+from sysv_ipc import SharedMemory, ExistentialError
 
 class UserRecord:
     parser = struct.Struct('=%dsccI16sII%ds2s%ds%ds%ds%dsIIIiIIIiiII' % (Config.IDLEN + 2, Config.NAMELEN, Config.OLDPASSLEN, Config.MAXCLUB/32 * 4, Config.MAXCLUB / 32 * 4, Config.MD5PASSLEN))
