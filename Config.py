@@ -36,7 +36,7 @@ class Config:
     @staticmethod
     def GetString(name, defval):
         if (Config.parser.has_option('sysconf', name)):
-            return Config.parser.get('sysconfi', name)
+            return Config.parser.get('sysconf', name)
         else:
             return defval
 

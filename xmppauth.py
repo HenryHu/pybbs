@@ -37,15 +37,15 @@ class XMPPAuth(sasl.auth.Authenticator):
         if (authorize and user != authorize):
             return False
 
-        print "trying to auth %s pass %s" % (user, passwd)
+#        print "trying to auth %s pass %s" % (user, passwd)
         user = UserManager.LoadUser(user)
         if (user == None):
             return False
 
         if (user.Authorize(passwd)):
-            print "OK"
+#            print "OK"
             return True
 
-        print "Wrong PW"
+#        print "Wrong PW"
         return False
 
