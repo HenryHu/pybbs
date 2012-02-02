@@ -26,5 +26,6 @@ For the xmpp part, the source is modified from the python-xmpp-server_ project o
 It depends on python-sasl_, tornado_ and lxml_.
 
 .. _python-xmpp-server: http://github.com/thisismedium/python-xmpp-server
+.. _python-sasl: http://github.com/thisismedium/python-sasl
 .. _tornado: http://github.com/facebook/tornado
 .. _lxml: http://lxml.de
