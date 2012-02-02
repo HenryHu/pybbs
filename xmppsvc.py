@@ -12,11 +12,13 @@ import rosters
 import xmpp
 import xmppauth
 import UCache
+import Utmp
 
 if __name__ == '__main__':
 
     Config.Config.LoadConfig();
     UCache.UCache.Init()
+    Utmp.Utmp.Init()
 
     hostname = Config.Config.GetString("BBS_XMPP_HOST", 'localhost')
 
