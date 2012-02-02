@@ -33,7 +33,17 @@ class Config:
         else:
             return defval
 
+    @staticmethod
+    def GetString(name, defval):
+        if (Config.parser.has_option('sysconf', name)):
+            return Config.parser.get('sysconfi', name)
+        else:
+            return defval
+
 BBS_ROOT = '/home/bbs/'
+BBS_XMPP_CERT_FILE = BBS_ROOT + "xmpp.crt"
+BBS_XMPP_KEY_FILE = BBS_ROOT + "xmpp.key"
+
 BOARDS_FILE = BBS_ROOT + '.BOARDS.TEST'
 STRLEN = 80
 BM_LEN = 60

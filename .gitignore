@@ -2,4 +2,5 @@ Defs.py
 *.pyc
 *.swp
 *.req
+*.rep
 
