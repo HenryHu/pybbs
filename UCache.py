@@ -30,9 +30,8 @@ class UCache:
         if (UCache.uidshm == None):
             try:
                 UCache.uidshm = SharedMemory(Config.Config.GetInt("UCACHE_SHMKEY", 3696), size = UCache.UIDSHM_SIZE)
-            except Exception as e:
+            except ExistentialError:
                 print "Init UCache SHM"
-                print e
                 # not implemented!
                 raise Exception("Not implemented: Init UCache SHM")
 
