@@ -56,3 +56,7 @@ class UCache:
     @staticmethod
     def GetUserByUid(uid):
         return UserRecord(uid)
+
+    @staticmethod
+    def Hash(userid):
+        raise NotImplementedError

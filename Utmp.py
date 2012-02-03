@@ -1,8 +1,10 @@
 import Config
 import os
 import struct
+import random
 from sysv_ipc import *
 from UtmpHead import UtmpHead
+from commondata import CommonData
 from UserInfo import UserInfo
 from Log import Log
 from Util import Util
@@ -159,4 +161,11 @@ class Utmp:
         Utmp.SetReadOnly(1)
         Utmp.Unlock(lock)
 
+    @staticmethod
+    def Clear2(uent):
+        pass
+
+    @staticmethod
+    def RebuildList():
+        pass
 
