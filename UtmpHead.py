@@ -79,5 +79,5 @@ class UtmpHead:
     @staticmethod
     def SetReadOnly(readonly):
         UtmpHead.utmphead.detach()
-        UtmpHead.utmphead.attach(flags = (SHM_RDONLY if readonly else 0))
+        UtmpHead.utmphead.attach(None, (SHM_RDONLY if readonly else 0))
 
