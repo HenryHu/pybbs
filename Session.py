@@ -1,6 +1,7 @@
 from Config import *
 from UserInfo import UserInfo
 from Util import Util
+from Utmp import Utmp
 import modes
 import User
 from UCache import UCache
