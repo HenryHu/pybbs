@@ -1,12 +1,12 @@
 from Config import *
 from Util import Util
+import User
+from UCache import UCache
+import time
+import os
 import json
 
 class Session:
-    sessionid = ''
-    username = ''
-    user = None
-
     def GetID(self):
         return self.sessionid
 
@@ -37,10 +37,53 @@ class Session:
 
     def __init__(self, user):
         self.username = user.name
+        self.uid = UCache.SearchUser(self.username)
         self.sessionid = Util.RandomStr(SESSIONID_LEN)
         self.user = UserManager.LoadUser(user.name)
+        self._userinfo = None
         self.utmpent = -1
         SessionManager.Insert(self)
+
+    def Register(self):
+        # register this session (so TERM users can see me)
+        userinfo = UserInfo()
+        userinfo.active = 1
+        userinfo.pid = os.getpid()
+        if ((self.user.HasPerm(User.PERM_CHATCLOAK) or self.user.HasPerm(User.PERM_CLOAK)) and (self.user.HasFlag(User.CLOAK_FLAG))):
+            userinfo.invisible = 1
+        userinfo.mode = modes.WWW
+        userinfo.pager = 0
+        if (self.user.Defined(User.DEF_FRIENDCALL)):
+            userinfo.pager |= User.FRIEND_PAGER
+
+        if (self.user.HasFlag(User.PAGER_FLAG)):
+            userinfo.pager |= User.ALL_PAGER
+            userinfo.pager |= User.FRIEND_PAGER
+
+        if (self.user.Defined(User.DEF_FRIENDMSG)):
+            userinfo.pager |= User.FRIEND_PAGER
+
+        if (self.user.Defined(User.DEF_ALLMSG)):
+            userinfo.pager |= User.ALL_PAGER
+            userinfo.pager |= User.FRIEND_PAGER
+
+        userinfo.uid = self.uid
+        userinfo.from = '127.0.0.1' # XXX: fix later
+        userinfo.freshtime = int(time.time())
+        userinfo.userid = self.username
+        userinfo.realname = 'ANONYMOUS' # XXX: fix later
+        userinfo.username = self.user.userec.username
+
+        self.utempent = Utmp.GetNewUtmpEntry(userinfo)
+        if (self.utempent = -1):
+            return None
+
+        userinfo.SetIndex(self.utmpent)
+        self.user.GetFriends(userinfo)
+        userinfo.save()
+
+        self._userinfo = userinfo
+        return userinfo
 
 class SessionManager:
     sessions = {}

@@ -31,13 +31,17 @@ class UserInfo:
     def pack(self):
         return UserInfo._parser.pack(*Util.Pack(self))
 
-    def __init__(self, idx):
+    def __init__(self, idx = 0):
         self._index = idx - 1
         if (idx != 0):
             self.load()
+        self.friends_nick = []
 
     def GetIndex(self):
         return self._index + 1
+
+    def SetIndex(self, index):
+        self._index = index - 1
 
     def HasFriend(self, uid):
         if (self.friendsnum <= 0):
@@ -46,4 +50,9 @@ class UserInfo:
             if (self.friends_uid[i] == uid):
                 return True, i
         return False, None
+
+    def GetNick(self, i):
+        if (len(self.friends_nick) >= i):
+            return None
+        return self.friends_nick[i]
 

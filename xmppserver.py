@@ -2,9 +2,19 @@ import xmpp
 class XMPPServer(xmpp.Plugin):
     """XMPP server for the BBS"""
 
-    def __init__(self, rosters):
+    def __init__(self, rosters, host):
         self.probed = False
         self.rosters = rosters
+
+        self._userid = self.authJID.bare.partition('@')[0]
+        # Login the user
+        self._user = UserManager.LoadUser(self._userid)
+        if (self._user == None):
+            raise Exception("How can that be!")
+        self._session = Session(self._user)
+        # insert into global session list!
+        self._userinfo = self._session.Register()
+        self._hostname = host
 
     @xmpp.iq('{urn:xmpp:ping}ping')
     def ping(self, iq):

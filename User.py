@@ -4,6 +4,7 @@ import json
 import hashlib
 import Config
 import Defs
+from Util import Util
 
 PERM_BASIC = 000001
 PERM_CHAT = 000002
@@ -35,6 +36,52 @@ PERM_SUICIDE = 0400000000
 PERM_COLLECTIVE = 01000000000
 PERM_DISS = 02000000000
 PERM_DENYMAIL = 04000000000
+# these are flags in userec.flags[0] 
+PAGER_FLAG   = 0x1  # /* true if pager was OFF last session */
+CLOAK_FLAG   = 0x2  # /* true if cloak was ON last session */
+BRDSORT_FLAG = 0x20 # /* true if the boards sorted alphabetical */
+CURSOR_FLAG  = 0x80 # /* true if the cursor mode open */
+GIVEUP_FLAG  = 0x4  # /* true if the user is giving up  by bad 2002.7.6 */
+PCORP_FLAG	 = 0x40	# /* true if have personalcorp */
+#define DEFINE(user,x)     ((x)?((user)->userdefine[def_list(x)])&(x):1)
+DEF_ACBOARD    = 000001
+DEF_COLOR      = 000002
+DEF_EDITMSG    = 000004
+DEF_NEWPOST    = 000010
+DEF_ENDLINE    = 000020
+DEF_LOGFRIEND  = 000040
+DEF_FRIENDCALL = 000100
+DEF_LOGOUT     = 000200
+DEF_INNOTE     = 000400
+DEF_OUTNOTE    = 001000
+DEF_NOTMSGFRIEND = 002000
+DEF_NORMALSCR  = 004000
+DEF_CIRCLE     = 010000
+DEF_FIRSTNEW   = 020000
+DEF_TITLECOLOR = 040000
+DEF_ALLMSG     = 0100000
+DEF_FRIENDMSG  = 0200000
+DEF_SOUNDMSG   = 0400000
+DEF_MAILMSG    = 01000000
+DEF_LOGININFORM= 02000000
+DEF_SHOWSCREEN = 04000000
+DEF_SHOWHOT    = 010000000
+DEF_NOTEPAD    = 020000000
+DEF_IGNOREMSG  = 040000000      /* Added by Marco */
+DEF_HIGHCOLOR = 0100000000   /*Leeward 98.01.12 */
+DEF_SHOWSTATISTIC = 0200000000    /* Haohmaru */
+DEF_UNREADMARK = 0400000000       /* Luzi 99.01.12 */
+DEF_USEGB   = 01000000000       /* KCN,99.09.05 */
+DEF_CHCHAR  = 02000000000
+DEF_SHOWDETAILUSERDATA = 04000000000
+DEF_SHOWREALUSERDATA  = 010000000000
+DEF_HIDEIP                    = 040000000001
+
+#//DEF_SPLITSCREEN 02000000000 /* bad 2002.9.1 */
+ALL_PAGER = 0x1
+FRIEND_PAGER = 0x2
+ALLMSG_PAGER = 0x4
+FRIENDMSG_PAGER = 0x8
 
 class User:
     name = ''
@@ -88,6 +135,24 @@ class User:
             return True
         return False
 
+    def HasFlag(self, flag):
+        if (self.userec.flags & flag != 0):
+            return True
+        return False
+
+    @staticmethod
+    def DefinePos(value):
+        if (value < DEF_HIDEIP):
+            return 0
+        return 1
+
+    def Defined(self, value):
+        if (value == 0):
+            return True
+        if (self.userec.userdefine[User.DefinePos(value)] & value != 0):
+            return True
+        return False
+
     def CanReadClub(self, clubnum):
         idx = clubnum - 1
         if (self.userec.club_read_rights[idx >> 5] & (1 << (idx & 0x1f)) != 0):
@@ -108,7 +173,13 @@ class User:
             return True
         return True
 
-    def GetFriends(self, userinfo, session):
+    @staticmethod
+    def InvalidId(username):
+        if (username.isalpha()):
+            return False
+        return True
+
+    def GetFriends(self, userinfo):
         userinfo.friendsnum = 0
         path = self.MyFile("friends")
         numFriends = Util.GetRecordCount(path, Friend.size)
@@ -126,10 +197,10 @@ class User:
 
         friends.sort(key = Friend.NCaseId)
 
-        session.topfriend = []
+        userinfo.friends_nick = []
         for i in range(numFriends):
             userinfo.friends_uid[i] = UserManager.SearchUser(friends[i].id)
-            session.topfriend.append(friends[i].exp)
+            userinfo.friends_nick.append(friends[i].exp)
 
         userinfo.friendsnum = numFriends
         return 0

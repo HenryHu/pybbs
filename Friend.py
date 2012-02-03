@@ -3,6 +3,8 @@ import Config
 import struct
 
 class Friend:
+    """struct friends
+    the entries of HOME/friends"""
     _parser = struct.Struct('=%ds%ds' % (13, Config.LEN_FRIEND_EXP))
     _fields = [['id', 1], ['exp', 1]]
 

@@ -5,7 +5,7 @@ from sysv_ipc import SharedMemory, ExistentialError
 
 class UserRecord:
     parser = struct.Struct('=%dsccI16sII%ds2s%ds%ds%ds%dsIIIiIIIiiII' % (Config.IDLEN + 2, Config.NAMELEN, Config.OLDPASSLEN, Config.MAXCLUB/32 * 4, Config.MAXCLUB / 32 * 4, Config.MD5PASSLEN))
-    _fields = [['userid', 1], 'flags', 'title', 'firstlogin', 'lasthost', 'numlogins', 'numposts', 'passwd', 'padding', ['username', 1], ['club_read_rights', 2, '=%dI' % (Config.MAXCLUB/32)], ['club_write_rights', 2, '=%dI' % (Config.MAXCLUB/32)], 'md5passwd', 'userlevel', 'lastlogin', 'stay', 'signature', 'userdef0', 'userdef1', 'notedate', 'noteline', 'notemode', 'exittime', 'usedspace']
+    _fields = [['userid', 1], 'flags', 'title', 'firstlogin', 'lasthost', 'numlogins', 'numposts', 'passwd', 'padding', ['username', 1], ['club_read_rights', 2, '=%dI' % (Config.MAXCLUB/32)], ['club_write_rights', 2, '=%dI' % (Config.MAXCLUB/32)], 'md5passwd', 'userlevel', 'lastlogin', 'stay', 'signature', ['userdef', 2, '=2I'], 'notedate', 'noteline', 'notemode', 'exittime', 'usedspace']
     uid = 0
 
     # struct userec

@@ -20,7 +20,7 @@ class Rosters(object):
         roster = self._rosters.get(bare)
         if roster is None:
             ## Automatically create an empty roster.
-            roster = self._rosters[bare] = roster.Roster(bare)
+            roster = self._rosters[bare] = roster.Roster(bare, conn)
         return roster
 
     def broadcast(self, conn, elem):

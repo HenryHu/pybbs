@@ -23,7 +23,7 @@ if __name__ == '__main__':
     hostname = Config.Config.GetString("BBS_XMPP_HOST", 'localhost')
 
     server = xmpp.Server({
-        'plugins': [(xmppserver.XMPPServer, { 'rosters': rosters.Rosters() })],
+        'plugins': [(xmppserver.XMPPServer, { 'rosters': rosters.Rosters() , 'host': hostname})],
         'auth': xmppauth.XMPPAuth('xmpp', hostname, 'bbs'),
         'certfile': Config.BBS_XMPP_CERT_FILE,
         'keyfile': Config.BBS_XMPP_KEY_FILE,
