@@ -149,7 +149,7 @@ class User:
     def Defined(self, value):
         if (value == 0):
             return True
-        if (self.userec.userdefine[User.DefinePos(value)] & value != 0):
+        if (self.userec.userdef[User.DefinePos(value)] & value != 0):
             return True
         return False
 
