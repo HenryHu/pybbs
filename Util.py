@@ -112,6 +112,19 @@ class Util:
         return ret
 
     @staticmethod
+    def InitStruct(obj):
+        obj.unpack('\0' * obj.size)
+#        fields = obj._fields
+#        for i in range(len(fields)):
+#            if (type(fields[i]) == type(list())):
+#                if (fields[i][1] == 1):
+#                    setattr(obj, fields[i][0], '')
+#                elif (fields[i][1] == 2):
+#                    setattr(obj, fields[i][0], [])
+#            else:
+#                setattr(obj, fields[i], 0)
+
+    @staticmethod
     def CString(string):
         i = string.find('\0')
         if (i != -1):

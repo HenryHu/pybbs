@@ -37,6 +37,8 @@ class UserInfo:
         self._index = idx - 1
         if (idx != 0):
             self.load()
+        else:
+            Util.InitStruct(self)
         self.friends_nick = []
 
     def GetIndex(self):
