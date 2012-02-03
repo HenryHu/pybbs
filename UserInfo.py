@@ -9,6 +9,8 @@ class UserInfo:
     ACTIVE_POS = 0
     UID_POS = ACTIVE_POS + 4
     PID_POS = UID_POS + 4
+    USERID_POS = 0x80
+    USERID_SIZE = 20
 
     #struct user_info
     size = _parser.size

@@ -135,6 +135,10 @@ class Utmp:
         return Utmp.GetInt(login, UserInfo.ACTIVE_POS)
 
     @staticmethod
+    def GetUserId(login):
+        return Utmp.GetString(login, UserInfo.USERID_POS, UserInfo.USERID_SIZE)
+
+    @staticmethod
     def GetUid(login):
         return Utmp.GetInt(login, UserInfo.UID_POS)
 
@@ -145,6 +149,10 @@ class Utmp:
     @staticmethod
     def GetInt(login, offset):
         return struct.unpack('=i', Utmp.utmpshm.read(4, login * UserInfo.size + offset))[0]
+
+    @staticmethod
+    def GetString(login, offset, size):
+        return Util.CString(struct.unpack('=20s', Utmp.utmpshm.read(size, login * UserInfo.size + offset))[0])
 
     @staticmethod
     def SetUserInfo(pos, userinfo):
