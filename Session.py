@@ -68,14 +68,15 @@ class Session:
             userinfo.pager |= User.FRIEND_PAGER
 
         userinfo.uid = self.uid
-        userinfo.from = '127.0.0.1' # XXX: fix later
+        setattr(userinfo, 'from', '127.0.0.1')
+#        userinfo.from = '127.0.0.1' # XXX: fix later
         userinfo.freshtime = int(time.time())
         userinfo.userid = self.username
         userinfo.realname = 'ANONYMOUS' # XXX: fix later
         userinfo.username = self.user.userec.username
 
         self.utempent = Utmp.GetNewUtmpEntry(userinfo)
-        if (self.utempent = -1):
+        if (self.utempent == -1):
             return None
 
         userinfo.SetIndex(self.utmpent)
