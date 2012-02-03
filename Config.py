@@ -69,3 +69,4 @@ UCACHE_SEMLOCK = 0
 LEN_FRIEND_EXP = 15
 
 REFRESH_TIME = 30 # time between friend list update
+USER_TITLE_LEN = 18 # used in UCache
