@@ -1,6 +1,7 @@
 from Config import *
 from UserInfo import UserInfo
 from Util import Util
+import modes
 import User
 from UCache import UCache
 import time
