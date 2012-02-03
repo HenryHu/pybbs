@@ -205,4 +205,8 @@ class User:
         userinfo.friendsnum = numFriends
         return 0
 
+    @staticmethod
+    def RemoveMsgCount(username):
+        pass
+
 from UserManager import UserManager
