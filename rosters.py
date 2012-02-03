@@ -1,10 +1,11 @@
 import copy
+import roster
 from xmpp import xml
 
 class Rosters(object):
-    """In a real implementation, roster information would be
-    persisted.  This class tracks a roster for each bare JID connected
-    to the server."""
+    """Rosters: Friend lists of different users.
+    Friends are already stored in UserInfo. We may just use it.
+    We may have caches similar to user_record"""
 
     def __init__(self):
         self._rosters = {}
@@ -19,7 +20,7 @@ class Rosters(object):
         roster = self._rosters.get(bare)
         if roster is None:
             ## Automatically create an empty roster.
-            roster = self._rosters[bare] = Roster(bare)
+            roster = self._rosters[bare] = roster.Roster(bare)
         return roster
 
     def broadcast(self, conn, elem):
