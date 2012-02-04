@@ -64,11 +64,11 @@ class Session:
             userinfo.pager |= User.FRIEND_PAGER
 
         if (self.user.Defined(User.DEF_FRIENDMSG)):
-            userinfo.pager |= User.FRIEND_PAGER
+            userinfo.pager |= User.FRIENDMSG_PAGER
 
         if (self.user.Defined(User.DEF_ALLMSG)):
-            userinfo.pager |= User.ALL_PAGER
-            userinfo.pager |= User.FRIEND_PAGER
+            userinfo.pager |= User.ALLMSG_PAGER
+            userinfo.pager |= User.FRIENDMSG_PAGER
 
         userinfo.uid = self.uid
         setattr(userinfo, 'from', '127.0.0.1')
