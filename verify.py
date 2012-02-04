@@ -33,6 +33,7 @@ def Init():
     BCache.Init()
     BoardManager.Init()
     UCache.Init()
+    Utmp.Init()
     return
 
 def verify():
