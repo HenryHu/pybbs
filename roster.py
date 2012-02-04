@@ -1,3 +1,5 @@
+from UCache import UCache
+
 import time
 from xmpp import xml
 from collections import namedtuple
@@ -7,7 +9,7 @@ class Roster(object):
     """Roster stores friends information, so we use friend information
     in BBS here."""
 
-    def update_all(self):
+    def update_all(self, conn):
         for friend_uid in conn._userinfo.friends_uid:
             friend = UCache.GetUserByUid(friend_uid)
             friend_name = friend.userid
@@ -17,7 +19,7 @@ class Roster(object):
 
     def check_update(self):
         if (self._update_time == -1 or self.time.time() - self._update_time > Config.REFRESH_TIME):
-            self.update_all()
+            self.update_all(conn)
             return True
         return False
 
@@ -29,13 +31,13 @@ class Roster(object):
 
         self._userid = jid.partition('@')[0]
         self._update_time = -1
-        self.update_all()
+        self.update_all(conn)
 
     def request(self, conn):
         """Remember that a client requested roster information.  The
         remembered set is used to push roster updates."""
 
-        self.check_update()
+        self.check_update(conn)
         if conn.authJID not in self._requests:
             jid = conn.authJID
             self._requests.add(jid)

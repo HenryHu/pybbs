@@ -37,6 +37,7 @@ class XMPPAuth(sasl.auth.Authenticator):
         if (authorize and user != authorize):
             return False
 
+        user = user.encode("gbk")
 #        print "trying to auth %s pass %s" % (user, passwd)
         user = UserManager.LoadUser(user)
         if (user == None):

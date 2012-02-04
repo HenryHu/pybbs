@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+# from Log import Log
 import codecs
 import random
 import struct
@@ -90,7 +91,7 @@ class Util:
                 if (fields[i][1] == 1):
                     setattr(obj, fields[i][0], Util.CString(data[i]))
                 if (fields[i][1] == 2):
-                    setattr(obj, fields[i][0], struct.unpack(fields[i][2], data[i]))
+                    setattr(obj, fields[i][0], list(struct.unpack(fields[i][2], data[i])))
             else:
                 setattr(obj, fields[i], data[i])
 
@@ -227,7 +228,8 @@ class Util:
         try:
             st = os.stat(path)
             return st.st_size / size;
-        except Error:
+        except OSError:
+#            Log.error("fail to get record count: %s" % path)
             return -1
 
     @staticmethod

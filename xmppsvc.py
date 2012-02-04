@@ -13,8 +13,18 @@ import xmpp
 import xmppauth
 import UCache
 import Utmp
+from Log import Log
+from pwd import getpwnam
+import os
+import sys
 
 if __name__ == '__main__':
+    try:
+        userinfo = getpwnam('bbs')
+        os.setuid(userinfo[2])
+    except:
+        Log.error("Failed to find user 'bbs'!")
+        sys.exit(1)
 
     Config.Config.LoadConfig();
     UCache.UCache.Init()

@@ -4,6 +4,8 @@ import json
 import hashlib
 import Config
 import Defs
+from UCache import UCache
+from Friend import Friend
 from Util import Util
 
 PERM_BASIC = 000001
@@ -199,7 +201,7 @@ class User:
 
         userinfo.friends_nick = []
         for i in range(numFriends):
-            userinfo.friends_uid[i] = UserManager.SearchUser(friends[i].id)
+            userinfo.friends_uid[i] = UCache.SearchUser(friends[i].id)
             userinfo.friends_nick.append(friends[i].exp)
 
         userinfo.friendsnum = numFriends

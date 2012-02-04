@@ -20,4 +20,4 @@ class Friend:
         self.unpack(str)
 
     def NCaseId(self):
-        return self._id.lower
+        return self.id.lower

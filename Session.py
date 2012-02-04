@@ -78,8 +78,8 @@ class Session:
         userinfo.realname = 'ANONYMOUS' # XXX: fix later
         userinfo.username = self.user.userec.username
 
-        self.utempent = Utmp.GetNewUtmpEntry(userinfo)
-        if (self.utempent == -1):
+        self.utmpent = Utmp.GetNewUtmpEntry(userinfo)
+        if (self.utmpent == -1):
             return None
 
         userinfo.SetIndex(self.utmpent)

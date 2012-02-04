@@ -2,6 +2,10 @@ import Config
 import os
 import struct
 import random
+import time
+import signal
+from User import User
+from UCache import UCache
 from sysv_ipc import *
 from UtmpHead import UtmpHead
 from commondata import CommonData
@@ -50,7 +54,7 @@ class Utmp:
             #return 0;
         #except BusyError:
             #return -1;
-        lockf = os.open("UTMP", os.O_RDWR | os.O_CREAT, 0600)
+        lockf = os.open(Config.BBS_ROOT + "UTMP", os.O_RDWR | os.O_CREAT, 0600)
         if (lockf < 0):
             Log.error("Fail to open lock file!")
             raise Exception("fail to lock!")
@@ -72,6 +76,7 @@ class Utmp:
         if (pos == -1):
             UtmpHead.SetReadOnly(1)
             Utmp.Unlock(utmpfd)
+            Log.error("Utmp full!")
             return -1;
 
         if (UtmpHead.GetListHead() == 0):
@@ -97,6 +102,7 @@ class Utmp:
                         Utmp.RebuildList()
                         UtmpHead.SetReadOnly(1)
                         Utmp.Unlock(utmpfd)
+                        Log.error("Utmp list loop!")
                         return -1 # wrong! exit(-1)!
                 UtmpHead.SetListPrev(pos, UtmpHead.GetListPrev(i-1))
                 UtmpHead.SetListNext(pos, i)
@@ -107,7 +113,7 @@ class Utmp:
         if (Utmp.IsActive(pos)):
             if (Utmp.GetPid(pos) != 0):
                 Log.warn("allocating an active utmp!")
-                os.kill(Utmp.GetPid(pos), os.SIGHUP)
+                os.kill(Utmp.GetPid(pos), signal.SIGHUP)
         Utmp.SetUserInfo(pos, userinfo)
         hashkey = Utmp.Hash(userinfo.userid)
 
@@ -122,12 +128,16 @@ class Utmp:
         if ((now > UtmpHead.GetUptime() + 120) or (now < UtmpHead.GetUptime() - 120)):
             UtmpHead.SetUptime(now)
             for n in range(Config.USHM_SIZE):
-                if (Utmp.IsActive(n) and Utmp.GetPid(n) != 0 and os.kill(Utmp.GetPid(n), 0) != -1):
-                    username = Utmp.GetUserId(n)
-                    Utmp.Clear2(n+1)
-                    User.RemoveMsgCount(username)
+                if (Utmp.IsActive(n) and Utmp.GetPid(n) != 0):
+                    try:
+                        os.kill(Utmp.GetPid(n), 0)
+                    except OSError:
+                        username = Utmp.GetUserId(n)
+                        Utmp.Clear2(n+1)
+                        User.RemoveMsgCount(username)
         UtmpHead.SetReadOnly(1)
         Utmp.Unlock(utmpfd)
+#        Log.info("New entry: %d" % pos)
         return pos + 1;
 
     @staticmethod

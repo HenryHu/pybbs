@@ -1,4 +1,7 @@
+from UserManager import UserManager
+from Session import Session
 import xmpp
+
 class XMPPServer(xmpp.Plugin):
     """XMPP server for the BBS"""
 
@@ -6,7 +9,7 @@ class XMPPServer(xmpp.Plugin):
         self.probed = False
         self.rosters = rosters
 
-        self._userid = self.authJID.bare.partition('@')[0]
+        self._userid = self.authJID.bare.partition('@')[0].encode("gbk")
         # Login the user
         self._user = UserManager.LoadUser(self._userid)
         if (self._user == None):

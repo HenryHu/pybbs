@@ -17,11 +17,11 @@ class Rosters(object):
 
     def _get(self, conn):
         bare = conn.authJID.bare
-        roster = self._rosters.get(bare)
-        if roster is None:
+        aroster = self._rosters.get(bare)
+        if aroster is None:
             ## Automatically create an empty roster.
-            roster = self._rosters[bare] = roster.Roster(bare, conn)
-        return roster
+            aroster = self._rosters[bare] = roster.Roster(bare, conn)
+        return aroster
 
     def broadcast(self, conn, elem):
         """Send presence information to everyone subscribed to this
