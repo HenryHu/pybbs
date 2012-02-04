@@ -38,13 +38,14 @@ class Session:
         svc.end_headers()
         return
 
-    def __init__(self, user):
+    def __init__(self, user, fromip):
         self.username = user.name
         self.uid = UCache.SearchUser(self.username)
         self.sessionid = Util.RandomStr(SESSIONID_LEN)
         self.user = UserManager.LoadUser(user.name)
         self._userinfo = None
         self.utmpent = -1
+        self._fromip = fromip
         SessionManager.Insert(self)
 
 
@@ -54,7 +55,7 @@ class Session:
         userinfo.pid = os.getpid()
         if ((self.user.HasPerm(User.PERM_CHATCLOAK) or self.user.HasPerm(User.PERM_CLOAK)) and (self.user.HasFlag(User.CLOAK_FLAG))):
             userinfo.invisible = 1
-        userinfo.mode = modes.WWW
+        userinfo.mode = modes.TALK
         userinfo.pager = 0
         if (self.user.Defined(User.DEF_FRIENDCALL)):
             userinfo.pager |= User.FRIEND_PAGER
@@ -71,8 +72,7 @@ class Session:
             userinfo.pager |= User.FRIENDMSG_PAGER
 
         userinfo.uid = self.uid
-        setattr(userinfo, 'from', '127.0.0.1')
-#        userinfo.from = '127.0.0.1' # XXX: fix later
+        setattr(userinfo, 'from', self._fromip)
         userinfo.freshtime = int(time.time())
         userinfo.userid = self.username
         userinfo.realname = 'ANONYMOUS' # XXX: fix later

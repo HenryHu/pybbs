@@ -106,7 +106,7 @@ class Auth:
                 return
 
             if (user.Authorize(pw)):
-                session = Session(user)
+                session = Session(user, svc.client_address[0])
                 # give session, so other info may be recorded
                 code = Auth.RecordSession(session)
                 sessid = Auth.SessionIDFromCode(code)
@@ -154,7 +154,7 @@ class Auth:
             return
 
         if (user.Authorize(pw)):
-            session = Session(user)
+            session = Session(user, svc.client_address[0])
             # give session, so other info may be recorded
             code = Auth.RecordSession(session)
             svc.send_response(302)

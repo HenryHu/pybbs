@@ -14,7 +14,8 @@ class XMPPServer(xmpp.Plugin):
         self._user = UserManager.LoadUser(self._userid)
         if (self._user == None):
             raise Exception("How can that be!")
-        self._session = Session(self._user)
+        peer_addr = self._Plugin__core.stream.socket.getpeername()
+        self._session = Session(self._user, peer_addr[0])
         # insert into global session list!
         self._userinfo = self._session.Register()
         self._hostname = host

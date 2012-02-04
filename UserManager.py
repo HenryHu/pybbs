@@ -12,7 +12,7 @@ class UserManager:
             return
 
         if (user.Authorize(passwd)):
-            session = Session(user)
+            session = Session(user, svc.client_address[0])
             ret = {}
             ret['session'] = session.GetID()
 
