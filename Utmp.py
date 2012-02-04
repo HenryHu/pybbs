@@ -83,37 +83,45 @@ class Utmp:
             Log.error("Utmp full!")
             return -1;
 
-        if (UtmpHead.GetListHead() == 0):
-            UtmpHead.SetListPrev(pos, pos+1)
-            UtmpHead.SetListNext(pos, pos+1)
-            UtmpHead.SetListHead(pos+1)
-        else:
-            i = UtmpHead.GetListHead()
-            if (Utmp.GetUserId(i-1).lower() >= userinfo.userid.lower()):
-                UtmpHead.SetListPrev(pos, UtmpHead.GetListPrev(i-1))
-                UtmpHead.SetListNext(pos, i)
-                UtmpHead.SetListPrev(i-1, pos+1)
-                UtmpHead.SetListNext(UtmpHead.GetListPrev(pos) - 1, pos+1)
-                UtmpHead.SetListHead(pos+1)
-            else:
-                count = 0;
-                i = UtmpHead.GetListNext(i-1)
-                while ((Utmp.GetUserId(i-1).lower() < userinfo.userid.lower()) and (i != UtmpHead.GetListHead())):
-                    i = UtmpHead.GetListNext(i-1)
-                    count = count + 1;
-                    if (count > Config.USHM_SIZE):
-                        UtmpHead.SetListHead(0)
-                        Utmp.RebuildList()
-                        UtmpHead.SetReadOnly(1)
-                        Utmp.Unlock(utmpfd)
-                        Log.error("Utmp list loop!")
-                        return -1 # wrong! exit(-1)!
-                UtmpHead.SetListPrev(pos, UtmpHead.GetListPrev(i-1))
-                UtmpHead.SetListNext(pos, i)
-                UtmpHead.SetListPrev(i-1, pos+1)
-                UtmpHead.SetListNext(UtmpHead.GetListPrev(pos) - 1, pos+1)
-        UtmpHead.SetHashHead(0, UtmpHead.GetNext(pos))
-        Log.debug("New freelist head: %d" % UtmpHead.GetHashHead(0))
+        login = Login(pos + 1)
+        if (not login.list_add(userinfo.userid)):
+            UtmpHead.SetReadOnly(1)
+            Utmp.Unlock(utmpfd)
+            Log.error("Utmp list loop!")
+            return -1 # wrong! exit(-1)!
+        login.hash_add(userinfo.userid)
+
+        #if (UtmpHead.GetListHead() == 0):
+            #UtmpHead.SetListPrev(pos, pos+1)
+            #UtmpHead.SetListNext(pos, pos+1)
+            #UtmpHead.SetListHead(pos+1)
+        #else:
+            #i = UtmpHead.GetListHead()
+            #if (Utmp.GetUserId(i-1).lower() >= userinfo.userid.lower()):
+                #UtmpHead.SetListPrev(pos, UtmpHead.GetListPrev(i-1))
+                #UtmpHead.SetListNext(pos, i)
+                #UtmpHead.SetListPrev(i-1, pos+1)
+                #UtmpHead.SetListNext(UtmpHead.GetListPrev(pos) - 1, pos+1)
+                #UtmpHead.SetListHead(pos+1)
+            #else:
+                #count = 0;
+                #i = UtmpHead.GetListNext(i-1)
+                #while ((Utmp.GetUserId(i-1).lower() < userinfo.userid.lower()) and (i != UtmpHead.GetListHead())):
+                    #i = UtmpHead.GetListNext(i-1)
+                    #count = count + 1;
+                    #if (count > Config.USHM_SIZE):
+                        #UtmpHead.SetListHead(0)
+                        #Utmp.RebuildList()
+                        #UtmpHead.SetReadOnly(1)
+                        #Utmp.Unlock(utmpfd)
+                        #Log.error("Utmp list loop!")
+                        #return -1 # wrong! exit(-1)!
+                #UtmpHead.SetListPrev(pos, UtmpHead.GetListPrev(i-1))
+                #UtmpHead.SetListNext(pos, i)
+                #UtmpHead.SetListPrev(i-1, pos+1)
+                #UtmpHead.SetListNext(UtmpHead.GetListPrev(pos) - 1, pos+1)
+#        UtmpHead.SetHashHead(0, UtmpHead.GetNext(pos))
+#        Log.debug("New freelist head: %d" % UtmpHead.GetHashHead(0))
 
         if (Utmp.IsActive(pos)):
             if (Utmp.GetPid(pos) != 0):
@@ -122,14 +130,16 @@ class Utmp:
                     os.kill(Utmp.GetPid(pos), signal.SIGHUP)
                 except OSError:
                     pass
-        Utmp.SetUserInfo(pos, userinfo)
-        hashkey = Utmp.Hash(userinfo.userid)
+        userinfo.SetIndex(pos + 1)
+        userinfo.save()
+#        Utmp.SetUserInfo(pos, userinfo)
+#        hashkey = Utmp.Hash(userinfo.userid)
 
-        i = UtmpHead.GetHashHead(hashkey);
-        UtmpHead.SetNext(pos, i)
-        UtmpHead.SetHashHead(hashkey, pos+1)
+#        i = UtmpHead.GetHashHead(hashkey);
+#        UtmpHead.SetNext(pos, i)
+#        UtmpHead.SetHashHead(hashkey, pos+1)
 
-        UtmpHead.SetNumber(UtmpHead.GetNumber() + 1)
+        UtmpHead.IncNumber()
         CommonData.UpdateMaxUser();
 
         now = int(time.time())
@@ -146,7 +156,6 @@ class Utmp:
         UtmpHead.SetReadOnly(1)
         Utmp.Unlock(utmpfd)
 #        Log.info("New entry: %d" % pos)
-        userinfo.SetIndex(pos + 1)
         return pos + 1;
 
     @staticmethod
@@ -171,7 +180,7 @@ class Utmp:
 
     @staticmethod
     def GetString(login, offset, size):
-        return Util.CString(struct.unpack('=20s', Utmp.utmpshm.read(size, login * UserInfo.size + offset))[0])
+        return Util.CString(Utmp.utmpshm.read(size, login * UserInfo.size + offset))
 
     @staticmethod
     def SetUserInfo(pos, userinfo):
@@ -190,7 +199,21 @@ class Utmp:
 
     @staticmethod
     def Clear2(uent):
-        pass
+        userinfo = UserInfo(uent)
+        
+        user = UCache.GetUserByUid(userinfo.uid)
+        UCache.DoAfterLogout(user, userinfo, uent, 0)
+
+        login = Login(uent)
+        login.hash_remove()
+        login.list_remove()
+
+        if (not userinfo.active):
+            UtmpHead.DecNumber()
+
+        zeroinfo = UserInfo()
+        zeroinfo.SetIndex(uent)
+        zeroinfo.save()
 
     @staticmethod
     def RebuildList():

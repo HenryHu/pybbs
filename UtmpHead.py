@@ -70,6 +70,14 @@ class UtmpHead:
         return UtmpHead.SetInt(NUMBER_POS, 0, number)
 
     @staticmethod
+    def DecNumber():
+        return UtmpHead.SetNumber(UtmpHead.GetNumber() - 1)
+
+    @staticmethod
+    def IntNumber():
+        return UtmpHead.SetNumber(UtmpHead.GetNumber() + 1)
+
+    @staticmethod
     def GetUptime():
         return UtmpHead.GetInt(UPTIME_POS, 0)
 

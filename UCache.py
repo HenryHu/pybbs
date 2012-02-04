@@ -169,3 +169,8 @@ class UCache:
     def GetInt(base, index):
         return struct.unpack('=i', UCache.uidshm.read(4, base + index * 4))[0]
 
+    @staticmethod
+    def DoAfterLogout(user, userinfo. uent, mode):
+        pass
+
+
