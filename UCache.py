@@ -39,10 +39,10 @@ class UserRecord:
         self.unpack()
 
     def unpack(self):
-        Util.Unpack(self, self.parser.unpack(UCache.uidshm.read(self.size, 0x15ee44 + self.size * self.uid)))
+        Util.Unpack(self, self.parser.unpack(UCache.uidshm.read(self.size, PASSWD_POS + self.size * self.uid)))
 
     def pack(self):
-        UCache.uidshm.write(self.parser.pack(Util.Pack(self)), 0x15ee44 + self.size * self.uid)
+        UCache.uidshm.write(self.parser.pack(Util.Pack(self)), PASSWD_POS + self.size * self.uid)
 
     @staticmethod
     def GetUserId(index):
@@ -50,7 +50,7 @@ class UserRecord:
 
 class UCache:
     uidshm = None
-    UIDSHM_SIZE = 0x15ee44 + Config.MAXUSERS * UserRecord.size
+    UIDSHM_SIZE = PASSWD_POS + Config.MAXUSERS * UserRecord.size
 
     @staticmethod
     def Init():
@@ -79,12 +79,18 @@ class UCache:
 
     @staticmethod
     def GetUser(name):
-        for i in range(1, Config.MAXUSERS):
-            user = UserRecord(i)
-            if (user.userid == name):
-                return user
+        uid = UCache.SearchUser(name)
+        if (uid == 0):
+            return None
 
-        return None
+        return UserRecord(uid)
+
+#        for i in range(1, Config.MAXUSERS):
+#            user = UserRecord(i)
+#            if (user.userid == name):
+#                return user
+
+#        return None
 
     @staticmethod
     def GetUserByUid(uid):
