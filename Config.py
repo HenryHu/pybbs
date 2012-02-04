@@ -36,7 +36,10 @@ class Config:
     @staticmethod
     def GetString(name, defval):
         if (Config.parser.has_option('sysconf', name)):
-            return Config.parser.get('sysconf', name)
+            val = Config.parser.get('sysconf', name)
+            if (val[0] == '"' and val.endswith('"')):
+                val = val[1:-1]
+            return val
         else:
             return defval
 

@@ -54,16 +54,19 @@ class Utmp:
             #return 0;
         #except BusyError:
             #return -1;
+        Log.debug("Utmp.Lock enter()")
         lockf = os.open(Config.BBS_ROOT + "UTMP", os.O_RDWR | os.O_CREAT, 0600)
         if (lockf < 0):
             Log.error("Fail to open lock file!")
             raise Exception("fail to lock!")
         Util.FLock(lockf, shared = False)
+        Log.debug("Utmp.Lock succ()")
         return lockf
 
     @staticmethod
     def Unlock(lockf):
         #SemLock.Unlock(Config.UCACHE_SEMLOCK)
+        Log.debug("Utmp.Unlock")
         Util.FUnlock(lockf)
 
     @staticmethod
@@ -73,6 +76,7 @@ class Utmp:
 
         userinfo.utmpkey = random.randint(0, 99999999);
         pos = UtmpHead.GetHashHead(0) - 1;
+        Log.debug("New entry: %d" % pos)
         if (pos == -1):
             UtmpHead.SetReadOnly(1)
             Utmp.Unlock(utmpfd)
@@ -109,11 +113,15 @@ class Utmp:
                 UtmpHead.SetListPrev(i-1, pos+1)
                 UtmpHead.SetListNext(UtmpHead.GetListPrev(pos) - 1, pos+1)
         UtmpHead.SetHashHead(0, UtmpHead.GetNext(pos))
+        Log.debug("New freelist head: %d" % UtmpHead.GetHashHead(0))
 
         if (Utmp.IsActive(pos)):
             if (Utmp.GetPid(pos) != 0):
                 Log.warn("allocating an active utmp!")
-                os.kill(Utmp.GetPid(pos), signal.SIGHUP)
+                try:
+                    os.kill(Utmp.GetPid(pos), signal.SIGHUP)
+                except OSError:
+                    pass
         Utmp.SetUserInfo(pos, userinfo)
         hashkey = Utmp.Hash(userinfo.userid)
 

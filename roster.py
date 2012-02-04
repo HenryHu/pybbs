@@ -1,6 +1,9 @@
 from UCache import UCache
+from Log import Log
+import Config
 
 import time
+import xmpp
 from xmpp import xml
 from collections import namedtuple
 Item = namedtuple('Item', 'attr groups')
@@ -10,15 +13,17 @@ class Roster(object):
     in BBS here."""
 
     def update_all(self, conn):
-        for friend_uid in conn._userinfo.friends_uid:
+        for i in range(conn._userinfo.friendsnum):
+            friend_uid = conn._userinfo.friends_uid[i]
             friend = UCache.GetUserByUid(friend_uid)
             friend_name = friend.userid
+#            Log.debug("friend %d %d %s" % (i, friend_uid, friend_name))
             friend_jid = friend_name + '@' + conn._hostname
             self._items[friend_jid] = Item({ 'jid': friend_jid, 'name': friend_name, 'subscription': 'to' }, [])
         self._update_time = time.time()
 
-    def check_update(self):
-        if (self._update_time == -1 or self.time.time() - self._update_time > Config.REFRESH_TIME):
+    def check_update(self, conn):
+        if (self._update_time == -1 or time.time() - self._update_time > Config.REFRESH_TIME):
             self.update_all(conn)
             return True
         return False

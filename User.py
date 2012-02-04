@@ -4,6 +4,7 @@ import json
 import hashlib
 import Config
 import Defs
+from Log import Log
 from UCache import UCache
 from Friend import Friend
 from Util import Util
@@ -185,22 +186,33 @@ class User:
         userinfo.friendsnum = 0
         path = self.MyFile("friends")
         numFriends = Util.GetRecordCount(path, Friend.size)
+#        Log.info("numFriends: %d" % numFriends)
         if (numFriends <= 0):
             return 0
         if (numFriends > Config.MAXFRIENDS):
             numFriends = Config.MAXFRIENDS
 
         friends = map(Friend, Util.GetRecords(path, Friend.size, 1, numFriends))
-        for i in range(numFriends):
+        i = 0
+        while (True):
+            if (i >= numFriends):
+                break
+#            Log.debug("checking %d %s %d" % (i, friends[i].id, -1 if User.InvalidId(friends[i].id) else UCache.SearchUser(friends[i].id)))
             if (User.InvalidId(friends[i].id) or UCache.SearchUser(friends[i].id) == 0):
+#                Log.debug("removing %d %s" % (i, friends[i].id))
                 friends[i] = friends[numFriends - 1]
                 numFriends = numFriends - 1
                 friends.pop()
+                i = i - 1
+#            print i,numFriends,len(friends)
+
+            i = i + 1
 
         friends.sort(key = Friend.NCaseId)
 
         userinfo.friends_nick = []
         for i in range(numFriends):
+#            Log.debug("friend %d %s" % (i, friends[i].id))
             userinfo.friends_uid[i] = UCache.SearchUser(friends[i].id)
             userinfo.friends_nick.append(friends[i].exp)
 

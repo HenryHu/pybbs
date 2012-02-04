@@ -22,7 +22,9 @@ HASHNEXT_POS = HASHHEAD_POS + 4 * (UCACHE_HASHSIZE + 1)
 UPTIME_POS = HASHNEXT_POS + 4 * Config.MAXUSERS
 NUMBER_POS = UPTIME_POS + 4
 USER_TITLE_POS = NUMBER_POS + 4
-PASSWD_POS = USER_TITLE_POS + 255 * Config.USER_TITLE_LEN
+PASSWD_POS = USER_TITLE_POS + 255 * Config.USER_TITLE_LEN + 2 # align
+
+USEREC_USERID_POS = 0
 
 class UserRecord:
     parser = struct.Struct('=%dsbBI16sII%ds2s%ds%ds%ds%dsIIIi8sIiiII' % (Config.IDLEN + 2, Config.NAMELEN, Config.OLDPASSLEN, Config.MAXCLUB/32 * 4, Config.MAXCLUB / 32 * 4, Config.MD5PASSLEN))
@@ -42,6 +44,10 @@ class UserRecord:
     def pack(self):
         UCache.uidshm.write(self.parser.pack(Util.Pack(self)), 0x15ee44 + self.size * self.uid)
 
+    @staticmethod
+    def GetUserId(index):
+        return Util.SHMGetString(UCache.uidshm, PASSWD_POS + UserRecord.size * index + USEREC_USERID_POS, Config.IDLEN + 2)
+
 class UCache:
     uidshm = None
     UIDSHM_SIZE = 0x15ee44 + Config.MAXUSERS * UserRecord.size
@@ -58,12 +64,18 @@ class UCache:
 
     @staticmethod
     def SearchUser(name):
-        # poor implementation
-        for i in range(1, Config.MAXUSERS):
-            user = UserRecord(i)
-            if (user.userid == name):
+        i = UCache.GetHashHead(UCache.Hash(name))
+        while (i):
+            if (name.lower() == UserRecord.GetUserId(i-1).lower()):
                 return i
+            i = UCache.GetNext(i-1)
         return 0
+        # poor implementation
+#        for i in range(1, Config.MAXUSERS):
+#            user = UserRecord(i)
+#            if (user.userid == name):
+#                return i
+#        return 0
 
     @staticmethod
     def GetUser(name):
@@ -138,4 +150,16 @@ class UCache:
     @staticmethod
     def GetShort(index):
         return struct.unpack('=h', UCache.uidshm.read(2, index))[0]
+
+    @staticmethod
+    def GetHashHead(index):
+        return UCache.GetInt(HASHHEAD_POS, index)
+
+    @staticmethod
+    def GetNext(index):
+        return UCache.GetInt(HASHNEXT_POS, index)
+
+    @staticmethod
+    def GetInt(base, index):
+        return struct.unpack('=i', UCache.uidshm.read(4, base + index * 4))[0]
 

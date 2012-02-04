@@ -241,6 +241,10 @@ class Util:
             ret.append(file.read(size))
         return ret
 
+    @staticmethod
+    def SHMGetString(shm, offset, size):
+        return Util.CString(shm.read(size, offset))
+
 def fixterm_handler(exc):
     if isinstance(exc, (UnicodeDecodeError)):
         s = u""

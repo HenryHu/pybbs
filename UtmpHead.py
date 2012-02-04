@@ -34,7 +34,7 @@ class UtmpHead:
         return UtmpHead.GetInt(LISTHEAD_POS)
 
     @staticmethod
-    def SetListHead(head):
+    def SetListHead(val):
         return UtmpHead.SetInt(LISTHEAD_POS, 0, val)
 
     @staticmethod
