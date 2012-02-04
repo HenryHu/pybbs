@@ -47,8 +47,8 @@ class Session:
         self.utmpent = -1
         SessionManager.Insert(self)
 
-    def Register(self):
-        # register this session (so TERM users can see me)
+
+    def InitNewUserInfo(self):
         userinfo = UserInfo()
         userinfo.active = 1
         userinfo.pid = os.getpid()
@@ -77,12 +77,15 @@ class Session:
         userinfo.userid = self.username
         userinfo.realname = 'ANONYMOUS' # XXX: fix later
         userinfo.username = self.user.userec.username
+        return userinfo
 
+    def Register(self):
+        # register this session (so TERM users can see me)
+        userinfo = self.InitNewUserInfo()
         self.utmpent = Utmp.GetNewUtmpEntry(userinfo)
         if (self.utmpent == -1):
             return None
 
-        userinfo.SetIndex(self.utmpent)
         self.user.GetFriends(userinfo)
         userinfo.save()
 

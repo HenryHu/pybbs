@@ -146,6 +146,7 @@ class Utmp:
         UtmpHead.SetReadOnly(1)
         Utmp.Unlock(utmpfd)
 #        Log.info("New entry: %d" % pos)
+        userinfo.SetIndex(pos + 1)
         return pos + 1;
 
     @staticmethod
