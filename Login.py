@@ -107,8 +107,9 @@ class Login:
             return None
         return Login(nextid)
 
-    def hash_remove(self):
-        userid = Utmp.GetUserId(self._loginid - 1)
+    def hash_remove(self, userid = None): # userid: for debugging
+        if (userid == None):
+            userid = Utmp.GetUserId(self._loginid - 1)
         hashkey, pos = Login.hash_head(userid)
         if (pos == None):
             Log.error("Login.hash_remove: hash list empty!")
