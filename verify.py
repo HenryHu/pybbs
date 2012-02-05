@@ -9,7 +9,7 @@ from Post import Post
 from Board import Board
 from Session import Session
 from BCache import BCache
-from Config import Config, UTMP_HASHSIZE
+from Config import Config, UTMP_HASHSIZE, USHM_SIZE
 from BoardManager import BoardManager
 from User import User
 from UCache import UCache
@@ -27,6 +27,7 @@ from Utmp import Utmp
 from UtmpHead import UtmpHead                                                                                             
 from UserInfo import UserInfo   
 from Log import Log
+import os
 
 def Init():
     Config.LoadConfig()
@@ -39,7 +40,14 @@ def Init():
 def verify():
     verifyUtmpHead();
 
+def dump_userinfo(i):
+    userinfo = UserInfo(i)
+    print vars(userinfo)
+
 def verifyUtmpHead():
+    allset = set()
+    for i in range(USHM_SIZE):
+        allset.add(i)
     ok = True
     i = UtmpHead.GetListHead()
     if (i == 0):
@@ -56,6 +64,15 @@ def verifyUtmpHead():
             Log.error("Repeated! %d" % i)
             ok = False
             break
+        if (not Utmp.IsActive(i - 1)):
+            Log.error("Inactive item! %d" % i)
+            ok = False
+
+        try:
+            os.kill(Utmp.GetPid(i-1), 0)
+        except:
+            Log.error("Process gone! %d" % i)
+            ok = False
         listseen.add(i)
         i = UtmpHead.GetListNext(i-1)
 
@@ -63,6 +80,8 @@ def verifyUtmpHead():
         Log.info("UtmpHead.LIST OK")
     else:
         Log.error("UtmpHead.LIST ERR")
+
+    seen = set()
 
     for i in range(0, UTMP_HASHSIZE + 1):
         j = UtmpHead.GetHashHead(i)
@@ -82,7 +101,6 @@ def verifyUtmpHead():
                 ok = False
                 UtmpHead.SetHashHead(i, 0)
                 continue
-        seen = set()
         seen.add(j)
         if (i != 0):
             if (not j in listseen):
@@ -125,14 +143,26 @@ def verifyUtmpHead():
             last = j
             j = UtmpHead.GetNext(j-1)
             cnt += 1
-            if (cnt > 10):
-                Log.warn("Hash list too long!")
-                break
+            if (cnt > 20):
+                if (i != 0):
+                    Log.warn("Hash list too long!")
+                    break
+        if (i == 0):
+            Log.info("freelist len: %d" % cnt)
+            if ( cnt < 100):
+                Log.error("freelist too short!")
+                ok = False
+                    
 
     if (len(listseen) != 0):
         for i in listseen:
             Log.error("%d missing in UtmpHead.HASH!" % i)
+            dump_userinfo(i)
             ok = False
+    left = allset - seen
+    if (len(left) != 0):
+        for i in left:
+            Log.warn("%d missing in CHAIN!" % i)
     if (ok):
         Log.info("UtmpHead OK")
     else:

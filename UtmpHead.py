@@ -74,7 +74,7 @@ class UtmpHead:
         return UtmpHead.SetNumber(UtmpHead.GetNumber() - 1)
 
     @staticmethod
-    def IntNumber():
+    def IncNumber():
         return UtmpHead.SetNumber(UtmpHead.GetNumber() + 1)
 
     @staticmethod

@@ -25,7 +25,7 @@ class UserInfo:
         if (self._index < 0):
             raise Exception("Cannot save without index!")
         from Utmp import Utmp
-        Utmp.utmpshm.write(self.pack(), UserInfo.size)
+        Utmp.utmpshm.write(self.pack(), self._index * UserInfo.size)
 
     def unpack(self, str):
         Util.Unpack(self, UserInfo._parser.unpack(str))

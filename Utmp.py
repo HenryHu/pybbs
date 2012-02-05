@@ -83,6 +83,8 @@ class Utmp:
             Log.error("Utmp full!")
             return -1;
 
+        from Login import Login
+
         login = Login(pos + 1)
         if (not login.list_add(userinfo.userid)):
             UtmpHead.SetReadOnly(1)
@@ -204,6 +206,7 @@ class Utmp:
         user = UCache.GetUserByUid(userinfo.uid)
         UCache.DoAfterLogout(user, userinfo, uent, 0)
 
+        from Login import Login
         login = Login(uent)
         login.hash_remove()
         login.list_remove()

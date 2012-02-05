@@ -1,13 +1,16 @@
 from Utmp import Utmp
 from UtmpHead import UtmpHead
 import Config
+from Log import Log
 
 class Login:
     def __eq__(self, other):
+        if (other == None):
+            return False
         return (self._loginid == other._loginid)
 
     def __ne__(self, other):
-        return (self._loginid != other._loginid)
+        return not self.__eq__(other)
 
     def __init__(self, loginid):
         self._loginid = loginid
@@ -89,7 +92,7 @@ class Login:
         hashkey = Utmp.Hash(userid)
         hashhead = UtmpHead.GetHashHead(hashkey)
         if (hashhead == 0):
-            return 0, None
+            return hashkey, None
         return hashkey, Login(hashhead)
 
     def set_hashnext(self, hashnext):
@@ -136,6 +139,7 @@ class Login:
         Login.set_freelist(self.hash_next())
 
         hashkey, node = Login.hash_head(userid)
+        Log.debug("I %d user %s key %d" % (self._loginid, userid, hashkey))
         self.set_hashnext(node)
         UtmpHead.SetHashHead(hashkey, self._loginid)
 
