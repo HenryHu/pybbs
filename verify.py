@@ -93,14 +93,14 @@ def verifyUtmpHead():
             if (userid == ''):
                 Log.error("illegal login id! %d" % j)
                 ok = False
-                continue
-            Log.info("userid %s" % userid)
-            hash = Utmp.Hash(userid)
-            if (hash != i):
-                Log.error("head in wrong list! %d %s %d != %d FIX!" % (j, userid, hash, i))
-                ok = False
-                UtmpHead.SetHashHead(i, 0)
-                continue
+            else:
+                Log.info("userid %s" % userid)
+                hash = Utmp.Hash(userid)
+                if (hash != i):
+                    Log.error("head in wrong list! %d %s %d != %d FIX!" % (j, userid, hash, i))
+                    ok = False
+                    UtmpHead.SetHashHead(i, 0)
+                    continue
         seen.add(j)
         if (i != 0):
             if (not j in listseen):
@@ -129,16 +129,17 @@ def verifyUtmpHead():
             if (i != 0):
                 userid = Utmp.GetUserId(j - 1)
                 if (userid == ''):
-                    Log.error("illegal login id! %d FIX" % j)
+                    Log.error("illegal login id! %d" % j)
                     ok = False
-                    UtmpHead.SetNext(last - 1, 0)
-                    break
-                Log.info("userid %s" % userid)
-                hash = Utmp.Hash(userid)
-                if (hash != i):
-                    Log.error("node in wrong list! %d %s %d != %d" % (j, userid, hash, i))
-                    ok = False
-                    break
+#                    UtmpHead.SetNext(last - 1, 0)
+#                    break
+                else:
+                    Log.info("userid %s" % userid)
+                    hash = Utmp.Hash(userid)
+                    if (hash != i):
+                        Log.error("node in wrong list! %d %s %d != %d" % (j, userid, hash, i))
+                        ok = False
+                        break
             seen.add(j)
             last = j
             j = UtmpHead.GetNext(j-1)

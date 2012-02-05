@@ -76,7 +76,7 @@ class Utmp:
 
         userinfo.utmpkey = random.randint(0, 99999999);
         pos = UtmpHead.GetHashHead(0) - 1;
-        Log.debug("New entry: %d" % pos)
+        Log.debug("New entry: %d" % pos + 1)
         if (pos == -1):
             UtmpHead.SetReadOnly(1)
             Utmp.Unlock(utmpfd)
@@ -191,18 +191,19 @@ class Utmp:
     @staticmethod
     def Clear(uent, useridx, pid):
         lock = Utmp.Lock()
-        Utmp.SetReadOnly(0)
+        UtmpHead.SetReadOnly(0)
 
         if (((useridx == 0) or (Utmp.GetUid(uent - 1) == useridx)) and (pid == Utmp.GetPid(uent - 1))):
             Utmp.Clear2(uent);
 
-        Utmp.SetReadOnly(1)
+        UtmpHead.SetReadOnly(1)
         Utmp.Unlock(lock)
 
     @staticmethod
     def Clear2(uent):
         userinfo = UserInfo(uent)
         
+#        Log.debug("clearing user %s uid %d loginid %d" % (userinfo.userid, userinfo.uid, uent))
         user = UCache.GetUserByUid(userinfo.uid)
         UCache.DoAfterLogout(user, userinfo, uent, 0)
 

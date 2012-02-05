@@ -133,7 +133,6 @@ class Login:
         Login.set_freelist(self.hash_next())
 
         hashkey, node = Login.hash_head(userid)
-        Log.debug("I %d user %s key %d" % (self._loginid, userid, hashkey))
         self.set_hashnext(node)
         UtmpHead.SetHashHead(hashkey, self._loginid)
 
