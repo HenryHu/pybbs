@@ -92,6 +92,13 @@ class Session:
         self._userinfo = userinfo
         return userinfo
 
+    def Unregister(self):
+        if (self.utmpent < 0):
+            Log.error("Unregister() without Register() or failed!")
+            return False
+        Utmp.Clear(self.utmpent, self.uid, userinfo.pid)
+        return True
+
 class SessionManager:
     sessions = {}
 
