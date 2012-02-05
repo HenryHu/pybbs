@@ -6,7 +6,7 @@ from Log import Log
 class Login:
     def __eq__(self, other):
         if (other == None):
-            return False
+            return (self._loginid == 0)
         return (self._loginid == other._loginid)
 
     def __ne__(self, other):
@@ -91,20 +91,13 @@ class Login:
     def hash_head(userid):
         hashkey = Utmp.Hash(userid)
         hashhead = UtmpHead.GetHashHead(hashkey)
-        if (hashhead == 0):
-            return hashkey, None
         return hashkey, Login(hashhead)
 
     def set_hashnext(self, hashnext):
-        if (hashnext == None):
-            UtmpHead.SetNext(self._loginid - 1, 0)
-        else:
-            UtmpHead.SetNext(self._loginid - 1, hashnext._loginid)
+        UtmpHead.SetNext(self._loginid - 1, hashnext._loginid)
 
     def hash_next(self):
         nextid = UtmpHead.GetNext(self._loginid - 1)
-        if (nextid == 0):
-            return None
         return Login(nextid)
 
     def hash_remove(self, userid = None): # userid: for debugging
@@ -114,7 +107,7 @@ class Login:
         if (pos == None):
             Log.error("Login.hash_remove: hash list empty!")
             return False
-        if (pos.get_loginid() == self.get_loginid()):
+        if (pos == self):
             UtmpHead.SetHashHead(hashkey, self.hash_next()._loginid)
         else:
             while (pos.hash_next() != None and pos.hash_next() != self):
@@ -147,16 +140,10 @@ class Login:
     @staticmethod
     def free_list():
         hashhead = UtmpHead.GetHashHead(0)
-        if (hashhead == 0):
-            return None
-        else:
-            return Login(hashhead)
+        return Login(hashhead)
 
     @staticmethod
     def set_freelist(login):
-        if (login == None):
-            UtmpHead.SetHashHead(0, 0)
-        else:
-            UtmpHead.SetHashHead(0, login._loginid)
+        UtmpHead.SetHashHead(0, login._loginid)
 
 
