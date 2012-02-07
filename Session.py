@@ -96,7 +96,7 @@ class Session:
         if (self.utmpent < 0):
             Log.error("Unregister() without Register() or failed!")
             return False
-        Utmp.Clear(self.utmpent, self.uid, userinfo.pid)
+        Utmp.Clear(self.utmpent, self.uid, self._userinfo.pid)
         return True
 
 class SessionManager:

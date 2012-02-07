@@ -19,6 +19,11 @@ class XMPPServer(xmpp.Plugin):
         # insert into global session list!
         self._userinfo = self._session.Register()
         self._hostname = host
+        self.bind(xmpp.ReceivedCloseStream, self.close)
+
+    def close(self):
+        if (self._session):
+            self._session.Unregister()
 
     @xmpp.iq('{urn:xmpp:ping}ping')
     def ping(self, iq):

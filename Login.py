@@ -1,4 +1,3 @@
-from Utmp import Utmp
 from UtmpHead import UtmpHead
 import Config
 from Log import Log
@@ -19,6 +18,7 @@ class Login:
         return self._loginid
 
     def get_userid(self):
+        from Utmp import Utmp
         return Utmp.GetUserId(self._loginid - 1)
 
     # UtmpHead.LIST
@@ -78,6 +78,7 @@ class Login:
             count += 1
             if (count > Config.USHM_SIZE):
                 UtmpHead.SetListHead(0)
+                from Utmp import Utmp
                 Utmp.RebuildList()
                 return False
         self.set_listprev(node.list_prev())
@@ -89,6 +90,7 @@ class Login:
     # UtmpHead.HASH
     @staticmethod
     def hash_head(userid):
+        from Utmp import Utmp
         hashkey = Utmp.Hash(userid)
         hashhead = UtmpHead.GetHashHead(hashkey)
         return hashkey, Login(hashhead)
@@ -102,6 +104,7 @@ class Login:
 
     def hash_remove(self, userid = None): # userid: for debugging
         if (userid == None):
+            from Utmp import Utmp
             userid = Utmp.GetUserId(self._loginid - 1)
         hashkey, pos = Login.hash_head(userid)
         if (pos == None):

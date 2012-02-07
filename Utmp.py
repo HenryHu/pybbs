@@ -12,6 +12,7 @@ from commondata import CommonData
 from UserInfo import UserInfo
 from Log import Log
 from Util import Util
+import Login
 # from SemLock import SemLock
 
 UTMPFILE_SIZE = UserInfo.size * Config.USHM_SIZE
@@ -72,26 +73,24 @@ class Utmp:
     @staticmethod
     def GetNewUtmpEntry(userinfo):
         utmpfd = Utmp.Lock()
-        UtmpHead.SetReadOnly(0)
+        pos = -2
+        try:
+            UtmpHead.SetReadOnly(0)
 
-        userinfo.utmpkey = random.randint(0, 99999999);
-        pos = UtmpHead.GetHashHead(0) - 1;
-        Log.debug("New entry: %d" % pos + 1)
-        if (pos == -1):
-            UtmpHead.SetReadOnly(1)
-            Utmp.Unlock(utmpfd)
-            Log.error("Utmp full!")
-            return -1;
+            userinfo.utmpkey = random.randint(0, 99999999);
+            pos = UtmpHead.GetHashHead(0) - 1;
+            Log.debug("New entry: %d" % (pos + 1))
+            if (pos == -1):
+                UtmpHead.SetReadOnly(1)
+                Log.error("Utmp full!")
+                raise Exception("Utmp full!")
 
-        from Login import Login
-
-        login = Login(pos + 1)
-        if (not login.list_add(userinfo.userid)):
-            UtmpHead.SetReadOnly(1)
-            Utmp.Unlock(utmpfd)
-            Log.error("Utmp list loop!")
-            return -1 # wrong! exit(-1)!
-        login.hash_add(userinfo.userid)
+            login = Login.Login(pos + 1)
+            if (not login.list_add(userinfo.userid)):
+                UtmpHead.SetReadOnly(1)
+                Log.error("Utmp list loop!")
+                raise Exception("Utmp list loop!")
+            login.hash_add(userinfo.userid)
 
         #if (UtmpHead.GetListHead() == 0):
             #UtmpHead.SetListPrev(pos, pos+1)
@@ -125,15 +124,15 @@ class Utmp:
 #        UtmpHead.SetHashHead(0, UtmpHead.GetNext(pos))
 #        Log.debug("New freelist head: %d" % UtmpHead.GetHashHead(0))
 
-        if (Utmp.IsActive(pos)):
-            if (Utmp.GetPid(pos) != 0):
-                Log.warn("allocating an active utmp!")
-                try:
-                    os.kill(Utmp.GetPid(pos), signal.SIGHUP)
-                except OSError:
-                    pass
-        userinfo.SetIndex(pos + 1)
-        userinfo.save()
+            if (Utmp.IsActive(pos)):
+                if (Utmp.GetPid(pos) != 0):
+                    Log.warn("allocating an active utmp!")
+                    try:
+                        os.kill(Utmp.GetPid(pos), signal.SIGHUP)
+                    except OSError:
+                        pass
+            userinfo.SetIndex(pos + 1)
+            userinfo.save()
 #        Utmp.SetUserInfo(pos, userinfo)
 #        hashkey = Utmp.Hash(userinfo.userid)
 
@@ -141,22 +140,23 @@ class Utmp:
 #        UtmpHead.SetNext(pos, i)
 #        UtmpHead.SetHashHead(hashkey, pos+1)
 
-        UtmpHead.IncNumber()
-        CommonData.UpdateMaxUser();
+            UtmpHead.IncNumber()
+            CommonData.UpdateMaxUser();
 
-        now = int(time.time())
-        if ((now > UtmpHead.GetUptime() + 120) or (now < UtmpHead.GetUptime() - 120)):
-            UtmpHead.SetUptime(now)
-            for n in range(Config.USHM_SIZE):
-                if (Utmp.IsActive(n) and Utmp.GetPid(n) != 0):
-                    try:
-                        os.kill(Utmp.GetPid(n), 0)
-                    except OSError:
-                        username = Utmp.GetUserId(n)
-                        Utmp.Clear2(n+1)
-                        User.RemoveMsgCount(username)
-        UtmpHead.SetReadOnly(1)
-        Utmp.Unlock(utmpfd)
+            now = int(time.time())
+            if ((now > UtmpHead.GetUptime() + 120) or (now < UtmpHead.GetUptime() - 120)):
+                UtmpHead.SetUptime(now)
+                for n in range(Config.USHM_SIZE):
+                    if (Utmp.IsActive(n) and Utmp.GetPid(n) != 0):
+                        try:
+                            os.kill(Utmp.GetPid(n), 0)
+                        except OSError:
+                            username = Utmp.GetUserId(n)
+                            Utmp.Clear2(n+1)
+                            User.RemoveMsgCount(username)
+            UtmpHead.SetReadOnly(1)
+        finally: # lock is important!
+            Utmp.Unlock(utmpfd)
 #        Log.info("New entry: %d" % pos)
         return pos + 1;
 
@@ -191,13 +191,15 @@ class Utmp:
     @staticmethod
     def Clear(uent, useridx, pid):
         lock = Utmp.Lock()
-        UtmpHead.SetReadOnly(0)
+        try:
+            UtmpHead.SetReadOnly(0)
 
-        if (((useridx == 0) or (Utmp.GetUid(uent - 1) == useridx)) and (pid == Utmp.GetPid(uent - 1))):
-            Utmp.Clear2(uent);
+            if (((useridx == 0) or (Utmp.GetUid(uent - 1) == useridx)) and (pid == Utmp.GetPid(uent - 1))):
+                Utmp.Clear2(uent);
 
-        UtmpHead.SetReadOnly(1)
-        Utmp.Unlock(lock)
+            UtmpHead.SetReadOnly(1)
+        finally: # lock is important!
+            Utmp.Unlock(lock)
 
     @staticmethod
     def Clear2(uent):
@@ -207,8 +209,7 @@ class Utmp:
         user = UCache.GetUserByUid(userinfo.uid)
         UCache.DoAfterLogout(user, userinfo, uent, 0)
 
-        from Login import Login
-        login = Login(uent)
+        login = Login.Login(uent)
         login.hash_remove()
         login.list_remove()
 
