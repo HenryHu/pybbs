@@ -32,6 +32,8 @@ class Post:
                     bo.GetPost(svc, session, params, id)
                 elif action == 'nextid':
                     bo.GetNextPostReq(svc, session, params, id)
+                elif action == 'get_attach':
+                    bo.GetAttachment(svc, session, params, id)
                 else:
                     svc.send_response(400, 'Unknown action')
                     svc.end_headers()
@@ -111,7 +113,7 @@ class Post:
                 raise IOError
 
             # read the name
-            name = read_string(fp)
+            name = Util.ReadString(fp)
 
             # read the size
             s = fp.read(4)

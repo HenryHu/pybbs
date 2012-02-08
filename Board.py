@@ -258,6 +258,26 @@ class Board:
         else:
             return ERROR_OUT_OF_RANGE
 
+    def GetAttachmentReq(svc, session, params, id):
+        mode = Util.GetString(params, 'mode', 'normal')
+        offset = Util.GetInt(params, 'offset')
+        if (offset <= 0):
+            svc.send_response(400, 'invalid or lack offset')
+            svc.end_headers()
+            return
+        self.UpdateBoardInfo()
+        if ((id >= 1) and (id <= self.status.total)):
+            pe = self.GetPostEntry(id - 1, mode)
+            attach = Post.ReadAttachment(self.GetBoardPath() + pe.filename, offset)
+            svc.send_response(200, 'OK')
+            svc.end_headers()
+            svc.wfile.write(json.dumps(attach))
+        else:
+            svc.send_response(416, 'Out of range')
+            svc.end_headers()
+
+        return
+
     def UpdateBoardInfo(self):
         self.status.unpack()
         return
