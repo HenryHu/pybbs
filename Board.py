@@ -4,6 +4,7 @@ from Util import Util
 import Config
 import struct
 import json
+import binascii
 from BCache import *
 import User
 from BRead import BReadMgr
@@ -269,6 +270,7 @@ class Board:
         if ((id >= 1) and (id <= self.status.total)):
             pe = self.GetPostEntry(id - 1, mode)
             attach = Post.ReadAttachment(self.GetBoardPath() + pe.filename, offset)
+            attach = (attach[0], binascii.b2a_base64(attach[1]))
             svc.send_response(200, 'OK')
             svc.end_headers()
             svc.wfile.write(json.dumps(attach))
