@@ -258,7 +258,7 @@ class Board:
         else:
             return ERROR_OUT_OF_RANGE
 
-    def GetAttachmentReq(svc, session, params, id):
+    def GetAttachmentReq(self, svc, session, params, id):
         mode = Util.GetString(params, 'mode', 'normal')
         offset = Util.GetInt(params, 'offset')
         if (offset <= 0):
