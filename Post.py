@@ -33,7 +33,7 @@ class Post:
                 elif action == 'nextid':
                     bo.GetNextPostReq(svc, session, params, id)
                 elif action == 'get_attach':
-                    bo.GetAttachment(svc, session, params, id)
+                    bo.GetAttachmentReq(svc, session, params, id)
                 else:
                     svc.send_response(400, 'Unknown action')
                     svc.end_headers()
