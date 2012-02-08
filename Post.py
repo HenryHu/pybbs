@@ -113,7 +113,7 @@ class Post:
                 raise IOError
 
             # read the name
-            name = Util.ReadString(fp)
+            name = Util.ReadString(fp).decode('gbk')
 
             # read the size
             s = fp.read(4)
