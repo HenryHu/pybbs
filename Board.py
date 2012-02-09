@@ -9,9 +9,6 @@ from BCache import *
 import User
 from BRead import BReadMgr
 from Error import *
-from collections import namedtuple
-
-Attachment = namedtuple('Attachment', 'name content')
 
 DEFAULT_GET_POST_COUNT = 20
 
@@ -273,7 +270,7 @@ class Board:
         if ((id >= 1) and (id <= self.status.total)):
             pe = self.GetPostEntry(id - 1, mode)
             attach = Post.ReadAttachment(self.GetBoardPath() + pe.filename, offset)
-            attach = Attachment(attach[0], base64.b64encode(attach[1]))
+            attach = {'name' : attach[0], 'content' : base64.b64encode(attach[1])}
             svc.send_response(200, 'OK')
             svc.end_headers()
             svc.wfile.write(json.dumps(attach))
