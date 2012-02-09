@@ -6,9 +6,12 @@ import Config
 import string
 import os
 import time
+from collections import namedtuple
 
 GENERATE_POST_SUFIX = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 GENERATE_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+
+AttachmentInfo = namedtuple('AttachmentInfo', 'name offset')
 
 class Post:
 
@@ -62,9 +65,9 @@ class Post:
                 # read the name
                 name = Util.ReadString(fp)
                 if (Post.IsPictureAttach(name)):
-                    picturelist.append((Util.gbkDec(name), offset))
+                    picturelist.append(AttachmentInfo(Util.gbkDec(name), offset))
                 else:
-                    attachlist.append((Util.gbkDec(name), offset))
+                    attachlist.append(AttachmentInfo(Util.gbkDec(name), offset))
 
                 # read the size
                 s = fp.read(4)
