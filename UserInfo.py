@@ -70,7 +70,7 @@ class UserInfo:
             return None
         return self.friends_nick[i]
 
-    def AcceptMsg(friend = False):
+    def AcceptMsg(self, friend = False):
         if (friend):
             return self.pager & FRIENDMSG_PAGER
         else:

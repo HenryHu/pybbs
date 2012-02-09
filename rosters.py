@@ -8,6 +8,8 @@ import UserManager
 import Config
 import Utmp
 from Log import Log
+import Login
+import UserInfo
 
 class Rosters(object):
     """Rosters: Friend lists of different users.
@@ -16,9 +18,9 @@ class Rosters(object):
 
     def __init__(self):
         self._rosters = {}
-        self._session_cache = None
-        self.update_sessions()
         self._resources = None
+        self._session_cache = {}
+        self.update_sessions()
         self.E = builder.ElementMaker()
 
     def set_resources(self, resources):
@@ -190,7 +192,7 @@ class Rosters(object):
 
     def get_bbs_sessions(self):
         new_sessions = {}
-        Utmp.Utmp.Lock()
+        lockfd = Utmp.Utmp.Lock()
         try:
             login = Login.Login.list_head()
             seen = set()
@@ -210,7 +212,7 @@ class Rosters(object):
                         Log.warn("update_sessions(): LOOP in UtmpHead.LIST!")
                         break
         finally:
-            Utmp.Utmp.Unlock()
+            Utmp.Utmp.Unlock(lockfd)
 
         return new_sessions
 
@@ -227,7 +229,7 @@ class Rosters(object):
 class SessionInfo(object):
     def __init__(self, loginid):
         self._loginid = loginid
-        self._userinfo = UserInfo(loginid)
+        self._userinfo = UserInfo.UserInfo(loginid)
         self._found = False
 
     def get_jid(self):
@@ -238,7 +240,7 @@ class SessionInfo(object):
 
     def get_show(self, user):
         if (user.CanSendTo(self._userinfo)):
-            inactive_time = int(time.time()) - self.freshtime
+            inactive_time = int(time.time()) - self._userinfo.freshtime
             if (inactive_time > Config.XMPP_LONG_IDLE_TIME):
                 return "xa"
             if (inactive_time > Config.XMPP_IDLE_TIME):
@@ -248,17 +250,18 @@ class SessionInfo(object):
             return "dnd"
 
     def get_status(self):
-        return self._userinfo.username
+        return self._userinfo.username.decode('gbk')
 
     def get_res(self):
         return "session%d" % self._loginid
 
     def get_priority(self):
+        inactive_time = int(time.time()) - self._userinfo.freshtime
         if (inactive_time > Config.XMPP_LONG_IDLE_TIME):
-            return -2
+            return "-2"
         if (inactive_time > Config.XMPP_IDLE_TIME):
-            return -1
-        return 0
+            return "-1"
+        return "0"
 
     def set_found(self):
         self._found = True
