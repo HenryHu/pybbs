@@ -2,6 +2,11 @@ import struct
 import Config
 from Util import Util
 
+ALL_PAGER = 0x1
+FRIEND_PAGER = 0x2
+ALLMSG_PAGER = 0x4
+FRIENDMSG_PAGER = 0x8
+
 class UserInfo:
     _fields = ['active', 'uid', 'pid', 'invisible', 'sockactive', 'sockaddr', 'destuid', 'mode', 'pager', 'in_chat', ['chatid', 1], ['from', 1], 'logintime', 'fill', 'freshtime', 'utmpkey', 'mailbox_prop', ['userid', 1], ['realname', 1], ['username', 1], 'friendsnum', ['friends_uid', 2, '=%di' % Config.MAXFRIENDS ], 'currentboard', 'mailcheck']
     _parser = struct.Struct('=iiiiiiiiii16s%dsi36siiI20s20s40si%dsiI' % (Config.IPLEN + 4, Config.MAXFRIENDS * 4))
@@ -64,4 +69,11 @@ class UserInfo:
         if (len(self.friends_nick) >= i):
             return None
         return self.friends_nick[i]
+
+    def AcceptMsg(friend = False):
+        if (friend):
+            return self.pager & FRIENDMSG_PAGER
+        else:
+            return self.pager & ALLMSG_PAGER
+
 

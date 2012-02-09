@@ -174,10 +174,13 @@ class User:
     def GetTitle(self):
         return self.userec.title
 
-    def CanSendTo(self, userid):
-        if (self.HasPerm(PERM_SYSOP)):
+    def CanSendTo(self, userinfo):
+        # can I send to userinfo?
+        if (userinfo.AcceptMsg() or self.HasPerm(PERM_SYSOP)):
             return True
-        return True
+        if (userinfo.AcceptMsg(True)):
+            return userinfo.HasFriend(UCache.SearchUser(self.userec.userid))
+        return False
 
     @staticmethod
     def InvalidId(username):

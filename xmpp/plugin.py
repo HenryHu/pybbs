@@ -477,6 +477,15 @@ class Plugin(object):
     def recv(self, where, what):
         return self._transmit('write', where, what)
 
+    def unbind_res(self):
+        self.__core.resources.unbind(self.authJID)
+
+    def get_resources(self):
+        return self.__core.resources
+
+    def getpeername(self):
+        return self.__core.stream.socket.getpeername()
+
     def handle(self, *args):
         self.__core.handle_stanza(*args)
         return self
@@ -560,7 +569,14 @@ class Plugin(object):
 
         try:
             for (jid, route) in self.routes(where):
-                getattr(route, method)(what)
+                try:
+                    getattr(route, method)(what)
+                except NoRoute:
+                    log.warning('transmit(%r, %r, %r)',
+                                method,
+                                where,
+                                xml.tostring(what),
+                                exc_info=True)
         except NoRoute:
             log.warning('transmit(%r, %r, %r)',
                         method,

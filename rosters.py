@@ -1,6 +1,13 @@
 import copy
-import roster
 from xmpp import xml
+from lxml import builder
+import time
+
+import roster
+import UserManager
+import Config
+import Utmp
+from Log import Log
 
 class Rosters(object):
     """Rosters: Friend lists of different users.
@@ -9,6 +16,14 @@ class Rosters(object):
 
     def __init__(self):
         self._rosters = {}
+        self._session_cache = None
+        self.update_sessions()
+        self._resources = None
+        self.E = builder.ElementMaker()
+
+    def set_resources(self, resources):
+        if (self._resources == None):
+            self._resources = resources
 
     def get(self, conn):
         """Get a connection's roster and remember the request."""
@@ -39,6 +54,15 @@ class Rosters(object):
         elem = conn.E.presence({'from': unicode(conn.authJID), 'type': 'probe'})
         for jid in roster.watching():
             conn.send(jid, elem)
+            if (jid != conn.authJID): # bug somewhere, if they are equal..
+                for session_info in self.get_bbs_online(jid):
+                    elem = conn.E.presence(
+                        {'from' : '%s/%s' % (jid, session_info.get_res()),
+                         'to' : conn.authJID.bare}, 
+                        conn.E.show(session_info.get_show(self.get_user(conn.authJID.bare))), 
+                        conn.E.status(session_info.get_status()), 
+                        conn.E.priority(session_info.get_priority()))
+                    conn.send(conn.authJID.bare, elem)
 
     def send(self, conn, to, elem):
         """Send a subscription request or response."""
@@ -94,7 +118,156 @@ class Rosters(object):
     def confirm(self, conn, roster, item):
         conn.push(roster, conn.E.query({ 'xmlns': 'jabber:iq:roster' }, item))
 
+    def routes(self, jid):
+        return self._resources.routes(xml.jid(jid))
+
+    def transmit(self, to, elem):
+        for (fulljid, route) in self.routes(jid):
+            route.handle(elem)
+
+    def get_user(self, jid):
+        userid = jid.partition('@')[0]
+        return UserManager.UserManager.LoadUser(userid)
+
+    def notify_session(self, jid, session, show = None):
+        # notify session changed (online/state change)
+        if (self._resources == None):
+            return
+        if (show == None):
+            show = session.get_show(self.get_user(jid))
+        for roster in self.rosters:
+            if (jid in roster.watching()):
+                # you are watching me, so I'll notify you
+                elem = self.E.presence(
+                    {'from' : session.get_fulljid(),
+                     'to' : jid}, 
+                    self.E.show(show),
+                    self.E.status(session_info.get_status()), 
+                    self.E.priority(session_info.get_priority()))
+
+                self.transmit(jid, elem)
+
+    def update_sessions(self):
+        new_sessions = self.get_bbs_sessions()
+        notify_sessions = []
+        offline_sessions = []
+        for jid in self._session_cache:
+            my_old_sessions = self._session_cache[jid]
+            if (jid not in new_sessions): # all logins go offline
+                my_new_sessions = []
+            else:
+                my_new_sessions = new_sessions[i]
+
+            for session in my_old_sessions:
+                found = False
+                for new_session in my_new_sessions:
+                    if (session == new_session): # same jid, same loginid
+                        found = True
+                        new_session.set_found()
+                        if (session.all_same(new_session)):
+                            # nothing changed...
+                            pass
+                        else:
+                            notify_sessions.append(new_session)
+                if (not found):
+                    offline_sessions.append(session)
+            for new_session in my_new_sessions:
+                if (not new_session.found()):
+                    # new session!
+                    notify_sessions.append(new_session)
+
+            for session in notify_sessions:
+                self.notify_session(jid, session)
+            for session in offline_sessions:
+                self.notify_session(jid, session, "unavailable")
+        for jid in new_sessions:
+            if (jid not in self._session_cache):
+                # new user!
+                for session in new_sessions[jid]:
+                    self.notify_session(jid, session)
+
+        self._session_cache = new_sessions
+
+    def get_bbs_sessions(self):
+        new_sessions = {}
+        Utmp.Utmp.Lock()
+        try:
+            login = Login.Login.list_head()
+            seen = set()
+            if (login != None): # if list is not empty
+                while (True):
+                    session = SessionInfo(login.get_loginid())
+                    if (session.get_jid() in new_sessions):
+                        new_sessions[session.get_jid()].append(session)
+                    else:
+                        new_sessions[session.get_jid()] = [session]
+                    seen.add(login.get_loginid())
+
+                    login = login.list_next()
+                    if (login == Login.Login.list_head()):
+                        break
+                    if (login.get_loginid() in seen):
+                        Log.warn("update_sessions(): LOOP in UtmpHead.LIST!")
+                        break
+        finally:
+            Utmp.Utmp.Unlock()
+
+        return new_sessions
+
+    def get_bbs_online(self, jid):
+        """ Look at the cache, and figure out online sessions """
+
+        if (jid in self._session_cache):
+            return self._session_cache[jid]
+        else:
+            return []
 
 ### Rosters
 
+class SessionInfo(object):
+    def __init__(self, loginid):
+        self._loginid = loginid
+        self._userinfo = UserInfo(loginid)
+        self._found = False
+
+    def get_jid(self):
+        return "%s@%s" % (self._userinfo.userid, Config.Config.GetString("BBS_XMPP_HOST", "localhost"))
+
+    def get_fulljid(self):
+        return "%s/%s" % (self.get_jid(), self.get_res())
+
+    def get_show(self, user):
+        if (user.CanSendTo(self._userinfo)):
+            inactive_time = int(time.time()) - self.freshtime
+            if (inactive_time > Config.XMPP_LONG_IDLE_TIME):
+                return "xa"
+            if (inactive_time > Config.XMPP_IDLE_TIME):
+                return "away"
+            return "chat"
+        else:
+            return "dnd"
+
+    def get_status(self):
+        return self._userinfo.username
+
+    def get_res(self):
+        return "session%d" % self._loginid
+
+    def get_priority(self):
+        if (inactive_time > Config.XMPP_LONG_IDLE_TIME):
+            return -2
+        if (inactive_time > Config.XMPP_IDLE_TIME):
+            return -1
+        return 0
+
+    def set_found(self):
+        self._found = True
+
+    def found(self):
+        return self._found
+
+    def __eq__(self, other):
+        if (other == None):
+            return False
+        return (self.get_fulljid() == other.get_fulljid())
 

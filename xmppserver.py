@@ -9,13 +9,15 @@ class XMPPServer(xmpp.Plugin):
         self.probed = False
         self.rosters = rosters
 
+        self.rosters.set_resource(self.get_resources())
+
         self._userid = self.authJID.bare.partition('@')[0].encode("gbk")
         # Login the user
         self._user = UserManager.LoadUser(self._userid)
         if (self._user == None):
             raise Exception("How can that be!")
-        peer_addr = self._Plugin__core.stream.socket.getpeername()
-        self._session = Session(self._user, peer_addr[0])
+        self._peer_addr = self.getpeername()
+        self._session = Session(self._user, self._peer_addr[0])
         # insert into global session list!
         self._userinfo = self._session.Register()
         self._hostname = host
@@ -24,6 +26,7 @@ class XMPPServer(xmpp.Plugin):
     def close(self):
         if (self._session):
             self._session.Unregister()
+        self.unbind_res()
 
     @xmpp.iq('{urn:xmpp:ping}ping')
     def ping(self, iq):

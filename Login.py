@@ -25,8 +25,6 @@ class Login:
     @staticmethod
     def list_head():
         listhead = UtmpHead.GetListHead()
-        if (listhead == 0):
-            return None
         return Login(listhead)
 
     def list_next(self):

@@ -73,3 +73,6 @@ LEN_FRIEND_EXP = 15
 
 REFRESH_TIME = 30 # time between friend list update
 USER_TITLE_LEN = 18 # used in UCache
+
+XMPP_IDLE_TIME = 300
+XMPP_LONG_IDLE_TIME = 1800
