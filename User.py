@@ -103,6 +103,9 @@ class User:
                 svc.end_headers()
                 return
 
+            svc.return_error(403, 'normal login disabled, please use OAuth')
+            svc.end_headers()
+            return
             UserManager.HandleLogin(svc, params['name'], params['pass'])
         else:
             svc.return_error(400, 'Unknown action')
