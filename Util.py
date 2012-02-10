@@ -245,6 +245,21 @@ class Util:
     def SHMGetString(shm, offset, size):
         return Util.CString(shm.read(size, offset))
 
+    @staticmethod
+    def RemoveTags(str):
+        ret = ''
+        intag = False
+        for ch in str:
+            if (intag):
+                if (ch.isalpha()):
+                    intag = False
+            else:
+                if (ch == '\033'):
+                    intag = True
+                else:
+                    ret += ch
+        return ret
+
 def fixterm_handler(exc):
     if isinstance(exc, (UnicodeDecodeError)):
         s = u""

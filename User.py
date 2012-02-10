@@ -179,7 +179,7 @@ class User:
         if (userinfo.AcceptMsg() or self.HasPerm(PERM_SYSOP)):
             return True
         if (userinfo.AcceptMsg(True)):
-            return userinfo.HasFriend(UCache.SearchUser(self.userec.userid))
+            return userinfo.HasFriend(UCache.SearchUser(self.userec.userid))[0]
         return False
 
     @staticmethod
