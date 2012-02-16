@@ -10,6 +10,7 @@ from xmpp.features import NoRoute
 
 import roster
 import UserManager
+import Msg
 import Config
 import Utmp
 from Log import Log
@@ -40,7 +41,7 @@ class Rosters(Thread):
         self.start()
 
     @staticmethod
-    def handle_signal_message(signum, frame):
+    def handle_signal_abort(signum, frame):
         Log.warn("Someone want to kill me! But I'll not die now! Hahahaha!")
 
     @staticmethod
@@ -275,6 +276,61 @@ class Rosters(Thread):
             return self._session_cache[jid]
         else:
             return []
+
+    def get_session_info(self, jid):
+        userid = jid.partition('@')[0]
+        resource = ''
+        sessionid = None
+        try:
+            resource = jid.partition('/')[1]
+
+            if (resource.find('session') == 0):
+                sessionid = int(resource[7:])
+        except Exception:
+            pass
+
+        return userid, sessionid
+ 
+    def send_msg(self, from_jid, to_jid, text):
+        maysend = False
+        from_userid, from_sessionid = self.get_session_info(from_jid)
+        to_userid, to_sessionid = self.get_session_info(to_jid)
+        if (not to_jid in self._session_cache):
+            return -14
+
+        errcode = 0
+        to_pid = 0
+        for session in self._session_cache[to_jid]:
+            ret = Msg.Msg.MaySendMsg(from_userid, to_userid, session._userinfo)
+            if (ret > 0):
+                maysend = True
+                to_pid = session._userinfo.pid
+            if (ret < 0):
+                errcode = ret
+
+        if (not maysend):
+            Log.warn("may not send from %s to %s err %d" % (from_jid, to_jid, errcode))
+            return errcode
+
+        ret = Msg.Msg.SaveMsg(from_userid, to_userid, to_pid, text)
+        if (ret < 0):
+            Log.error("savemsg() fail! from %s to %s err %d" % (from_userid, to_userid, ret))
+            return ret
+
+        errcode = 1
+        for session in self._session_cache[to_jid]:
+            ret = Msg.Msg.NotifyMsg(from_userid, to_userid, session._userinfo)
+            if (ret > 0):
+                notified = True
+            if (ret < 0):
+                errcode = ret
+
+        if (notified):
+            return 1
+        else:
+            Log.warn("notifymsg() fail: err %d" % errcode)
+            return errcode
+
 
 ### Rosters
 

@@ -233,7 +233,9 @@ class User:
         if (self.HasPerm(PERM_SYSOP)):
             return True
         ignores = User.OwnFile(userid, 'ignores')
-        itemcount = Util.GetRecordCount(ignores, IDLEN + 1)
+        itemcount = Util.GetRecordCount(ignores, Config.IDLEN + 1)
+        if (itemcount == -1):
+            return False
         records = Util.GetRecords(ignores, Config.IDLEN + 1, 1, itemcount)
         for guy in records:
             if (Util.CString(guy).lower() == self.name.lower()):

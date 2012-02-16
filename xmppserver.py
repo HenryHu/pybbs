@@ -1,6 +1,7 @@
 from UserManager import UserManager
 import UserInfo
 from Session import Session
+from Log import Log
 import xmpp
 import modes
 
@@ -36,20 +37,6 @@ class XMPPServer(xmpp.Plugin):
 
         return self.iq('result', iq)
 
-    def get_session_info(self, jid):
-        userid = jid.partition('@')[0]
-        resource = ''
-        sessionid = None
-        try:
-            resource = jid.partition('/')[1]
-
-            if (resource.find('session') == 0):
-                sessionid = int(resource[7:])
-        except Exception:
-            pass
-
-        return userid, sessionid
-
     @xmpp.stanza('message')
     def message(self, elem):
         """Proxy message from one user to another"""
@@ -61,15 +48,11 @@ class XMPPServer(xmpp.Plugin):
         # Old user -> XMPP user (emulated) => handled elsewhere
 
         to_jid = elem.get('to')
-        to_userid, to_sessionid = self.get_session_info(to_jid)
-        if (to_sessionid == None):
-            self.recv(to_jid, elem)
+        from_jid = elem.get('from')
+        if (from_jid == None):
             return
 
-        to_userinfo = UserInfo.UserInfo(to_sessionid)
-        if (to_userinfo.mode == modes.XMPP):
-            self.recv(to_jid, elem)
-            return
+#       self.recv(to_jid, elem)
 
         text_body = None
         for child in elem:
@@ -78,14 +61,9 @@ class XMPPServer(xmpp.Plugin):
         if (text_body == None):
             return
 
-        from_jid = elem.get('from')
-        if (from_jid == None):
-            return
-        from_userid, from_sessionid = self.get_session_info(from_jid)
-
-        ret = Msg.SendMsg(from_userid, to_userid, to_userinfo, text_body)
+        ret = self.rosters.send_msg(from_jid, to_jid, text_body)
         if (ret <= 0):
-            Log.warn("sendmsg() failed to %s from %s error %d" % (to_userid, from_userid, ret))
+            Log.warn("sendmsg() failed to %s from %s error %d" % (to_jid, from_jid, ret))
             # -2: no perm to see cloak
             # 0: error
             # -1: lockscreen
