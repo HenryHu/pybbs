@@ -46,7 +46,7 @@ def dump_userinfo(i):
 
 def verifyUtmpHead():
     allset = set()
-    for i in range(USHM_SIZE):
+    for i in range(1, USHM_SIZE):
         allset.add(i)
     ok = True
     i = UtmpHead.GetListHead()
@@ -83,7 +83,7 @@ def verifyUtmpHead():
 
     seen = set()
 
-    for i in range(1, UTMP_HASHSIZE + 1):
+    for i in range(0, UTMP_HASHSIZE + 1):
         j = UtmpHead.GetHashHead(i)
         if (j == 0):
             continue
