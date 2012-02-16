@@ -1,25 +1,45 @@
 import copy
-from xmpp import xml
 from lxml import builder
 import time
+from threading import Thread
+import traceback
+
+from xmpp import xml
+from xmpp.features import NoRoute
 
 import roster
 import UserManager
 import Config
 import Utmp
 from Log import Log
+import Login
+import UserInfo
+import Util
 
-class Rosters(object):
+class Rosters(Thread):
     """Rosters: Friend lists of different users.
     Friends are already stored in UserInfo. We may just use it.
     We may have caches similar to user_record"""
 
+    __xmlns__ = "jabber:client"
+
     def __init__(self):
+        Thread.__init__(self)
         self._rosters = {}
-        self._session_cache = None
-        self.update_sessions()
         self._resources = None
-        self.E = builder.ElementMaker()
+        self._session_cache = {}
+        self.update_sessions()
+        self._running = True
+        self.E = builder.ElementMaker(namespace = self.__xmlns__)
+        self.start()
+
+    def run(self):
+        while (self._running):
+            time.sleep(Config.XMPP_UPDATE_TIME_INTERVAL)
+            try:
+                self.update_sessions()
+            except Exception as e:
+                traceback.print_exc()
 
     def set_resources(self, resources):
         if (self._resources == None):
@@ -40,7 +60,8 @@ class Rosters(object):
 
     def broadcast(self, conn, elem):
         """Send presence information to everyone subscribed to this
-        account."""
+        account.
+        We do not need to consider the people logined through term"""
 
         roster = self._get(conn)
         for jid in roster.presence(conn.authJID, elem).subscribers():
@@ -48,20 +69,23 @@ class Rosters(object):
 
     def probe(self, conn):
         """Ask everybody this account is subscribed to for a status
-        update.  This is used when a client first connects."""
+        update.  This is used when a client first connects.
+        Also fake responses from TERM users"""
 
         roster = self._get(conn)
         elem = conn.E.presence({'from': unicode(conn.authJID), 'type': 'probe'})
         for jid in roster.watching():
             conn.send(jid, elem)
-            if (jid != conn.authJID): # bug somewhere, if they are equal..
+            if (jid != conn.authJID.bare): # bug somewhere, if they are equal..
                 for session_info in self.get_bbs_online(jid):
+                    show = session_info.get_show(self.get_user(conn.authJID.bare))
                     elem = conn.E.presence(
                         {'from' : '%s/%s' % (jid, session_info.get_res()),
-                         'to' : conn.authJID.bare}, 
-                        conn.E.show(session_info.get_show(self.get_user(conn.authJID.bare))), 
-                        conn.E.status(session_info.get_status()), 
+                         'to' : conn.authJID.bare},
+                        conn.E.status(session_info.get_status()),
                         conn.E.priority(session_info.get_priority()))
+                    if (show != None):
+                        elem.append(conn.E.show(show))
                     conn.send(conn.authJID.bare, elem)
 
     def send(self, conn, to, elem):
@@ -122,41 +146,54 @@ class Rosters(object):
         return self._resources.routes(xml.jid(jid))
 
     def transmit(self, to, elem):
-        for (fulljid, route) in self.routes(jid):
+        for (fulljid, route) in self.routes(to):
+            Log.debug("sending to %s" % fulljid)
             route.handle(elem)
 
     def get_user(self, jid):
         userid = jid.partition('@')[0]
         return UserManager.UserManager.LoadUser(userid)
 
-    def notify_session(self, jid, session, show = None):
+    def notify_session(self, jid, session, type = None):
         # notify session changed (online/state change)
-        if (self._resources == None):
-            return
-        if (show == None):
-            show = session.get_show(self.get_user(jid))
-        for roster in self.rosters:
+        for hisjid in self._rosters:
+            roster = self._rosters[hisjid]
             if (jid in roster.watching()):
                 # you are watching me, so I'll notify you
-                elem = self.E.presence(
-                    {'from' : session.get_fulljid(),
-                     'to' : jid}, 
-                    self.E.show(show),
-                    self.E.status(session_info.get_status()), 
-                    self.E.priority(session_info.get_priority()))
+                Log.debug("notify %s about %s" % (hisjid, session.get_fulljid()))
+                elem = None
+                if (type == None):
+                    show = session.get_show(self.get_user(hisjid))
+                    elem = self.E.presence(
+                            {'from' : session.get_fulljid(),
+                                'to' : hisjid}, 
+                            self.E.status(session.get_status()), 
+                            self.E.priority(session.get_priority()))
+                    if (show != None):
+                        elem.append(self.E.show(show))
+                else:
+                    elem = self.E.presence(
+                            {'from' : session.get_fulljid(),
+                                'to' : hisjid,
+                                'type' : type})
 
-                self.transmit(jid, elem)
+                try:
+                    self.transmit(hisjid, elem)
+                except NoRoute:
+                    Log.error("notify error: NoRoute")
+                    pass
 
     def update_sessions(self):
+        Log.debug("updating sessions")
         new_sessions = self.get_bbs_sessions()
-        notify_sessions = []
-        offline_sessions = []
         for jid in self._session_cache:
+            notify_sessions = []
+            offline_sessions = []
             my_old_sessions = self._session_cache[jid]
             if (jid not in new_sessions): # all logins go offline
                 my_new_sessions = []
             else:
-                my_new_sessions = new_sessions[i]
+                my_new_sessions = new_sessions[jid]
 
             for session in my_old_sessions:
                 found = False
@@ -177,20 +214,23 @@ class Rosters(object):
                     notify_sessions.append(new_session)
 
             for session in notify_sessions:
+                Log.debug("changed or new session: %s" % session.to_string())
                 self.notify_session(jid, session)
             for session in offline_sessions:
+                Log.debug("offline session: %s" % session.to_string())
                 self.notify_session(jid, session, "unavailable")
         for jid in new_sessions:
             if (jid not in self._session_cache):
                 # new user!
                 for session in new_sessions[jid]:
+                    Log.debug("new session: %s" % session.to_string())
                     self.notify_session(jid, session)
 
         self._session_cache = new_sessions
 
     def get_bbs_sessions(self):
         new_sessions = {}
-        Utmp.Utmp.Lock()
+        lockfd = Utmp.Utmp.Lock()
         try:
             login = Login.Login.list_head()
             seen = set()
@@ -207,10 +247,10 @@ class Rosters(object):
                     if (login == Login.Login.list_head()):
                         break
                     if (login.get_loginid() in seen):
-                        Log.warn("update_sessions(): LOOP in UtmpHead.LIST!")
+                        Log.warn("get_bbs_sessions(): LOOP in UtmpHead.LIST!")
                         break
         finally:
-            Utmp.Utmp.Unlock()
+            Utmp.Utmp.Unlock(lockfd)
 
         return new_sessions
 
@@ -227,7 +267,7 @@ class Rosters(object):
 class SessionInfo(object):
     def __init__(self, loginid):
         self._loginid = loginid
-        self._userinfo = UserInfo(loginid)
+        self._userinfo = UserInfo.UserInfo(loginid)
         self._found = False
 
     def get_jid(self):
@@ -236,29 +276,36 @@ class SessionInfo(object):
     def get_fulljid(self):
         return "%s/%s" % (self.get_jid(), self.get_res())
 
+    def get_show_natural(self):
+        inactive_time = int(time.time()) - self._userinfo.freshtime
+        if (inactive_time > Config.XMPP_LONG_IDLE_TIME):
+            return "xa"
+        if (inactive_time > Config.XMPP_IDLE_TIME):
+            return "away"
+        if (self._userinfo.AcceptMsg()):
+            return "chat"
+        else:
+            return None
+
     def get_show(self, user):
         if (user.CanSendTo(self._userinfo)):
-            inactive_time = int(time.time()) - self.freshtime
-            if (inactive_time > Config.XMPP_LONG_IDLE_TIME):
-                return "xa"
-            if (inactive_time > Config.XMPP_IDLE_TIME):
-                return "away"
-            return "chat"
+            return self.get_show_natural()
         else:
             return "dnd"
 
     def get_status(self):
-        return self._userinfo.username
+        return Util.Util.RemoveTags(Util.Util.gbkDec(self._userinfo.username))
 
     def get_res(self):
         return "session%d" % self._loginid
 
     def get_priority(self):
+        inactive_time = int(time.time()) - self._userinfo.freshtime
         if (inactive_time > Config.XMPP_LONG_IDLE_TIME):
-            return -2
+            return "-2"
         if (inactive_time > Config.XMPP_IDLE_TIME):
-            return -1
-        return 0
+            return "-1"
+        return "0"
 
     def set_found(self):
         self._found = True
@@ -270,4 +317,21 @@ class SessionInfo(object):
         if (other == None):
             return False
         return (self.get_fulljid() == other.get_fulljid())
+
+    def all_same(self, other):
+        if (other == None):
+            return False
+        return (self.get_fulljid() == other.get_fulljid() and
+                self.get_show_natural() == other.get_show_natural() and
+                self.get_status() == other.get_status() and
+                self.get_priority() == other.get_priority() and
+                # match CanSendTo()
+                self._userinfo.pager == other._userinfo.pager and
+                self._userinfo.friendsnum == other._userinfo.friendsnum and
+                self._userinfo.friends_uid == other._userinfo.friends_uid)
+
+    def to_string(self):
+        return "jid: %s full: %s show: %s status: %s\033[m prio: %s idle: %d" % (
+                self.get_jid(), self.get_fulljid(), self.get_show_natural(),
+                self.get_status(), self.get_priority(), int(time.time()) - self._userinfo.freshtime)
 

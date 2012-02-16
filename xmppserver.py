@@ -9,7 +9,7 @@ class XMPPServer(xmpp.Plugin):
         self.probed = False
         self.rosters = rosters
 
-        self.rosters.set_resource(self.get_resources())
+        self.rosters.set_resources(self.get_resources())
 
         self._userid = self.authJID.bare.partition('@')[0].encode("gbk")
         # Login the user
