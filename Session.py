@@ -55,7 +55,7 @@ class Session:
         userinfo.pid = os.getpid()
         if ((self.user.HasPerm(User.PERM_CHATCLOAK) or self.user.HasPerm(User.PERM_CLOAK)) and (self.user.HasFlag(User.CLOAK_FLAG))):
             userinfo.invisible = 1
-        userinfo.mode = modes.TALK
+        userinfo.mode = modes.XMPP
         userinfo.pager = 0
         if (self.user.Defined(User.DEF_FRIENDCALL)):
             userinfo.pager |= User.FRIEND_PAGER
