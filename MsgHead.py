@@ -17,6 +17,9 @@ class MsgHead:
         return MsgHead.parser.pack(*Util.Pack(self))
 
     def __init__(self, str):
-        self.unpack(str)
+        if (str == None):
+            Util.InitStruct(self)
+        else:
+            self.unpack(str)
 
 

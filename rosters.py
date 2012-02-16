@@ -1,4 +1,5 @@
 import copy
+import signal
 from lxml import builder
 import time
 from threading import Thread
@@ -25,13 +26,26 @@ class Rosters(Thread):
 
     def __init__(self):
         Thread.__init__(self)
+
+        self.E = builder.ElementMaker(namespace = self.__xmlns__)
         self._rosters = {}
         self._resources = None
         self._session_cache = {}
         self.update_sessions()
+
+        signal.signal(signal.SIGUSR2, Rosters.handle_signal_message)
+        signal.signal(signal.SIGABRT, Rosters.handle_signal_abort)
+
         self._running = True
-        self.E = builder.ElementMaker(namespace = self.__xmlns__)
         self.start()
+
+    @staticmethod
+    def handle_signal_message(signum, frame):
+        Log.warn("Someone want to kill me! But I'll not die now! Hahahaha!")
+
+    @staticmethod
+    def handle_signal_message(signum, frame):
+        Log.info("Someone has sent me a message...")
 
     def run(self):
         while (self._running):

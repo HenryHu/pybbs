@@ -7,6 +7,9 @@ FRIEND_PAGER = 0x2
 ALLMSG_PAGER = 0x4
 FRIENDMSG_PAGER = 0x8
 
+CHECK_MAIL = 0x1
+CHECK_MSG = 0x2
+
 class UserInfo:
     _fields = ['active', 'uid', 'pid', 'invisible', 'sockactive', 'sockaddr', 'destuid', 'mode', 'pager', 'in_chat', ['chatid', 1], ['from', 1], 'logintime', 'fill', 'freshtime', 'utmpkey', 'mailbox_prop', ['userid', 1], ['realname', 1], ['username', 1], 'friendsnum', ['friends_uid', 2, '=%di' % Config.MAXFRIENDS ], 'currentboard', 'mailcheck']
     _parser = struct.Struct('=iiiiiiiiii16s%dsi36siiI20s20s40si%dsiI' % (Config.IPLEN + 4, Config.MAXFRIENDS * 4))
