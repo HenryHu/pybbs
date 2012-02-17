@@ -18,7 +18,6 @@ import Login
 import UserInfo
 import Util
 
-_ref = None
 update_condition = Condition()
 new_msgs = False
 
@@ -54,8 +53,6 @@ class Rosters(Thread):
     def __init__(self):
         Thread.__init__(self)
 
-        _ref = self
-        print _ref
         self.E = builder.ElementMaker(namespace = self.__xmlns__)
         self._rosters = {}
         self._resources = None
@@ -65,6 +62,7 @@ class Rosters(Thread):
 
         signal.signal(signal.SIGUSR2, Rosters.handle_signal_message)
         signal.signal(signal.SIGABRT, Rosters.handle_signal_abort)
+        signal.signal(signal.SIGHUP, Rosters.handle_signal_abort)
 
         self._running = True
         self._updater = Updater(self)
