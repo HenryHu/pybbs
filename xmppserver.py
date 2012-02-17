@@ -132,7 +132,7 @@ class XMPPServer(xmpp.Plugin):
         """Presence information may be sent out from the client or
         received from another account."""
 
-        if self.authJID.match_bare(elem.get('from')):
+        if self.authJID == elem.get('from'):
             return self.send_presence(elem)
         self.recv_presence(elem)
 
