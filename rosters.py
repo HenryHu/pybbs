@@ -348,11 +348,18 @@ class Rosters(Thread):
 
         errcode = 0
         to_pid = 0
+        priority = -20
         for session in self._session_cache[to_jid]:
             ret = Msg.Msg.MaySendMsg(from_userid, to_userid, session._userinfo)
             if (ret > 0):
-                maysend = True
-                to_pid = session._userinfo.pid
+                if (not maysend):
+                    maysend = True
+                    to_pid = session._userinfo.pid
+                    priority = int(session.get_priority())
+                else:
+                    if (int(session.get_priority()) > priority):
+                        priority = int(session.get_priority)
+                        to_pid = session._userinfo.pid
             if (ret < 0):
                 errcode = ret
 
@@ -450,6 +457,10 @@ class SessionInfo(object):
 
     def to_string(self):
         return "jid: %s full: %s show: %s status: %s\033[m prio: %s idle: %d" % (
-                self.get_jid(), self.get_fulljid(), self.get_show_natural(),
-                self.get_status(), self.get_priority(), int(time.time()) - self._userinfo.freshtime)
+                self.get_jid(), 
+                self.get_fulljid(), 
+                self.get_show_natural(),
+                self.get_status(), 
+                self.get_priority(), 
+                int(time.time()) - self._userinfo.freshtime)
 
