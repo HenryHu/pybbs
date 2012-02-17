@@ -91,6 +91,8 @@ class Rosters(Thread):
         key = conn.get_loginid()
         if (key in self._conns):
             del self._conns[key]
+            if (conn.authJID.bare in self._rosters):
+                del self._rosters[conn.authJID.bare]
         else:
             Log.warn("Rosters: conn not found in unregister_conn()")
 

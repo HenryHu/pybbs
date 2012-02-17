@@ -77,6 +77,18 @@ class XMPPServer(xmpp.Plugin):
         ret = self.rosters.send_msg(from_jid, to_jid, text_body)
         if (ret <= 0):
             Log.warn("sendmsg() failed to %s from %s error %d" % (to_jid, from_jid, ret))
+            errors = { -1 : "That user has locked screen, please send later.",
+                    -11: "That user denied your message.",
+                    -12: "That user has too many unread messages. Please send later.",
+                    -13: "User has gone after message sent.",
+                    -14: "User has gone before message sent.",
+                    -21: "Error when sending message!"}
+            if (ret in errors):
+                elem = self.E.message({'from': to_jid,
+                    'to': from_jid,
+                    'type': 'error'},
+                    self.E.body(errors[ret]))
+                self.recv(from_jid, elem)
             # -2: no perm to see cloak
             # 0: error
             # -1: lockscreen
