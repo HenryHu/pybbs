@@ -2,6 +2,7 @@ from UserManager import UserManager
 import UserInfo
 from Session import Session
 from Log import Log
+import MsgBox
 import xmpp
 import modes
 
@@ -13,6 +14,8 @@ class XMPPServer(xmpp.Plugin):
         self.rosters = rosters
 
         self.rosters.set_resources(self.get_resources())
+        self.rosters.register_conn(self)
+
 
         self._userid = self.authJID.bare.partition('@')[0].encode("gbk")
         # Login the user
@@ -23,13 +26,23 @@ class XMPPServer(xmpp.Plugin):
         self._session = Session(self._user, self._peer_addr[0])
         # insert into global session list!
         self._userinfo = self._session.Register()
+        self._loginid = self._session.utmpent
         self._hostname = host
         self.bind(xmpp.ReceivedCloseStream, self.close)
+
+        msgbox = MsgBox.MsgBox(self._userid)
+        if (msgbox.GetUnreadCount() > 0):
+            self._read_msgs = msgbox.GetMsgCount(all = False) - msgbox.GetUnreadCount()
+            self.check_msg()
+
+    def get_loginid(self):
+        return self._loginid
 
     def close(self):
         if (self._session):
             self._session.Unregister()
         self.unbind_res()
+        self.rosters.unregister_conn(self)
 
     @xmpp.iq('{urn:xmpp:ping}ping')
     def ping(self, iq):
@@ -72,6 +85,28 @@ class XMPPServer(xmpp.Plugin):
             # -13: user gone when notifying
             # -14: user gone before saving
             # -21: error when saving message
+
+    def make_jid(self, userid):
+        return "%s@%s" % (userid, self._hostname)
+
+    def check_msg(self):
+        msgbox = MsgBox.MsgBox(self._userid)
+        msg_count = msgbox.GetMsgCount(all = False)
+        if (msg_count > self._read_msgs):
+            for i in range(self._read_msgs, msg_count):
+                msghead = msgbox.LoadMsgHead(i, all = False)
+                msgtext = msgbox.LoadMsgsText(msghead)
+
+                # got a new message! send it!
+                elem = self.E.message({'from': self.make_jid(msghead.id), 
+                                       'to': unicode(self.authJID)},
+                                      self.E.body(msgtext))
+                self.recv(unicode(self.authJID), elem)
+            self._read_msgs = msg_count
+        else:
+            if (msg_count < self._read_msgs):
+                # <? someone cleared it...
+                self._read_msgs = 0
 
     @xmpp.stanza('presence')
     def presence(self, elem):

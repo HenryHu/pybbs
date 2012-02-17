@@ -32,6 +32,7 @@ class Rosters(Thread):
         self._rosters = {}
         self._resources = None
         self._session_cache = {}
+        self._conns = {}
         self.update_sessions()
 
         signal.signal(signal.SIGUSR2, Rosters.handle_signal_message)
@@ -47,6 +48,21 @@ class Rosters(Thread):
     @staticmethod
     def handle_signal_message(signum, frame):
         Log.info("Someone has sent me a message...")
+        for conn in self._conns:
+            conn.check_msg()
+
+    def register_conn(self, conn):
+        key = conn.get_loginid()
+        if (key in self._conns):
+            Log.warn("Rosters: conn already present in register_conn()")
+        self._conns[key] = conn
+
+    def unregister_conn(self, conn):
+        key = conn.get_loginid()
+        if (key in self._conns):
+            del self._conns[key]
+        else:
+            Log.warn("Rosters: conn not found in unregister_conn()")
 
     def run(self):
         while (self._running):
