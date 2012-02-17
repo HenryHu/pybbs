@@ -69,6 +69,7 @@ class Utmp:
         #SemLock.Unlock(Config.UCACHE_SEMLOCK)
         Log.debug("Utmp.Unlock")
         Util.FUnlock(lockf)
+        os.close(lockf)
 
     @staticmethod
     def GetNewUtmpEntry(userinfo):

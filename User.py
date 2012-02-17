@@ -231,7 +231,7 @@ class User:
 
     def BeIgnored(self, userid):
         if (self.HasPerm(PERM_SYSOP)):
-            return True
+            return False
         ignores = User.OwnFile(userid, 'ignores')
         itemcount = Util.GetRecordCount(ignores, Config.IDLEN + 1)
         if (itemcount == -1):

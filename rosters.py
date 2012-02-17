@@ -2,7 +2,7 @@ import copy
 import signal
 from lxml import builder
 import time
-from threading import Thread
+from threading import Thread, Condition
 import traceback
 
 from xmpp import xml
@@ -18,6 +18,32 @@ import Login
 import UserInfo
 import Util
 
+_ref = None
+update_condition = Condition()
+new_msgs = False
+
+class Updater(Thread):
+    def __init__(self, rosters):
+        Thread.__init__(self)
+        self._rosters = rosters
+        self.start()
+
+    def run(self):
+        while (self._rosters._running):
+            global new_msgs
+            update_condition.acquire()
+            update_condition.wait(2)
+#            Log.debug("wake up %r" % new_msgs)
+            cur_msgs = new_msgs
+
+            if (cur_msgs):
+#                Log.info("enumerating...")
+                for conn in self._rosters._conns:
+#                    Log.info("check!")
+                    self._rosters._conns[conn].check_msg()
+                new_msgs = False
+            update_condition.release()
+
 class Rosters(Thread):
     """Rosters: Friend lists of different users.
     Friends are already stored in UserInfo. We may just use it.
@@ -28,6 +54,8 @@ class Rosters(Thread):
     def __init__(self):
         Thread.__init__(self)
 
+        _ref = self
+        print _ref
         self.E = builder.ElementMaker(namespace = self.__xmlns__)
         self._rosters = {}
         self._resources = None
@@ -39,6 +67,7 @@ class Rosters(Thread):
         signal.signal(signal.SIGABRT, Rosters.handle_signal_abort)
 
         self._running = True
+        self._updater = Updater(self)
         self.start()
 
     @staticmethod
@@ -47,9 +76,12 @@ class Rosters(Thread):
 
     @staticmethod
     def handle_signal_message(signum, frame):
+        global new_msgs
         Log.info("Someone has sent me a message...")
-        for conn in self._conns:
-            conn.check_msg()
+        update_condition.acquire()
+        new_msgs = True
+        update_condition.notify()
+        update_condition.release()
 
     def register_conn(self, conn):
         key = conn.get_loginid()

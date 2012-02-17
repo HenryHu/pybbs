@@ -14,8 +14,6 @@ class XMPPServer(xmpp.Plugin):
         self.rosters = rosters
 
         self.rosters.set_resources(self.get_resources())
-        self.rosters.register_conn(self)
-
 
         self._userid = self.authJID.bare.partition('@')[0].encode("gbk")
         # Login the user
@@ -30,9 +28,11 @@ class XMPPServer(xmpp.Plugin):
         self._hostname = host
         self.bind(xmpp.ReceivedCloseStream, self.close)
 
+        self.rosters.register_conn(self)
+
         msgbox = MsgBox.MsgBox(self._userid)
+        self._read_msgs = msgbox.GetMsgCount(all = False) - msgbox.GetUnreadCount()
         if (msgbox.GetUnreadCount() > 0):
-            self._read_msgs = msgbox.GetMsgCount(all = False) - msgbox.GetUnreadCount()
             self.check_msg()
 
     def get_loginid(self):
@@ -90,18 +90,25 @@ class XMPPServer(xmpp.Plugin):
         return "%s@%s" % (userid, self._hostname)
 
     def check_msg(self):
+        Log.debug("checking msg for %s" % self._userid)
         msgbox = MsgBox.MsgBox(self._userid)
         msg_count = msgbox.GetMsgCount(all = False)
         if (msg_count > self._read_msgs):
+#            Log.debug("total: %d read: %d" % (msg_count, self._read_msgs))
             for i in range(self._read_msgs, msg_count):
                 msghead = msgbox.LoadMsgHead(i, all = False)
-                msgtext = msgbox.LoadMsgsText(msghead)
+                msgtext = msgbox.LoadMsgText(msghead)
+#                Log.debug("from: %s text: %s" % (msghead.id, msgtext))
 
                 # got a new message! send it!
                 elem = self.E.message({'from': self.make_jid(msghead.id), 
                                        'to': unicode(self.authJID)},
                                       self.E.body(msgtext))
                 self.recv(unicode(self.authJID), elem)
+            # clear unread...
+            for i in range(msg_count):
+                if (msgbox.GetUnreadMsg() < 0):
+                    break
             self._read_msgs = msg_count
         else:
             if (msg_count < self._read_msgs):
