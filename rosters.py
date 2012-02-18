@@ -370,7 +370,7 @@ class Rosters(Thread):
                     priority = int(session.get_priority())
                 else:
                     if (int(session.get_priority()) > priority):
-                        priority = int(session.get_priority)
+                        priority = int(session.get_priority())
                         to_pid = session._userinfo.pid
             if (ret < 0):
                 errcode = ret
