@@ -46,7 +46,7 @@ class Msg:
             to_userinfo.save()
             return 1
 
-        if (to_userinfo.pid != 1):
+        if (to_userinfo.pid != 1 and to_userinfo.mode != modes.MSG):
             try:
                 os.kill(to_userinfo.pid, signal.SIGUSR2)
             except OSError:
