@@ -182,7 +182,7 @@ class MsgBox:
         return ret
 
     def SaveMsgText(self, msghead, msg):
-        msg = msg.encode('gbk', errors='ignore')
+        msg = msg.encode('gbk', 'ignore')
         if (not self.OpenAll(write = True)):
             return -1;
         if (not self.OpenContent(write = True)):
