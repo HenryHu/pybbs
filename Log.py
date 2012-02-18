@@ -14,20 +14,20 @@ class Log:
     @staticmethod
     def debug(msg):
         if (Log._debug):
-            print "[DEBUG]", msg
+            print "[DEBUG]", msg.encode('utf-8')
     
     @staticmethod
     def error(msg):
         if (Log._error):
-            print Log.FAIL, "[ERROR] ", msg, Log.ENDC
+            print Log.FAIL, "[ERROR] ", msg.encode('utf-8'), Log.ENDC
 
     @staticmethod
     def warn(msg):
         if (Log._warning):
-            print Log.WARNING, "[WARN] ", msg, Log.ENDC
+            print Log.WARNING, "[WARN] ", msg.encode('utf-8'), Log.ENDC
 
     @staticmethod
     def info(msg):
         if (Log._info):
-            print Log.OKGREEN, "[INFO] ", msg, Log.ENDC
+            print Log.OKGREEN, "[INFO] ", msg.encode('utf-8'), Log.ENDC
 
