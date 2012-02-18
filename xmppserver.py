@@ -1,3 +1,5 @@
+import time
+
 from UserManager import UserManager
 import UserInfo
 from Session import Session
@@ -57,6 +59,8 @@ class XMPPServer(xmpp.Plugin):
     def ping(self, iq):
         """Handle ping requests"""
 
+        self._userinfo.freshtime = int(time.time())
+        self._userinfo.save()
         return self.iq('result', iq)
 
     @xmpp.stanza('message')
