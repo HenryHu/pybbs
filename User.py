@@ -2,8 +2,10 @@
 
 import json
 import hashlib
+
 import Config
 import Defs
+import modes
 from Log import Log
 from UCache import UCache
 from Friend import Friend
@@ -176,6 +178,8 @@ class User:
 
     def CanSendTo(self, userinfo):
         # can I send to userinfo?
+        if (userinfo.mode == modes.LOCKSCREEN):
+            return False
         if (userinfo.AcceptMsg() or self.HasPerm(PERM_SYSOP)):
             return True
         if (userinfo.AcceptMsg(True)):
