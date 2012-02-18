@@ -193,7 +193,7 @@ class Rosters(Thread):
 
     def recv_subscribed(self, conn, pres):
         roster = self.get(conn)
-        contact = xmpp.jid(pres.get('from')).bare
+        contact = xml.jid(pres.get('from')).bare
         self.confirm(conn, roster, roster.subscribe(contact, 'to'))
         pres.set('from', contact)
         pres.set('to', conn.authJID.bare)

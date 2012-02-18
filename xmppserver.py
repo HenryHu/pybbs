@@ -133,13 +133,15 @@ class XMPPServer(xmpp.Plugin):
         received from another account."""
 
         if self.authJID == elem.get('from'):
-            return self.send_presence(elem)
+            if (elem.get('to') == None or (not self.authJID.match_bare(elem.get('to')))):
+                return self.send_presence(elem)
         self.recv_presence(elem)
 
     def send_presence(self, elem):
         direct = elem.get('to')
         if not direct:
             self.rosters.broadcast(self, elem)
+            self.recv_presence(elem)
             if not self.probed:
                 self.probed = True
                 self.rosters.probe(self)
@@ -164,9 +166,6 @@ class XMPPServer(xmpp.Plugin):
         for item in roster.items():
             query.append(item)
         return self.iq('result', iq, query)
-
-    def use_tls(self):
-        return True
 
     def set_roster(self, iq, roster):
         query = self.E.query(xmlns='jabber:iq:roster')
