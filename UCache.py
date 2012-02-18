@@ -173,4 +173,15 @@ class UCache:
     def DoAfterLogout(user, userinfo, uent, mode):
         pass
 
+    @staticmethod
+    def formalize_jid(jid):
+        if (jid.find('@') < 0):
+            return jid
+        userid = jid.partition('@')[0]
+        left = jid.partition('@')[2]
 
+        userec = UCache.GetUser(userid)
+        if (userec == None):
+            return jid
+        return "%s@%s" % (userec.userid, left)
+ 

@@ -31,6 +31,7 @@ def setattrs(obj, items=None, **kwargs):
 ### Logging
 
 log = logging.getLogger(basename(dirname(__file__)))
+#log.setLevel(logging.DEBUG)
 log.addHandler(logging.StreamHandler())
 
 

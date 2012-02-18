@@ -14,6 +14,7 @@ import Msg
 import Config
 import Utmp
 from Log import Log
+import UCache
 import Login
 import UserInfo
 import Util
@@ -32,15 +33,19 @@ class Updater(Thread):
             global new_msgs
             update_condition.acquire()
             update_condition.wait(2)
+            try:
 #            Log.debug("wake up %r" % new_msgs)
-            cur_msgs = new_msgs
+                cur_msgs = new_msgs
 
-            if (cur_msgs):
+                if (cur_msgs):
 #                Log.info("enumerating...")
-                for conn in self._rosters._conns:
+                    for conn in self._rosters._conns:
 #                    Log.info("check!")
-                    self._rosters._conns[conn].check_msg()
-                new_msgs = False
+                        self._rosters._conns[conn].check_msg()
+                    new_msgs = False
+            except Exception as e:
+                Log.error("Exception caught in rosters.msg_checker")
+                traceback.print_exc()
             update_condition.release()
 
 class Rosters(Thread):
@@ -102,6 +107,7 @@ class Rosters(Thread):
             try:
                 self.update_sessions()
             except Exception as e:
+                Log.error("Exception caught in rosters.updater")
                 traceback.print_exc()
 
     def set_resources(self, resources):
@@ -138,18 +144,19 @@ class Rosters(Thread):
         roster = self._get(conn)
         elem = conn.E.presence({'from': unicode(conn.authJID), 'type': 'probe'})
         for jid in roster.watching():
-            conn.send(jid, elem)
-            if (jid != conn.authJID.bare): # bug somewhere, if they are equal..
-                for session_info in self.get_bbs_online(jid):
-                    show = session_info.get_show(self.get_user(conn.authJID.bare))
-                    elem = conn.E.presence(
-                        {'from' : '%s/%s' % (jid, session_info.get_res()),
-                         'to' : conn.authJID.bare},
-                        conn.E.status(session_info.get_status()),
-                        conn.E.priority(session_info.get_priority()))
-                    if (show != None):
-                        elem.append(conn.E.show(show))
-                    conn.send(conn.authJID.bare, elem)
+            if (jid in self._rosters):
+                conn.send(jid, elem)
+#            if (jid != conn.authJID.bare): # bug somewhere, if they are equal..
+            for session_info in self.get_bbs_online(jid):
+                show = session_info.get_show(self.get_user(conn.authJID.bare))
+                elem = conn.E.presence(
+                    {'from' : '%s/%s' % (jid, session_info.get_res()),
+                     'to' : conn.authJID.bare},
+                    conn.E.status(session_info.get_status()),
+                    conn.E.priority(session_info.get_priority()))
+                if (show != None):
+                    elem.append(conn.E.show(show))
+                conn.send(conn.authJID.bare, elem)
 
     def send(self, conn, to, elem):
         """Send a subscription request or response."""
@@ -242,8 +249,9 @@ class Rosters(Thread):
 
                 try:
                     self.transmit(hisjid, elem)
-                except NoRoute:
-                    Log.error("notify error: NoRoute")
+                except Exception as e:
+                    Log.error("notify error: %r" % e)
+                    traceback.print_exc()
                     pass
 
     def update_sessions(self):
@@ -338,12 +346,16 @@ class Rosters(Thread):
             pass
 
         return userid, sessionid
- 
+
+
     def send_msg(self, from_jid, to_jid, text):
+        from_jid = UCache.UCache.formalize_jid(from_jid)
+        to_jid = UCache.UCache.formalize_jid(to_jid)
         maysend = False
         from_userid, from_sessionid = self.get_session_info(from_jid)
         to_userid, to_sessionid = self.get_session_info(to_jid)
         if (not to_jid in self._session_cache):
+            Log.debug("to: %s not in session_cache, -14" % to_jid)
             return -14
 
         errcode = 0

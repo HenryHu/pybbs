@@ -2,6 +2,7 @@ from UserManager import UserManager
 import UserInfo
 from Session import Session
 from Log import Log
+import UCache
 import MsgBox
 import xmpp
 import modes
@@ -16,6 +17,8 @@ class XMPPServer(xmpp.Plugin):
         self.rosters.set_resources(self.get_resources())
 
         self._userid = self.authJID.bare.partition('@')[0].encode("gbk")
+        self._fixedjid = UCache.UCache.formalize_jid(unicode(self.authJID))
+        Log.debug("%s: session start" % unicode(self.authJID))
         # Login the user
         self._user = UserManager.LoadUser(self._userid)
         if (self._user == None):
@@ -26,7 +29,9 @@ class XMPPServer(xmpp.Plugin):
         self._userinfo = self._session.Register()
         self._loginid = self._session.utmpent
         self._hostname = host
+        self._closed = False
         self.bind(xmpp.ReceivedCloseStream, self.close)
+        self.bind(xmpp.StreamClosed, self.close)
 
         self.rosters.register_conn(self)
 
@@ -39,6 +44,10 @@ class XMPPServer(xmpp.Plugin):
         return self._loginid
 
     def close(self):
+        if (self._closed):
+            return
+        self._closed = True
+        Log.debug("%s: session end" % unicode(self.authJID))
         if (self._session):
             self._session.Unregister()
         self.unbind_res()

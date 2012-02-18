@@ -33,6 +33,8 @@ class Core(i.CoreInterface):
         self.install_features(features)
         self._reset()
 
+        self.stream.on_close(self.handle_stream_closed)
+
     def __repr__(self):
         peer = self.stream.socket and self.stream.socket.getpeername()
         return '<%s %r>' % (type(self).__name__, peer)
@@ -98,6 +100,11 @@ class Core(i.CoreInterface):
 
     def handle_close_stream(self):
         self.state.trigger(ReceivedCloseStream)
+        self.close()
+
+    def handle_stream_closed(self):
+        self.state.trigger(StreamClosed)
+        self.root = None
         self.close()
 
     ### ---------- Outgoing Stream ----------
