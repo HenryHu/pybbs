@@ -1,3 +1,5 @@
+import time
+
 class Log:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -14,20 +16,20 @@ class Log:
     @staticmethod
     def debug(msg):
         if (Log._debug):
-            print "[DEBUG]", msg.encode('utf-8')
+            print "%s [DEBUG]" % time.ctime(), msg.encode('utf-8')
     
     @staticmethod
     def error(msg):
         if (Log._error):
-            print Log.FAIL, "[ERROR] ", msg.encode('utf-8'), Log.ENDC
+            print Log.FAIL, "%s [ERROR] " % time.ctime(), msg.encode('utf-8'), Log.ENDC
 
     @staticmethod
     def warn(msg):
         if (Log._warning):
-            print Log.WARNING, "[WARN] ", msg.encode('utf-8'), Log.ENDC
+            print Log.WARNING, "%s [WARN] " % time.ctime(), msg.encode('utf-8'), Log.ENDC
 
     @staticmethod
     def info(msg):
         if (Log._info):
-            print Log.OKGREEN, "[INFO] ", msg.encode('utf-8'), Log.ENDC
+            print Log.OKGREEN, "%s [INFO] " % time.ctime(), msg.encode('utf-8'), Log.ENDC
 
