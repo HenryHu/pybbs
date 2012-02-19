@@ -203,13 +203,19 @@ class XMPPServer(xmpp.Plugin):
 
     @xmpp.iq('{vcard-temp}vCard')
     def vcard(self, iq):
-        """Fake vCard support: the client requests its vCard after
-        establishing a session; send an empty one."""
+        """vCard support: the client requests its vCard after
+        establishing a session."""
 
         if iq.get('type') == 'get':
-            return self.iq('result', iq, self.E.vCard(
-                { 'xmlns': 'vcard-temp' },
-                self.E('FN', 'No Name')
-            ))
+            if (iq.get('to') == None):
+                target = iq.get('from')
+            else:
+                target = iq.get('to')
 
+            target = UCache.UCache.formalize_jid(target)
+            name = target.partition('@')[0]
+            vcard = self.E.vCard({'xmlns': 'vcard-temp'},
+                self.E('FN', name))
+
+            return self.iq('result', iq, vcard)
 
