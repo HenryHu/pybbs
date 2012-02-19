@@ -11,6 +11,7 @@ import xmpp
 import modes
 
 __disco_info_ns__ = 'http://jabber.org/protocol/disco#info'
+__vcard_ns__ = 'vcard-temp'
 
 class XMPPServer(xmpp.Plugin):
     """XMPP server for the BBS"""
@@ -238,7 +239,7 @@ class XMPPServer(xmpp.Plugin):
                                  'type': 'im',
                                  'name': Config.Config.GetString('XMPP_SERVER_IDENTITY_NAME', 'BBS'),
                                 }))
-            features = [__disco_info_ns__]
+            features = [__disco_info_ns__, __vcard_ns__]
             for feature in features:
                 query.append(self.E.feature({'var' : feature}))
 
@@ -250,7 +251,7 @@ class XMPPServer(xmpp.Plugin):
                                  'name': Config.Config.GetString('XMPP_SERVER_IDENTITY_NAME', 'BBS'),
                                 }))
 
-            features = [__disco_info_ns__]
+            features = [__disco_info_ns__, __vcard_ns__]
             for feature in features:
                 query.append(self.E.feature({'var' : feature}))
 
