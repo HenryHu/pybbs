@@ -11,6 +11,7 @@ import Config
 import MsgBox
 import MsgHead
 import modes
+import Utmp
 
 class Msg:
     @staticmethod
@@ -59,10 +60,8 @@ class Msg:
     def MaySendMsg(from_userid, to_userid, to_userinfo, sender_mode = 4):
         from_user = UserManager.UserManager.LoadUser(from_userid)
 
-        if (not from_user.HasPerm(User.PERM_SEECLOAK) 
-                and to_userinfo.invisible 
-                and from_userid != to_userid 
-                and sender_mode != modes.CHAT1):
+        if (not from_user.CanSee(to_userinfo)):
+#                and sender_mode != modes.CHAT1):
             return -2
 
         if (to_userinfo.mode == modes.LOCKSCREEN and sender_mode != 3):
@@ -79,12 +78,12 @@ class Msg:
         # to_userinfo is readonly
         # and I don't want to generate a new one...
         to_login = to_userinfo.GetIndex()
-        pid = Utmp.Utmp.GetPid(to_login)
-        active = Utmp.Utmp.IsActive(to_login)
-        userid = Utmp.Utmp.GetUserId(to_login)
+        pid = Utmp.Utmp.GetPid(to_login - 1)
+        active = Utmp.Utmp.IsActive(to_login - 1)
+        userid = Utmp.Utmp.GetUserId(to_login - 1)
 
         if (active == 0 or pid == 0 or userid != to_userid):
-            Log.debug("error -14: %d %d %s" % (active, pid, userid))
+            Log.debug("error -14: %d %d" % (active, pid))
             return -14;
 
         try:

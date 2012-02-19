@@ -22,8 +22,8 @@ class XMPPServer(xmpp.Plugin):
 
         self.rosters.set_resources(self.get_resources())
 
-        self._userid = self.authJID.bare.partition('@')[0].encode("gbk")
         self._fixedjid = UCache.UCache.formalize_jid(unicode(self.authJID))
+        self._userid = self._fixedjid.partition('@')[0].encode("gbk")
         Log.debug("%s: session start" % unicode(self.authJID))
         # Login the user
         self._user = UserManager.LoadUser(self._userid)
@@ -94,11 +94,13 @@ class XMPPServer(xmpp.Plugin):
         ret = self.rosters.send_msg(from_jid, to_jid, text_body)
         if (ret <= 0):
             Log.warn("sendmsg() failed to %s from %s error %d" % (to_jid, from_jid, ret))
-            errors = { -1 : "That user has locked screen, please send later.",
+            errors = { 
+                    -1 : "That user has locked screen, please send later.",
                     -11: "That user denied your message.",
                     -12: "That user has too many unread messages. Please send later.",
                     -13: "User has gone after message sent.",
                     -14: "User has gone before message sent.",
+                    -2 : "User has gone before message sent.",
                     -21: "Error when sending message!"}
             if (ret in errors):
                 elem = self.E.message({'from': to_jid,

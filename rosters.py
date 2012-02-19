@@ -143,11 +143,14 @@ class Rosters(Thread):
 
         roster = self._get(conn)
         elem = conn.E.presence({'from': unicode(conn.authJID), 'type': 'probe'})
+        sender = UserManager.UserManager.LoadUser(conn._userid)
         for jid in roster.watching():
             if (jid in self._rosters):
                 conn.send(jid, elem)
 #            if (jid != conn.authJID.bare): # bug somewhere, if they are equal..
             for session_info in self.get_bbs_online(jid):
+                if (not sender.CanSee(session_info._userinfo)):
+                    continue
                 show = session_info.get_show(self.get_user(conn.authJID.bare))
                 elem = conn.E.presence(
                     {'from' : '%s/%s' % (jid, session_info.get_res()),
@@ -221,7 +224,7 @@ class Rosters(Thread):
             route.handle(elem)
 
     def get_user(self, jid):
-        userid = jid.partition('@')[0]
+        userid = UCache.UCache.formalize_jid(jid).partition('@')[0]
         return UserManager.UserManager.LoadUser(userid)
 
     def notify_session(self, jid, session, type = None):
@@ -229,6 +232,10 @@ class Rosters(Thread):
         for hisjid in self._rosters:
             roster = self._rosters[hisjid]
             if (jid in roster.watching()):
+                him = self.get_user(hisjid)
+                # he can't see you!
+                if (not him.CanSee(session._userinfo)):
+                    continue
                 # you are watching me, so I'll notify you
                 Log.debug("notify %s about %s" % (hisjid, session.get_fulljid()))
                 elem = None

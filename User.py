@@ -246,5 +246,10 @@ class User:
                 return True
         return False
 
+    def CanSee(self, userinfo):
+        return (self.HasPerm(PERM_SEECLOAK) or
+                not userinfo.invisible or
+                userinfo.userid == self.name)
+
 
 from UserManager import UserManager
