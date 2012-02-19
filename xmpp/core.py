@@ -227,11 +227,14 @@ class Core(i.CoreInterface):
         if text:
             error.append(self.E.text({ 'xmlns': self.STANZAS }, text))
 
-        stanza = self.E(elem.tag, {
-            'from': unicode(self.serverJID),
+        reply_info = {
+#            'from': unicode(self.serverJID),
             'type': 'error',
             'id': elem.get('id')
-        })
+        }
+        if (elem.get('to') != None):
+            reply_info['from'] = elem.get('to')
+        stanza = self.E(elem.tag, reply_info)
         if len(elem) > 0:
             stanza.append(elem[0])
         stanza.append(error)

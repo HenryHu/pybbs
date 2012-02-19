@@ -5,9 +5,12 @@ import UserInfo
 from Session import Session
 from Log import Log
 import UCache
+import Config
 import MsgBox
 import xmpp
 import modes
+
+__disco_info_ns__ = 'http://jabber.org/protocol/disco#info'
 
 class XMPPServer(xmpp.Plugin):
     """XMPP server for the BBS"""
@@ -212,10 +215,45 @@ class XMPPServer(xmpp.Plugin):
             else:
                 target = iq.get('to')
 
-            target = UCache.UCache.formalize_jid(target)
-            name = target.partition('@')[0]
+            form_target = UCache.UCache.formalize_jid(target)
+            name = form_target.partition('@')[0]
             vcard = self.E.vCard({'xmlns': 'vcard-temp'},
                 self.E('FN', name))
 
-            return self.iq('result', iq, vcard)
+            if (iq.get('to') == None):
+                return self.iq('result', iq, vcard)
+            else:
+                return self.iq('result', iq, vcard, {'from': iq.get('to')})
+
+    @xmpp.iq('{%s}query' % __disco_info_ns__)
+    def disco_info(self, iq):
+        """ Service Discovery: disco#info """
+
+        target = iq.get('to')
+
+        if (target.find('@') < 0):
+            # query server info
+            query = self.E.query({ 'xmlns': __disco_info_ns__},
+                self.E.identity({ 'category': 'server',
+                                 'type': 'im',
+                                 'name': Config.Config.GetString('XMPP_SERVER_IDENTITY_NAME', 'BBS'),
+                                }))
+            features = [__disco_info_ns__]
+            for feature in features:
+                query.append(self.E.feature({'var' : feature}))
+
+        else:
+            # query client info
+            query = self.E.query({ 'xmlns': __disco_info_ns__},
+                self.E.identity({ 'category': 'client',
+                                 'type': 'term',
+                                 'name': Config.Config.GetString('XMPP_SERVER_IDENTITY_NAME', 'BBS'),
+                                }))
+
+            features = [__disco_info_ns__]
+            for feature in features:
+                query.append(self.E.feature({'var' : feature}))
+
+        return self.iq('result', iq, query, {'from': target})
+
 
