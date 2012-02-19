@@ -76,15 +76,21 @@ class Msg:
             if (to_msgbox.GetUnreadCount() > Config.MAXMESSAGE):
                 return -12;
 
-        to_userinfo.load()
-        if (to_userinfo.active == 0 or to_userinfo.pid == 0 or to_userinfo.userid != to_userid):
-            Log.debug("error -14: %d %d %s" % (to_userinfo.active, to_userinfo.pid, to_userinfo.userid))
+        # to_userinfo is readonly
+        # and I don't want to generate a new one...
+        to_login = to_userinfo.GetIndex()
+        pid = Utmp.Utmp.GetPid(to_login)
+        active = Utmp.Utmp.IsActive(to_login)
+        userid = Utmp.Utmp.GetUserId(to_login)
+
+        if (active == 0 or pid == 0 or userid != to_userid):
+            Log.debug("error -14: %d %d %s" % (active, pid, userid))
             return -14;
 
         try:
-            os.kill(to_userinfo.pid, 0)
+            os.kill(pid, 0)
         except OSError:
-            Log.debug("error -14: kill fail")
+            Log.debug("error -14: kill fail, process gone")
             return -14
 
         return 1
