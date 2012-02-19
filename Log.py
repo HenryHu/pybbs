@@ -1,4 +1,5 @@
 import time
+import sys
 
 class Log:
     HEADER = '\033[95m'
@@ -18,19 +19,23 @@ class Log:
     def debug(msg):
         if (Log._debug):
             print Log.DEBUG, "%s [DEBUG]" % time.ctime(), msg.encode('utf-8'), Log.ENDC
+            sys.stdout.flush()
     
     @staticmethod
     def error(msg):
         if (Log._error):
             print Log.FAIL, "%s [ERROR]" % time.ctime(), msg.encode('utf-8'), Log.ENDC
+            sys.stdout.flush()
 
     @staticmethod
     def warn(msg):
         if (Log._warning):
             print Log.WARNING, "%s [WARN] " % time.ctime(), msg.encode('utf-8'), Log.ENDC
+            sys.stdout.flush()
 
     @staticmethod
     def info(msg):
         if (Log._info):
             print Log.OKGREEN, "%s [INFO] " % time.ctime(), msg.encode('utf-8'), Log.ENDC
+            sys.stdout.flush()
 
