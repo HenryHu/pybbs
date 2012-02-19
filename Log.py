@@ -7,6 +7,7 @@ class Log:
     WARNING = '\033[93m'
     FAIL = '\033[91m'
     ENDC = '\033[0m'
+    DEBUG = '\033[90m'
 
     _debug = True
     _info = True
@@ -16,12 +17,12 @@ class Log:
     @staticmethod
     def debug(msg):
         if (Log._debug):
-            print "%s [DEBUG]" % time.ctime(), msg.encode('utf-8')
+            print Log.DEBUG, "%s [DEBUG]" % time.ctime(), msg.encode('utf-8'), Log.ENDC
     
     @staticmethod
     def error(msg):
         if (Log._error):
-            print Log.FAIL, "%s [ERROR] " % time.ctime(), msg.encode('utf-8'), Log.ENDC
+            print Log.FAIL, "%s [ERROR]" % time.ctime(), msg.encode('utf-8'), Log.ENDC
 
     @staticmethod
     def warn(msg):
