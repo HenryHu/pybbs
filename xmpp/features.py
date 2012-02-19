@@ -258,8 +258,9 @@ class Resources(object):
     def bind(self, name, feature):
         """Create a fresh binding."""
 
-        resource = '%s-%d' % (name or 'Resource', random.getrandbits(32))
-        jid = xml.jid(feature.authJID, resource=md5(resource))
+        res_id = md5(str(random.getrandbits(32)))[:8].upper()
+        resource = '%s%s' % (name or 'Resource', res_id)
+        jid = xml.jid(feature.authJID, resource=resource)
         return self._bind(feature, jid)
 
     def bound(self, jid, feature):
