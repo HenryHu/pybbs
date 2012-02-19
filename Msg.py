@@ -46,7 +46,9 @@ class Msg:
             to_userinfo.save()
             return 1
 
-        if (to_userinfo.pid != 1 and to_userinfo.mode != modes.MSG):
+        if (to_userinfo.pid != 1 
+                and to_userinfo.mode != modes.MSG 
+                and to_userinfo.mode != modes.LOCKSCREEN):
             try:
                 os.kill(to_userinfo.pid, signal.SIGUSR2)
             except OSError:
@@ -57,7 +59,10 @@ class Msg:
     def MaySendMsg(from_userid, to_userid, to_userinfo, sender_mode = 4):
         from_user = UserManager.UserManager.LoadUser(from_userid)
 
-        if (not from_user.HasPerm(User.PERM_SEECLOAK) and to_userinfo.invisible and from_userid != to_userid and sender_mode != modes.CHAT1):
+        if (not from_user.HasPerm(User.PERM_SEECLOAK) 
+                and to_userinfo.invisible 
+                and from_userid != to_userid 
+                and sender_mode != modes.CHAT1):
             return -2
 
         if (to_userinfo.mode == modes.LOCKSCREEN and sender_mode != 3):
