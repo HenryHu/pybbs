@@ -124,7 +124,7 @@ class BCache:
 
     @staticmethod
     def Lock():
-        lockfd = os.open("bcache.lock", os.O_CREAT | os.O_TRUNC | os.O_WRONLY, 0600)
+        lockfd = os.open(Config.BBS_ROOT + "bcache.lock", os.O_CREAT | os.O_TRUNC | os.O_WRONLY, 0600)
         if (lockfd == None):
             Log.warn("fail to create bcache.lock")
             return None

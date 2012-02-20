@@ -1,4 +1,5 @@
 import json
+import Config
 from User import User
 from Util import Util
 from BoardManager import BoardManager
@@ -180,7 +181,7 @@ class FavBoards:
                     index = index + 1
             fd.close()
         if (self._count <= 0):
-            fd = open("etc/initial_favboard", "r")
+            fd = open(Config.BBS_ROOT + "etc/initial_favboard", "r")
             if (fd == None):
                 self._count = 1
                 self._favboards[0] = FavBoard(0)

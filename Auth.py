@@ -2,6 +2,7 @@ from UserManager import UserManager
 from Session import Session
 import json
 from Util import Util
+import Config
 import time
 import base64
 
@@ -139,7 +140,7 @@ class Auth:
         if (resptype != "code"):
             Auth.Error(svc, rduri, 'unsupported_response_type')
             return
-        fauthpage = open("authpage.html", "r")
+        fauthpage = open(Config.Config.GetString("BBS_DATASVC_ROOT", "") + "authpage.html", "r")
         authpage = fauthpage.read()
         fauthpage.close()
         authpage = authpage % (rduri, cid)
@@ -200,7 +201,7 @@ class Auth:
         svc.send_response(200)
         svc.end_headers()
 
-        fdcode = open("displaycode.html", "r")
+        fdcode = open(Config.Config.GetString("BBS_DATASVC_ROOT", "") + "displaycode.html", "r")
         dcode = fdcode.read()
         fdcode.close()
         svc.wfile.write(dcode % code)
