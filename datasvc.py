@@ -142,7 +142,7 @@ class MyServer(SocketServer.ThreadingMixIn, HTTPServer):
         self.Init()
 
         ctx = SSL.Context(SSL.SSLv23_METHOD)
-        fpem = "server.pem"
+        fpem = Config.GetString('BBS_DATASVC_CERT', 'server.pem')
         ctx.use_privatekey_file(fpem)
         ctx.use_certificate_file(fpem)
         self.socket = SSL.Connection(ctx, socket.socket(self.address_family, self.socket_type))
