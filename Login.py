@@ -41,7 +41,7 @@ class Login:
 
     def list_remove(self):
         if (Login.list_head() == self):
-            UtmpHead.SetListHead(self.next()._loginid)
+            UtmpHead.SetListHead(self.list_next()._loginid)
 
         self.list_prev().set_listnext(self.list_next())
         self.list_next().set_listprev(self.list_prev())
