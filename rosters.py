@@ -8,6 +8,7 @@ import traceback
 from xmpp import xml
 from xmpp.features import NoRoute
 
+import modes
 import roster
 import UserManager
 import Msg
@@ -369,9 +370,17 @@ class Rosters(Thread):
             Log.debug("to: %s not in session_cache, -14" % to_jid)
             return -14
 
+        # to_pid: target PID
+        #     not important for XMPP
+        #     but important for term users
+        # priority: best priority till now
+        # idle_time: idle time of the best session till now
+
         errcode = 0
         to_pid = 0
         priority = -20
+        idle_time = -1
+        has_xmpp = False
         for session in self._session_cache[to_jid]:
             ret = Msg.Msg.MaySendMsg(from_userid, to_userid, session._userinfo)
             if (ret > 0):
@@ -379,10 +388,16 @@ class Rosters(Thread):
                     maysend = True
                     to_pid = session._userinfo.pid
                     priority = int(session.get_priority())
+                    idle_time = session.idle_time()
                 else:
-                    if (int(session.get_priority()) > priority):
-                        priority = int(session.get_priority())
+                    if (int(session.get_priority()) > priority or
+                       (int(session.get_priority()) == priority and
+                           session.idle_time() < idle_time)):
                         to_pid = session._userinfo.pid
+                        priority = int(session.get_priority())
+                        idle_time = session.idle_time()
+                if (session._userinfo.mode == modes.XMPP):
+                    has_xmpp = True
             if (ret < 0):
                 errcode = ret
 
@@ -395,13 +410,23 @@ class Rosters(Thread):
             Log.error("savemsg() fail! from %s to %s err %d" % (from_userid, to_userid, ret))
             return ret
 
-        errcode = 1
+        # has xmpp session: that will clear unread msgs. no point to send notifications in msg mode
+        # no xmpp session: 
+        #    not to_pid session: that session will ignore the messages. no point to send
+        #    to_pid session: that session will not ignore the messages, and they are unread
+        #                    so send notifications in msg mode
+        errcode = -13
         for session in self._session_cache[to_jid]:
-            ret = Msg.Msg.NotifyMsg(from_userid, to_userid, session._userinfo)
+            ret = Msg.Msg.MaySendMsg(from_userid, to_userid, session._userinfo)
             if (ret > 0):
-                notified = True
-            if (ret < 0):
-                errcode = ret
+                ret = Msg.Msg.NotifyMsg(from_userid, to_userid, 
+                   session._userinfo, 
+                   (not has_xmpp and (session.to_userinfo.pid == to_pid)))
+
+                if (ret > 0):
+                    notified = True
+                if (ret < 0):
+                    errcode = ret
 
         if (notified):
             return 1
@@ -485,5 +510,8 @@ class SessionInfo(object):
                 self.get_show_natural(),
                 self.get_status(), 
                 self.get_priority(), 
-                int(time.time()) - self._userinfo.freshtime)
+                self.idle_time())
+
+    def idle_time(self):
+        return int(time.time()) - self._userinfo.freshtime
 

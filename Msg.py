@@ -41,14 +41,14 @@ class Msg:
         return 1
 
     @staticmethod
-    def NotifyMsg(from_userid, to_userid, to_userinfo):
+    def NotifyMsg(from_userid, to_userid, to_userinfo, notify_msg_mode):
         if (to_userinfo.mode == modes.WWW):
             to_userinfo.mailcheck |= UserInfo.CHECK_MSG
             to_userinfo.save()
             return 1
 
         if (to_userinfo.pid != 1 
-                and to_userinfo.mode != modes.MSG 
+                and (to_userinfo.mode != modes.MSG or notify_msg_mode)
                 and to_userinfo.mode != modes.LOCKSCREEN):
             try:
                 os.kill(to_userinfo.pid, signal.SIGUSR2)
