@@ -17,6 +17,13 @@ class UserInfo:
     ACTIVE_POS = 0
     UID_POS = ACTIVE_POS + 4
     PID_POS = UID_POS + 4
+    INVISIBLE_POS = PID_POS + 4
+    SOCKACTIVE_POS = INVISIBLE_POS + 4
+    SOCKADDR_POS = SOCKACTIVE_POS + 4
+    DESTUID_POS = SOCKADDR_POS + 4
+    MODE_POS = DESTUID_POS + 4
+    PAGER_POS = MODE_POS + 4
+    INCHAT_POS = MODE_POS + 4
     USERID_POS = 0x80
     USERID_SIZE = 20
 
@@ -34,6 +41,13 @@ class UserInfo:
             raise Exception("Cannot save without index!")
         from Utmp import Utmp
         Utmp.utmpshm.write(self.pack(), self._index * UserInfo.size)
+
+    def GetInt(self, offset):
+        from Utmp import Utmp
+        return struct.unpack('=i', Utmp.utmpshm.read(4, self._index * UserInfo.size + offset))[0]
+
+    def GetMode(self):
+        return self.GetInt(UserInfo.MODE_POS)
 
     def unpack(self, str):
         Util.Unpack(self, UserInfo._parser.unpack(str))

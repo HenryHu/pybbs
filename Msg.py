@@ -48,8 +48,8 @@ class Msg:
             return 1
 
         if (to_userinfo.pid != 1 
-                and (to_userinfo.mode != modes.MSG or notify_msg_mode)
-                and to_userinfo.mode != modes.LOCKSCREEN):
+                and (to_userinfo.GetMode() != modes.MSG or notify_msg_mode)
+                and to_userinfo.GetMode() != modes.LOCKSCREEN):
             try:
                 os.kill(to_userinfo.pid, signal.SIGUSR2)
             except OSError:
