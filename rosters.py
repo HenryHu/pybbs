@@ -99,7 +99,7 @@ class Rosters(Thread):
             del self._conns[key]
             if (conn.authJID.bare in self._rosters):
                 try:
-                    self._resources.routes(conn.authJID.bare)
+                    self._resources.routes(xml.jid(conn.authJID.bare))
                 except NoRoute:
                     # last connection: remove from rosters
                     del self._rosters[conn.authJID.bare]
@@ -416,12 +416,13 @@ class Rosters(Thread):
         #    to_pid session: that session will not ignore the messages, and they are unread
         #                    so send notifications in msg mode
         errcode = -13
+        notified = False
         for session in self._session_cache[to_jid]:
             ret = Msg.Msg.MaySendMsg(from_userid, to_userid, session._userinfo)
             if (ret > 0):
                 ret = Msg.Msg.NotifyMsg(from_userid, to_userid, 
                    session._userinfo, 
-                   (not has_xmpp and (session.to_userinfo.pid == to_pid)))
+                   (not has_xmpp and (session._userinfo.pid == to_pid)))
 
                 if (ret > 0):
                     notified = True
