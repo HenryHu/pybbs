@@ -375,12 +375,16 @@ class Rosters(Thread):
         #     but important for term users
         # priority: best priority till now
         # idle_time: idle time of the best session till now
+        #
+        # may_send_sessions: sessions which we are able to send to
+        #             (and we will notify)
 
         errcode = 0
         to_pid = 0
         priority = -20
         idle_time = -1
         has_xmpp = False
+        may_send_sessions = []
         for session in self._session_cache[to_jid]:
             ret = Msg.Msg.MaySendMsg(from_userid, to_userid, session._userinfo)
             if (ret > 0):
@@ -398,6 +402,7 @@ class Rosters(Thread):
                         idle_time = session.idle_time()
                 if (session._userinfo.mode == modes.XMPP):
                     has_xmpp = True
+                may_send_sessions.append(session)
             if (ret < 0):
                 errcode = ret
 
@@ -417,17 +422,15 @@ class Rosters(Thread):
         #                    so send notifications in msg mode
         errcode = -13
         notified = False
-        for session in self._session_cache[to_jid]:
-            ret = Msg.Msg.MaySendMsg(from_userid, to_userid, session._userinfo)
-            if (ret > 0):
-                ret = Msg.Msg.NotifyMsg(from_userid, to_userid, 
-                   session._userinfo, 
-                   (not has_xmpp and (session._userinfo.pid == to_pid)))
+        for session in may_send_sessions:
+            ret = Msg.Msg.NotifyMsg(from_userid, to_userid, 
+                    session._userinfo, 
+                    (not has_xmpp and (session._userinfo.pid == to_pid)))
 
-                if (ret > 0):
-                    notified = True
-                if (ret < 0):
-                    errcode = ret
+            if (ret > 0):
+                notified = True
+            if (ret < 0):
+                errcode = ret
 
         if (notified):
             return 1
