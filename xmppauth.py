@@ -1,4 +1,5 @@
 from UserManager import UserManager
+from Log import Log
 import sasl
 
 class XMPPAuth(sasl.auth.Authenticator):
@@ -31,21 +32,25 @@ class XMPPAuth(sasl.auth.Authenticator):
     def get_password(self):
         raise NotImplementedError
 
-    def verify_password(self, authorize, user, passwd):
+    def verify_password(self, authorize, username, passwd):
         """Verity password"""
 
-        if (authorize and user != authorize):
+        if (authorize and username != authorize):
+            Log.warn("XMPPAuth: user %s does not match authorize %s" % (username, authorize))
             return False
 
-        user = user.encode("gbk")
+        username = username.encode("gbk")
 #        print "trying to auth %s pass %s" % (user, passwd)
-        user = UserManager.LoadUser(user)
+        user = UserManager.LoadUser(username)
         if (user == None):
+            Log.warn("XMPPAuth: user not exist: %s" % username)
             return False
 
         if (user.Authorize(passwd)):
 #            print "OK"
             return True
+
+        Log.warn("XMPPAuth: user %s auth failed!" % username)
 
 #        print "Wrong PW"
         return False
