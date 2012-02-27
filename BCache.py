@@ -7,7 +7,7 @@ from Util import Util
 from sysv_ipc import *
 
 class BoardHeader:
-    parser = struct.Struct('=%ds%ds%dsIIIIIli128sic195s' % (Config.STRLEN, Config.BM_LEN, Config.STRLEN))
+    parser = struct.Struct('=%ds%ds%dsIIIIIli128sib195s' % (Config.STRLEN, Config.BM_LEN, Config.STRLEN))
     _fields = [['filename', 1], ['BM', 1], ['title', 1], 'level', 'nowid', 'clubnum', 'flag', 'adv_club', 'createtime', 'toptitle', ['ann_path',1], 'group', 'title_level', ['des',1]]
 
     # struct boardheader
