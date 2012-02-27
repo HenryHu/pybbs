@@ -28,6 +28,10 @@ class UserManager:
 
     @staticmethod
     def LoadUser(user):
+        userec = UCache.GetUser(user)
+        if (userec == None):
+            return None
+        user = userec.userid
         if (user not in UserManager.users):
             ruser = UserManager.LoadNewUser(user)
             if (ruser == None):
