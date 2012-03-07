@@ -19,7 +19,7 @@ class Roster(object):
             friend_name = friend.userid
 #            Log.debug("friend %d %d %s" % (i, friend_uid, friend_name))
             friend_jid = friend_name + '@' + conn._hostname
-            self._items[friend_jid] = Item({ 'jid': friend_jid, 'name': friend_name, 'subscription': 'to' }, [])
+            self._items[friend_jid] = Item({ 'jid': friend_jid, 'name': friend_name, 'subscription': 'to' }, [Config.Config.GetString("XMPP_DEFAULT_GROUP", "BBS")])
         self._update_time = time.time()
 
     def check_update(self, conn):
