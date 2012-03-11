@@ -177,17 +177,16 @@ class Board:
                 post['title'] = Util.gbkDec(pe.title)
                 post['owner'] = Util.gbkDec(pe.owner) # maybe...
                 ret = ''
-                if (pe.attachment != 0):
-                    while (True):
-                        data = postf.read(512)
-                        i = data.find('\0')
-                        if (i != -1):
-                            ret = ret + data[:i]
+                while (True):
+                    data = postf.read(512)
+                    i = data.find('\0')
+                    if (i != -1):
+                        ret = ret + data[:i]
+                        break
+                    else:
+                        ret = ret + data
+                        if (len(data) < 512):
                             break
-                        else:
-                            ret = ret + data
-                else:
-                    ret = postf.read()
 
                 post['content'] = Util.gbkDec(ret)
 
