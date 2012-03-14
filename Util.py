@@ -280,6 +280,8 @@ def fixterm_handler(exc):
                     if (ord(c) == 0x1b):# \ESC
                         cr = lc
                         s += c
+                        s += "[50m"
+                        s += c
                         ci = 2
                     else:
                         s += c
