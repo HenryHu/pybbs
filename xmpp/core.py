@@ -134,6 +134,8 @@ class Core(i.CoreInterface):
 
     @writer
     def write(self, data, *args):
+        if self.root is None:
+            return
         if xml.is_element(data):
             data = xml.stanza_tostring(self.root, data)
         self.stream.write(data, *args)
