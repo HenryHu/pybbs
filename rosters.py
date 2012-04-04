@@ -230,7 +230,11 @@ class Rosters(Thread):
     def transmit(self, to, elem):
         for (fulljid, route) in self.routes(to):
             Log.debug("sending to %s" % fulljid)
-            route.handle(elem)
+            try:
+                route.handle(elem)
+            except Exception as e:
+                Log.error("send error: %r" % e)
+                traceback.print_exc()
 
     def get_user(self, jid):
         userid = UCache.UCache.formalize_jid(jid).partition('@')[0]
@@ -268,7 +272,6 @@ class Rosters(Thread):
                 except Exception as e:
                     Log.error("notify error: %r" % e)
                     traceback.print_exc()
-                    pass
 
     def update_sessions(self):
         Log.debug("updating sessions")
@@ -364,8 +367,8 @@ class Rosters(Thread):
         return userid, sessionid
 
     def allow_login(self, jid):
-        sessions = get_bbs_online(self, jid)
-        if len(sessions) >= Config.GetInt("XMPP_TOTAL_LOGIN_LIMIT", 5):
+        sessions = self.get_bbs_online(jid)
+        if len(sessions) >= Config.Config.GetInt("XMPP_TOTAL_LOGIN_LIMIT", 5):
             return False
         # may add other checks here
         return True
