@@ -115,7 +115,7 @@ class State(object):
         if not handler:
             raise i.StreamError(
                 'unsupported-stanza-type',
-                'Unrecognized stanza %r.' % name
+                'Unrecognized stanza %r.\nstanzas: %r\nevents: %r\nstate: %r\nlocked: %r\ncore: %r\nplugins: %r\ncore.authJID: %r' % (name, self.stanzas, self.events, self.state, self.locked, self.core, self.plugins, self.core.authJID)
             )
         elif isinstance(handler, Once):
             del self.stanzas[name]

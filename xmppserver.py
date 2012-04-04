@@ -18,12 +18,18 @@ class XMPPServer(xmpp.Plugin):
 
     def __init__(self, rosters, host):
         self.probed = False
+        self._closed = False
         self.rosters = rosters
 
         self.rosters.set_resources(self.get_resources())
 
         self._fixedjid = UCache.UCache.formalize_jid(unicode(self.authJID))
         self._userid = self._fixedjid.partition('@')[0].encode("gbk")
+
+        if (not self.rosters.allow_login(self.authJID.bare)):
+            Log.warn("user %s login denied" % self._userid)
+            self.close()
+            raise Exception("User %s login denied." % self._userid)
         Log.debug("%s: session start" % unicode(self.authJID))
         # Login the user
         self._user = UserManager.LoadUser(self._userid)
@@ -35,7 +41,6 @@ class XMPPServer(xmpp.Plugin):
         self._userinfo = self._session.Register()
         self._loginid = self._session.utmpent
         self._hostname = host
-        self._closed = False
         self.bind(xmpp.ReceivedCloseStream, self.close)
         self.bind(xmpp.StreamClosed, self.close)
 

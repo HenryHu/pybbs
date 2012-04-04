@@ -164,7 +164,11 @@ class Rosters(Thread):
                     conn.E.priority(session_info.get_priority()))
                 if (show != None):
                     elem.append(conn.E.show(show))
-                conn.send(conn.authJID.bare, elem)
+                try:
+                    conn.send(conn.authJID.bare, elem)
+                except Exception as e:
+                    Log.error("Exception caught when probing others.")
+                    traceback.print_exc()
 
     def send(self, conn, to, elem):
         """Send a subscription request or response."""
@@ -359,6 +363,12 @@ class Rosters(Thread):
 
         return userid, sessionid
 
+    def allow_login(self, jid):
+        sessions = get_bbs_online(self, jid)
+        if len(sessions) >= Config.GetInt("XMPP_TOTAL_LOGIN_LIMIT", 5):
+            return False
+        # may add other checks here
+        return True
 
     def send_msg(self, from_jid, to_jid, text):
         from_jid = UCache.UCache.formalize_jid(from_jid)
