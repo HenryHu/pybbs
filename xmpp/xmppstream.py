@@ -83,7 +83,7 @@ class XMPPTarget(object):
             if len(self.stack) == 1 and not self.core.is_stanza(name):
                 raise StreamError(
                     'unsupported-stanza-type',
-                    'Unrecognized stanza %r.' % name
+                    'Unrecognized stanza %r.\nstanzas: %r\nevents: %r\nstate: %r\nlocked: %r\ncore: %r\nplugins: %r\ncore.authJID: %r' % (name, self.core.state.stanzas, self.core.state.events, self.core.state.state, self.core.state.locked, self.core, self.core.state.plugins, self.core.authJID)
                 )
             parent = self.stack[-1]
             self.stack.append(xml.SubElement(parent, name, attrs, nsmap))
