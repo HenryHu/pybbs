@@ -248,9 +248,9 @@ class Util:
     @staticmethod
     def SHMGetVal(shm, offset, format, size=0):
         if (size == 0):
-            return struct.unpack(format, shm.read(struct.calcsize(format), offset))
+            return struct.unpack(format, shm.read(struct.calcsize(format), offset))[0]
         else:
-            return struct.unpack(format, shm.read(size, offset))
+            return struct.unpack(format, shm.read(size, offset))[0]
 
     @staticmethod
     def SHMPutVal(shm, offset, val, format):

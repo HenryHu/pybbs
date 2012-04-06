@@ -33,6 +33,7 @@ from Auth import Auth
 from MsgBox import MsgBox
 from FavBoard import FavBoard
 from Log import Log
+import commondata
 
 class DataService(BaseHTTPRequestHandler):
     classes = { "post"      : Post, 
@@ -154,6 +155,7 @@ class MyServer(SocketServer.ThreadingMixIn, HTTPServer):
         BCache.Init()
         BoardManager.Init()
         UCache.Init()
+        commondata.CommonData.Init()
 
     pass
 

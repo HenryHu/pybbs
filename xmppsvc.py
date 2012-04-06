@@ -13,6 +13,7 @@ import xmpp
 import xmppauth
 import UCache
 import Utmp
+import commondata
 from Log import Log
 from pwd import getpwnam
 import os
@@ -29,6 +30,7 @@ if __name__ == '__main__':
     Config.Config.LoadConfig();
     UCache.UCache.Init()
     Utmp.Utmp.Init()
+    commondata.CommonData.Init()
 
     hostname = Config.Config.GetString("BBS_XMPP_HOST", 'localhost')
 

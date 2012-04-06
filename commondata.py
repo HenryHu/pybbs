@@ -1,5 +1,5 @@
 import struct
-from sysv_ipc import SharedMemory, ExistentialError
+from sysv_ipc import SharedMemory, ExistentialError, SHM_RDONLY
 
 from Util import Util
 import UtmpHead
@@ -34,7 +34,7 @@ PUBLICSHM_SIZE = UNUSED_POS + 1004
 class CommonData:
     parser = struct.Struct('=iiiII')
     _fields = ['nowtime', 'sysconfimg_version', 'www_guest_count', 'max_user', 'max_wwwguest']
-    uidshm = None
+    publicshm = None
 
     @staticmethod
     def GetWWWGuestCount():
@@ -82,5 +82,5 @@ class CommonData:
     @staticmethod
     def SetReadonly(readonly):
         CommonData.publicshm.detach()
-        CommonData.publicshm.attach(None, (sysv_ipc.SHM_RDONLY if readonly else 0))
+        CommonData.publicshm.attach(None, (SHM_RDONLY if readonly else 0))
 
