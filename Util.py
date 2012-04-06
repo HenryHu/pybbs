@@ -246,6 +246,33 @@ class Util:
         return Util.CString(shm.read(size, offset))
 
     @staticmethod
+    def SHMGetVal(shm, offset, format, size=0):
+        if (size == 0):
+            return struct.unpack(format, shm.read(struct.calcsize(format), offset))
+        else:
+            return struct.unpack(format, shm.read(size, offset))
+
+    @staticmethod
+    def SHMPutVal(shm, offset, val, format):
+        return shm.write(struct.pack(format, val), offset)
+
+    @staticmethod
+    def SHMGetInt(shm, offset):
+        return Util.SHMGetVal(shm, offset, '=i', 4)
+
+    @staticmethod
+    def SHMGetUInt(shm, offset):
+        return Util.SHMGetVal(shm, offset, '=I', 4)
+
+    @staticmethod
+    def SHMPutInt(shm, offset, val):
+        return Util.SHMPutVal(shm, offset, val, '=i')
+
+    @staticmethod
+    def SHMPutUInt(shm, offset, val):
+        return Util.SHMPutVal(shm, offset, val, '=I')
+
+    @staticmethod
     def RemoveTags(str):
         ret = ''
         intag = False
