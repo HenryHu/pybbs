@@ -214,7 +214,7 @@ class Utmp:
         login.hash_remove()
         login.list_remove()
 
-        if (not userinfo.active):
+        if (userinfo.active):
             UtmpHead.DecNumber()
 
         zeroinfo = UserInfo()
