@@ -139,7 +139,11 @@ class Rosters(Thread):
 
         roster = self._get(conn)
         for jid in roster.presence(conn.authJID, elem).subscribers():
-            conn.send(jid, elem)
+            try:
+                conn.send(jid, elem)
+            except Exception as e:
+                Log.error("Exception caught when broadcasting from %r to %r..." % (conn.authJID, jid))
+                traceback.print_exc()
 
     def probe(self, conn):
         """Ask everybody this account is subscribed to for a status
@@ -151,7 +155,11 @@ class Rosters(Thread):
         sender = UserManager.UserManager.LoadUser(conn._userid)
         for jid in roster.watching():
             if (jid in self._rosters):
-                conn.send(jid, elem)
+                try:
+                    conn.send(jid, elem)
+                except Exception as e:
+                    Log.error("Exception caught when probing XMPP user %r: %r" % (jid, e))
+                    traceback.print_exc()
 #            if (jid != conn.authJID.bare): # bug somewhere, if they are equal..
             for session_info in self.get_bbs_online(jid):
                 if (not sender.CanSee(session_info._userinfo)):
@@ -167,7 +175,7 @@ class Rosters(Thread):
                 try:
                     conn.send(conn.authJID.bare, elem)
                 except Exception as e:
-                    Log.error("Exception caught when probing others.")
+                    Log.error("Exception caught when faking response from %s/%s to %r" % (jid, session_info.get_res(), conn.authJID.bare))
                     traceback.print_exc()
 
     def send(self, conn, to, elem):
