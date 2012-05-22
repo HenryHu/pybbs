@@ -31,21 +31,21 @@ class Utmp:
                 Utmp.utmpshm = SharedMemory(Config.Config.GetInt("UTMP_SHMKEY", 3699), size = UTMPFILE_SIZE, flags = IPC_CREAT, mode = 0660, init_character='\0')
                 UtmpHead.utmphead = SharedMemory(Config.Config.GetInt("UTMPHEAD_SHMKEY", 3698), UTMPHEAD_SIZE, flags = IPC_CREAT, mode = 0660, init_character='\0')
                 fd = Utmp.Lock()
-                UtmpHead.SetNumber(0);
-                UtmpHead.SetHashHead(0, 1);
+                UtmpHead.SetNumber(0)
+                UtmpHead.SetHashHead(0, 1)
                 for i in range(Config.USHM_SIZE - 1):
-                    UtmpHead.SetNext(i, i+2);
-                UtmpHead.SetNext(Config.USHM_SIZE - 1, 0);
-                Utmp.Unlock(fd);
+                    UtmpHead.SetNext(i, i+2)
+                UtmpHead.SetNext(Config.USHM_SIZE - 1, 0)
+                Utmp.Unlock(fd)
 
     @staticmethod
     def Hash(userid):
         hash = UCache.Hash(userid)
         if (hash == 0):
             return 0
-        hash = (hash / 3) % Config.UTMP_HASHSIZE;
+        hash = (hash / 3) % Config.UTMP_HASHSIZE
         if (hash == 0):
-            return 1;
+            return 1
         return hash
 
     @staticmethod

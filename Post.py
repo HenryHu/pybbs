@@ -138,7 +138,7 @@ class Post:
             else:
                 filename = "M.%lu.%c%c" % now, GENERATE_POST_SUFIX[(pid + i) % 62], GENERATE_POST_SUFIX[(pid * i) % 62]
             fname = "%s/%s" % path, filename
-            fp = os.open(fname, O_CREAT | O_EXCL | O_WRONLY, 0644)
+            fp = os.open(fname, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0644)
             if (fp != None):
                 fp.close()
                 return filename

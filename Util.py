@@ -222,7 +222,7 @@ class Util:
         if (not stat.S_ISREG(fstat.st_mode)):
             fd.close()
             return None
-        if (stat.st_size < 0):
+        if (fstat.st_size < 0):
             fd.close()
             return None
         return mmap.mmap(fd.fileno(), fstat.st_size, flags = flag, prot = pro)
@@ -290,6 +290,22 @@ class Util:
                 else:
                     ret += ch
         return ret
+
+    @staticmethod
+    def AppendRecord(filename, record):
+        try:
+            with open(filename, "ab") as f:
+                os.fchmod(f.fileno(), 0664)
+                fcntl.flock(f, fcntl.LOCK_EX)
+                # no lseek: append
+                try:
+                    f.write(record)
+                finally:
+                    fcntl.flock(f, fcntl.LOCK_UN)
+        except IOError:
+            return -1
+
+        return 0
 
 def fixterm_handler(exc):
     if isinstance(exc, (UnicodeDecodeError)):

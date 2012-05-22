@@ -10,6 +10,7 @@ import User
 from BRead import BReadMgr
 from Error import *
 from Log import Log
+import fcntl
 
 DEFAULT_GET_POST_COUNT = 20
 
@@ -43,8 +44,8 @@ FILE_IMPORTED	= 0x80      #/* Leeward 98.04.15 */
 # not used:
 # /* roy 2003.07.21 */
 FILE_WWW_POST	= 0x1 #/* post by www */
-FILE_ON_TOP		= 0x2 = #/* on top mode */
-FILE_VOTE		= 0x4 = #/* article with votes */
+FILE_ON_TOP		= 0x2 #/* on top mode */
+FILE_VOTE		= 0x4 #/* article with votes */
 
 # PostEntry.accessed[1]
 #ifdef FILTER # not def
@@ -88,6 +89,15 @@ class PostEntry:
             self.accessed[1] |= FILE_ROOTANON
         else:
             self.accessed[1] &= ~FILE_ROOTANON
+
+    def NeedMailBack(self):
+        return bool(self.accessed[1] & FILE_MAILBACK);
+
+    def SetMailBack(self, need):
+        if (need):
+            self.accessed[1] |= FILE_MAILBACK
+        else:
+            self.accessed[1] &= ~FILE_MAILBACK
 
 class Board:
 
@@ -458,6 +468,9 @@ class Board:
     def IsJunkBoard(self):
         return self.CheckFlag(BOARD_JUNK)
 
+    def DoStat(self):
+        return self.CheckFlag(BOARD_POSTSTAT)
+
     def PostArticle(self, user, title, content, refile, signature_id, anony):
         mycrc = binascii.crc32(user.name)
         if (self.CheckReadonly()):
@@ -470,8 +483,11 @@ class Board:
             if (not user.HasPerm(User.PERM_SYSOP)):
                 return False
 
+        # filter title: 'Re: ' and '\ESC'
         while (title[:4] == "Re: "):
             title = title[4:]
+
+        title = title.replace('\033', ' ')
 
         may_anony = False
         if (refile == None): # not in reply mode
@@ -493,7 +509,6 @@ class Board:
             Log.error("random signature: not implemented")
             return
 
-        title = title.replace('\033', ' ')
 
         post_file = PostEntry()
         post_file.filename = self.GetPostFilename()
@@ -525,8 +540,189 @@ class Board:
 
         return
 
-    def AfterPost(self, post_file):
-        pass
+    def AfterPost(self, user, post_file, re_file, anony):
+        bdir = self.GetDirPath('normal')
+
+        try:
+            with open(bdir, "ab") as bdirf:
+                fcntl.flock(bdirf, fcntl.LOCK_EX)
+                try:
+                    nowid = self.GetNextId()
+                    post_file.id = nowid
+                    if (re_file == None):
+                        post_file.groupid = nowid
+                        post_file.reid = nowid
+                    else:
+                        post_file.groupid = re_file.groupid
+                        post_file.reid = re_file.id
+
+                    post_file.posttime = 0 # not used
+                    # no seek: append mode
+                    bdirf.write(post_file.pack())
+                finally:
+                    fcntl.flock(bdirf, fcntl.LOCK_UN)
+
+        except IOError as e:
+            post_fname = self.GetBoardPath() + post_file.filename
+            os.unlink(post_fname)
+            raise e
+
+        self.UpdateLastPost()
+
+        bread = BReadMgr.LoadBRead(session.GetUser().name)
+        if (bread != None):
+            bread.Load(self.name)
+            bread.MarkRead(post_file.id, self.name)
+
+        if (re_file != None):
+            if (re_file.NeedMailBack()):
+                # mail back, not implemented
+                pass
+
+        if (user != None and anony):
+            # ANONYDIR: not used, ignore it
+            pass
+
+        if (user != None and not anony):
+            self.WritePosts(user, post_file.groupid)
+
+        if (post_file.id == post_file.groupid):
+            # self.RegenSpecial('origin': later)
+            self.SetUpdate('origin', True)
+
+        self.SetUpdate('title', True)
+        if (post_file.IsMarked()):
+            self.SetUpdate('mask', True)
+
+        # log: later
+        return
+
+    def UpdateLastPost():
+        myid = BCache.GetBoardNum(self.name)
+        if (myid == 0):
+            return False
+        (post_cnt, last_post) = self.GetLastPost()
+        status = BoardStatus(pos)
+        status.lastpost = last_post
+        status.total = post_cnt
+        status.pack()
+        return True
+
+    def GetLastPost(self):
+        bdir = self.GetDirPath('normal')
+        try:
+            with open(bdir, "rb") as f:
+                f.seek(0, 2)
+                size = f.tell()
+                post_cnt = size / PostHeader.size
+                if (post_cnt <= 0):
+                    last_post = 0
+                    post_cnt = 0
+                else:
+                    f.seek((post_cnt - 1) * PostHeader.size, 0)
+                    post_file = PostHeader(f.read(PostHeader.size))
+                    last_post = post_file.id
+
+                return (post_cnt, last_post)
+        except IOError:
+            return (0, 0)
+
+    def IsNormalBoard(self):
+        if (self.name == Config.DEFAULTBOARD):
+            return True
+        myid = BCache.GetBoardNum(self.name)
+        if (myid == 0):
+            return False
+
+        bh = BoardHeader(myid)
+        ret = True
+        while (ret):
+            ret = not (bh.level & PERM_SYSOP) and not (bh.flag & BOARD_CLUB_HIDE) and not (bh.flag and BOARD_CLUB_READ)
+            if (bh.title_level != 0):
+                ret = False
+            if (not ret or (bh.group == 0)):
+                break
+            bh = BoardHeader(bh.group)
+
+        return ret
+
+    def WritePosts(self, user, groupid):
+        if (self.name != Config.BLESS_BOARD and (not self.DoStat() or (not self.IsNormalBoard()))):
+            return 0
+        now = time.time()
+
+        postlog = PostLog()
+        postlog.board = self.name
+        postlog.groupid = groupid
+        postlog.date = now
+        postlog.number = 1
+
+        postlog_new = PostLogNew()
+        postlog_new.board = self.name
+        postlog_new.groupid = groupid
+        postlog_new.date = now
+        postlog_new.number = 1
+        postlog_new.userid = user.name
+
+        xpostfile = "%s/tmp/Xpost/%s" % (Config.BBS_ROOT, user.name)
+
+        log = True
+        try:
+            with open(xpostfile, "rb") as fp:
+                while (True):
+                    pl_data = fp.read(PostLog.size)
+                    if (len(pl_data) < PostLog.size):
+                        break
+
+                    pl = PostLog(pl_data)
+                    if (pl.groupid == groupid and pl.board == self.name):
+                        log = False
+                        break
+        except IOError:
+            pass
+
+        if (log):
+            Util.AppendRecord(xpostfile, postlog.pack())
+            Util.AppendRecord(Config.BBS_ROOT + "/.newpost", postlog.pack())
+            Util.AppendRecord(Config.BBS_ROOT + "/.newpost_new", postlog_new.pack())
+
+        return 0
+
+    def GetUpdate(self, item):
+        myid = BCache.GetBoardNum(self.name)
+        if (myid == 0):
+            return False
+        value = 0
+        if (item == 'origin'):
+            value = status.updateorigin
+        elif (item == 'mark'):
+            value = status.updatemark
+        elif (item == 'title'):
+            value = status.updatetitle
+
+        if (value == 0):
+            return False
+        return True
+
+    def SetUpdate(self, item, need_update):
+        myid = BCache.GetBoardNum(self.name)
+        if (myid == 0):
+            return False
+        value = 0
+        if (need_update):
+            value = 1
+
+        status = BoardStatus(myid)
+        if (item == 'origin'):
+            status.updateorigin = value
+        elif (item == 'mark'):
+            status.updatemark = value
+        elif (item == 'title'):
+            status.updatetitle = value
+
+        status.pack()
+
+        return True
 
 from Post import Post
 from BoardManager import BoardManager

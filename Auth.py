@@ -89,7 +89,7 @@ class Auth:
             # todo: check redirect_uri match client_id
             Auth.AuthPage(svc, rduri, cid, name, pw)
         elif (action == 'pwauth'):
-            svc.return_error(403, 'pwauth is disabled');
+            svc.return_error(403, 'pwauth is disabled')
             return
             if (not params.has_key('user') or not params.has_key('pass')):
                 print "no name or pass"
