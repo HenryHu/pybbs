@@ -251,5 +251,9 @@ class User:
                 not userinfo.invisible or
                 userinfo.userid == self.name)
 
+    def AddNumPosts(self):
+        self.userec.numposts += 1
+        self.userec.pack()
+
 
 from UserManager import UserManager

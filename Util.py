@@ -105,7 +105,11 @@ class Util:
         for i in range(0, len(fields)):
             if (type(fields[i]) == type(list())):
                 if (fields[i][1] == 1):
-                    ret.append(getattr(obj, fields[i][0]))
+                    if (len(fields[i]) >= 3):
+                        # terminal zero
+                        ret.append(getattr(obj, fields[i][0])[:fields[i][2]-1])
+                    else:
+                        ret.append(getattr(obj, fields[i][0]))
                 if (fields[i][1] == 2):
                     ret.append(struct.pack(fields[i][2], *getattr(obj, fields[i][0])))
             else:

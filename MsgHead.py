@@ -5,7 +5,7 @@ from Util import Util
 
 class MsgHead:
     parser = struct.Struct('=iibb%dsiii' % (Config.IDLEN + 2))
-    _fields = ['pos', 'len', 'sent', 'mode', ['id', 1], 'time', 'frompid', 'topid']
+    _fields = ['pos', 'len', 'sent', 'mode', ['id', 1, Config.IDLEN + 2], 'time', 'frompid', 'topid']
 
     #struct msghead
     size = parser.size

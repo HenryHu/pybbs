@@ -9,6 +9,7 @@ from BCache import *
 import User
 from BRead import BReadMgr
 from Error import *
+from Log import Log
 
 DEFAULT_GET_POST_COUNT = 20
 
@@ -28,25 +29,65 @@ BOARD_POSTSTAT = 0x1000# /* 不统计十大 */
 BOARD_NOREPLY = 0x2000 #/* 不可re文 */
 BOARD_ANONYREPLY = 0x4000 #/* cannot reply anonymously */
 
+# PostEntry.accessed[0]
+FILE_SIGN		= 0x1           #/* In article mode, Sign , Bigman 2000.8.12 ,in accessed[0] */
+FILE_OWND		= 0x2          #/* accessed array */
+FILE_TOTAL		= 0x2  #// aqua 2008.11.4
+FILE_VISIT		= 0x4
+FILE_MARKED		= 0x8
+FILE_DIGEST		= 0x10      #/* Digest Mode*/  /*For SmallPig Digest Mode */
+FILE_REPLIED	= 0x20       #/* in mail ,added by alex, 96.9.7 */
+FILE_FORWARDED	= 0x40     #/* in mail ,added by alex, 96.9.7 */
+FILE_IMPORTED	= 0x80      #/* Leeward 98.04.15 */
+
+# not used:
+# /* roy 2003.07.21 */
+FILE_WWW_POST	= 0x1 #/* post by www */
+FILE_ON_TOP		= 0x2 = #/* on top mode */
+FILE_VOTE		= 0x4 = #/* article with votes */
+
+# PostEntry.accessed[1]
+#ifdef FILTER # not def
+FILE_CENSOR		= 0x20        #/* for accessed[1], flyriver, 2002.9.29 */
+BADWORD_IMG_FILE	= "etc/badwordv3.img"
+#endif
+FILE_READ		= 0x1          #/* Ownership flags used in fileheader structure in accessed[1] */
+FILE_DEL		= 0x2           #/* In article mode, Sign , Bigman 2000.8.12 ,in accessed[1] */
+FILE_MAILBACK	= 0x4		#/* reply articles mail to owner's mailbox, accessed[1] */
+#ifdef COMMEND_ARTICLE # not def
+FILE_COMMEND	= 0x8		#/* 推荐文章,stiger , in accessed[1], */
+#endif
+FILE_ROOTANON	= 0x10		#/* if the root article was posted anonymously, accessed[1] */
+
 class PostEntry:
     parser = struct.Struct('%dsIII44sH2s%ds%ds%dsIIII%dsI12s' % (Config.FILENAME_LEN, Config.OWNER_LEN, Config.OWNER_LEN, (34 - Config.OWNER_LEN), Config.STRLEN))
     _fields = [['filename', 1], 'id', 'groupid','reid', 'unsued1',
-            'attachflag', 'innflag', ['owner',1], ['realowner', 1],
+            'attachflag', 'innflag', ['owner',1, Config.OWNER_LEN], ['realowner', 1, Config.OWNER_LEN],
             'unsued2', 'rootcrc', 'eff_size', 'posttime', 'attachment',
-            ['title',1], 'level', 'accessed']
+            ['title',1, Config.ARTICLE_TITLE_LEN], 'level', 'accessed']
 
     size = parser.size
 
-    def unpack(self):
-        Util.Unpack(self, PostEntry.parser.unpack(self.data))
+    def unpack(self, data):
+        Util.Unpack(self, PostEntry.parser.unpack(data))
 
     def pack(self):
-        self.data = PostEntry.parser.pack(Util.Pack(self))
+        return PostEntry.parser.pack(Util.Pack(self))
 
-    def __init__(self, data):
-        self.data = data
-        self.unpack()
+    def __init__(self, data = None):
+        if (data == None):
+            Util.InitStruct(self)
+        else:
+            self.unpack(data)
 
+    def IsRootPostAnonymous(self):
+        return bool(self.accessed[1] & FILE_ROOTANON)
+
+    def SetRootPostAnonymous(self, rootanon):
+        if (rootanon):
+            self.accessed[1] |= FILE_ROOTANON
+        else:
+            self.accessed[1] &= ~FILE_ROOTANON
 
 class Board:
 
@@ -417,12 +458,9 @@ class Board:
     def IsJunkBoard(self):
         return self.CheckFlag(BOARD_JUNK)
 
-    def PostArticle(self, user, mode, title, content, refile, signature_id):
+    def PostArticle(self, user, title, content, refile, signature_id, anony):
         mycrc = binascii.crc32(user.name)
         if (self.CheckReadonly()):
-            return False
-
-        if (mode != "normal" and mode != "mark" and mode != "thread"):
             return False
 
         if (not self.CheckPostPerm(user)):
@@ -432,13 +470,63 @@ class Board:
             if (not user.HasPerm(User.PERM_SYSOP)):
                 return False
 
-        dirpath = self.GetDirPath(mode)
+        while (title[:4] == "Re: "):
+            title = title[4:]
+
+        may_anony = False
+        if (refile == None): # not in reply mode
+            if (self.name == "Announce"):
+                may_anony = True
+            elif (self.CanAnonyPost()):
+                may_anony = True
+        else:
+            if (self.CanAnonyPost() and mycrc == refile.rootcrc):
+                may_anony = True
+            else:
+                if (self.CanAnonyReply()):
+                    may_anony = True
+
+        if (not may_anony):
+            anony = False
+
+        if (signature_id < 0):
+            Log.error("random signature: not implemented")
+            return
+
+        title = title.replace('\033', ' ')
+
+        post_file = PostEntry()
+        post_file.filename = self.GetPostFilename()
+        if (anony):
+            post_file.owner = user.name
+        else:
+            post_file.owner = self.name
+        post_file.realowner = user.name
+        content_encoded = content.encode('gbk')
+        post_file.eff_size = len(content_encoded)
+
+        if (refile != None):
+            post_file.rootcrc = refile.rootcrc
+            if (refile.IsRootPostAnonymous()):
+                post_file.SetRootPostAnonymous(True)
+        else:
+            post_file.rootcrc = mycrc
+            if (anony):
+                post_file.SetRootPostAnonymous(True)
+
+        post_file.title = title
+        # TODO: outpost ('SS')
+        post_file.innflag = 'LL'
+
+        self.AfterPost(post_file)
+
+        if (not self.IsJunkBoard()):
+            user.AddNumPosts()
 
         return
 
-
-        
-
+    def AfterPost(self, post_file):
+        pass
 
 from Post import Post
 from BoardManager import BoardManager
