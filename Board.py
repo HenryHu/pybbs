@@ -692,6 +692,8 @@ class Board:
         myid = BCache.GetBoardNum(self.name)
         if (myid == 0):
             return False
+        status = BoardStatus(myid)
+
         value = 0
         if (item == 'origin'):
             value = status.updateorigin

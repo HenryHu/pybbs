@@ -18,7 +18,7 @@ class BoardHeader:
         return
 
     def pack(self):
-        BCache.bcache[self.idx * BoardHeader.parser.size:(self.idx + 1) * BoardHeader.parser.size] = BoardHeader.parser.pack(Util.Pack(self))
+        BCache.bcache[self.idx * BoardHeader.parser.size:(self.idx + 1) * BoardHeader.parser.size] = BoardHeader.parser.pack(*Util.Pack(self))
 
     def __init__(self, idx):
         self.idx = idx - 1 # we start from 0 here...
@@ -36,7 +36,7 @@ class BoardStatus:
         return
 
     def pack(self):
-        BCache.brdshm.write(BoardStatus.parser.pack(Util.Pack(self)), 4 + self.size * self.idx)
+        BCache.brdshm.write(BoardStatus.parser.pack(*Util.Pack(self)), 4 + self.size * self.idx)
 
     def __init__(self, idx):
         self.idx = idx - 1 # we start from 0 here...
