@@ -759,6 +759,12 @@ class Board:
                 return filename
         return None
 
+    def DeniedUser(self, user):
+        if (Util.SeekInFile(self.GetBoardPath() + "deny_users", user.name)):
+            return True
+        if (Util.SeekInFile(self.GetBoardPath() + "anony_deny_users", user.name)):
+            return True
+
 from Post import Post
 from BoardManager import BoardManager
 

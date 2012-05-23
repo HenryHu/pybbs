@@ -307,6 +307,19 @@ class Util:
 
         return 0
 
+    @staticmethod
+    def SeekInFile(filename, str):
+        try:
+            with open(filename, "r") as f:
+                line = f.readline()
+                while (line != ""):
+                    line = line.split(':')[0].split(' ')[0].split('\n')[0].split('\r')[0].split('\t')[0]
+                    if (line.lower() == str.lower()):
+                        return True
+        except IOError:
+            return False
+        return False
+
 def fixterm_handler(exc):
     if isinstance(exc, (UnicodeDecodeError)):
         s = u""
