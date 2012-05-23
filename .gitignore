@@ -3,4 +3,4 @@ Defs.py
 *.swp
 *.req
 *.rep
-
+*.log*

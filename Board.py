@@ -10,7 +10,11 @@ import User
 from BRead import BReadMgr
 from Error import *
 from Log import Log
+from cstruct import CStruct
 import fcntl
+import time
+import os
+import random
 
 DEFAULT_GET_POST_COUNT = 20
 
@@ -60,6 +64,9 @@ FILE_COMMEND	= 0x8		#/* 推荐文章,stiger , in accessed[1], */
 #endif
 FILE_ROOTANON	= 0x10		#/* if the root article was posted anonymously, accessed[1] */
 
+GENERATE_POST_SUFIX = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+GENERATE_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+
 class PostEntry:
     parser = struct.Struct('%dsIII44sH2s%ds%ds%dsIIII%dsI12s' % (Config.FILENAME_LEN, Config.OWNER_LEN, Config.OWNER_LEN, (34 - Config.OWNER_LEN), Config.STRLEN))
     _fields = [['filename', 1], 'id', 'groupid','reid', 'unsued1',
@@ -73,7 +80,7 @@ class PostEntry:
         Util.Unpack(self, PostEntry.parser.unpack(data))
 
     def pack(self):
-        return PostEntry.parser.pack(Util.Pack(self))
+        return PostEntry.parser.pack(*Util.Pack(self))
 
     def __init__(self, data = None):
         if (data == None):
@@ -98,6 +105,20 @@ class PostEntry:
             self.accessed[1] |= FILE_MAILBACK
         else:
             self.accessed[1] &= ~FILE_MAILBACK
+
+class PostLog(CStruct):
+    # what the hell! this is board name, not id! why IDLEN+6!
+    # IDLEN = 12, BOARDNAMELEN = 30!
+    # anyway, no one uses it...
+    # change to IDLEN + 8 for padding
+    parser = struct.Struct('=%dsIii' % (Config.IDLEN + 8))
+    _fields = [['board', 1], 'groupid', 'date', 'number']
+    size = parser.size
+
+class PostLogNew(CStruct):
+    parser = struct.Struct('=%ds%dsIii' % (Config.IDLEN + 6, Config.IDLEN + 6))
+    _fields = [['userid', 1], ['board', 1], 'groupid', 'date', 'number']
+    size = parser.size
 
 class Board:
 
@@ -468,7 +489,7 @@ class Board:
     def IsJunkBoard(self):
         return self.CheckFlag(BOARD_JUNK)
 
-    def DoStat(self):
+    def DontStat(self):
         return self.CheckFlag(BOARD_POSTSTAT)
 
     def PostArticle(self, user, title, content, refile, signature_id, anony):
@@ -597,15 +618,12 @@ class Board:
         # log: later
         return
 
-    def UpdateLastPost():
-        myid = BCache.GetBoardNum(self.name)
-        if (myid == 0):
-            return False
+    def UpdateLastPost(self):
         (post_cnt, last_post) = self.GetLastPost()
-        status = BoardStatus(pos)
-        status.lastpost = last_post
-        status.total = post_cnt
-        status.pack()
+        self.status.unpack()
+        self.status.lastpost = last_post
+        self.status.total = post_cnt
+        self.status.pack()
         return True
 
     def GetLastPost(self):
@@ -614,13 +632,13 @@ class Board:
             with open(bdir, "rb") as f:
                 f.seek(0, 2)
                 size = f.tell()
-                post_cnt = size / PostHeader.size
+                post_cnt = size / PostEntry.size
                 if (post_cnt <= 0):
                     last_post = 0
                     post_cnt = 0
                 else:
-                    f.seek((post_cnt - 1) * PostHeader.size, 0)
-                    post_file = PostHeader(f.read(PostHeader.size))
+                    f.seek((post_cnt - 1) * PostEntry.size, 0)
+                    post_file = PostEntry(f.read(PostEntry.size))
                     last_post = post_file.id
 
                 return (post_cnt, last_post)
@@ -630,14 +648,11 @@ class Board:
     def IsNormalBoard(self):
         if (self.name == Config.DEFAULTBOARD):
             return True
-        myid = BCache.GetBoardNum(self.name)
-        if (myid == 0):
-            return False
 
-        bh = BoardHeader(myid)
+        bh = self.header
         ret = True
         while (ret):
-            ret = not (bh.level & PERM_SYSOP) and not (bh.flag & BOARD_CLUB_HIDE) and not (bh.flag and BOARD_CLUB_READ)
+            ret = not (bh.level & User.PERM_SYSOP) and not (bh.flag & BOARD_CLUB_HIDE) and not (bh.flag & BOARD_CLUB_READ)
             if (bh.title_level != 0):
                 ret = False
             if (not ret or (bh.group == 0)):
@@ -647,7 +662,7 @@ class Board:
         return ret
 
     def WritePosts(self, user, groupid):
-        if (self.name != Config.BLESS_BOARD and (not self.DoStat() or (not self.IsNormalBoard()))):
+        if (self.name != Config.BLESS_BOARD and (not self.DontStat() or (not self.IsNormalBoard()))):
             return 0
         now = time.time()
 
@@ -730,16 +745,17 @@ class Board:
         filename = None
         now = int(time.time())
         xlen = len(GENERATE_POST_SUFIX)
+        pid = random.randint(1000, 200000) # wrong, but why care?
         for i in range(0, 10):
             if (use_subdir):
                 rn = int(xlen * random.random())
-                filename = "%c/M.%lu.%c%c" % GENERATE_ALPHABET[rn], now, GENERATE_POST_SUFIX[(pid + i) % 62], GENERATE_POST_SUFIX[(pid * i) % 62]
+                filename = "%c/M.%lu.%c%c" % (GENERATE_ALPHABET[rn], now, GENERATE_POST_SUFIX[(pid + i) % 62], GENERATE_POST_SUFIX[(pid * i) % 62])
             else:
-                filename = "M.%lu.%c%c" % now, GENERATE_POST_SUFIX[(pid + i) % 62], GENERATE_POST_SUFIX[(pid * i) % 62]
+                filename = "M.%lu.%c%c" % (now, GENERATE_POST_SUFIX[(pid + i) % 62], GENERATE_POST_SUFIX[(pid * i) % 62])
             fname = "%s/%s" % (self.GetBoardPath(), filename)
-            fp = os.open(fname, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0644)
-            if (fp != None):
-                fp.close()
+            fd = os.open(fname, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0644)
+            if (fd >= 0):
+                os.close(fd)
                 return filename
         return None
 
