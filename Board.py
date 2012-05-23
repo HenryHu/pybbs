@@ -533,7 +533,7 @@ class Board:
         # TODO: outpost ('SS')
         post_file.innflag = 'LL'
 
-        self.AfterPost(post_file)
+        self.AfterPost(user, post_file, refile, anony)
 
         if (not self.IsJunkBoard()):
             user.AddNumPosts()
@@ -723,6 +723,23 @@ class Board:
         status.pack()
 
         return True
+
+    def GetPostFilename(self, use_subdir):
+        filename = None
+        now = int(time.time())
+        xlen = len(GENERATE_POST_SUFIX)
+        for i in range(0, 10):
+            if (use_subdir):
+                rn = int(xlen * random.random())
+                filename = "%c/M.%lu.%c%c" % GENERATE_ALPHABET[rn], now, GENERATE_POST_SUFIX[(pid + i) % 62], GENERATE_POST_SUFIX[(pid * i) % 62]
+            else:
+                filename = "M.%lu.%c%c" % now, GENERATE_POST_SUFIX[(pid + i) % 62], GENERATE_POST_SUFIX[(pid * i) % 62]
+            fname = "%s/%s" % (self.GetBoardPath(), filename)
+            fp = os.open(fname, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0644)
+            if (fp != None):
+                fp.close()
+                return filename
+        return None
 
 from Post import Post
 from BoardManager import BoardManager
