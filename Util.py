@@ -9,6 +9,7 @@ import os
 import stat
 import mmap
 import string
+import re
 
 class Util:
     gbkDecoder = codecs.getdecoder('gbk')
@@ -313,9 +314,10 @@ class Util:
             with open(filename, "r") as f:
                 line = f.readline()
                 while (line != ""):
-                    line = line.split(':')[0].split(' ')[0].split('\n')[0].split('\r')[0].split('\t')[0]
+                    line = re.split('[: \n\r\t]', line)[0]
                     if (line.lower() == str.lower()):
                         return True
+                    line = f.readline()
         except IOError:
             return False
         return False
