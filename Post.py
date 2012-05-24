@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# vim: set fileencoding=utf-8
 
 from Util import Util
 import struct
@@ -122,5 +123,26 @@ class Post:
         finally:
             fp.close()
         return (name, content)
+
+    @staticmethod
+    def AddLogInfo(filepath, user, session, anony, has_sig):
+        color = (user.userec.numlogins % 7) + 31
+        if (anony):
+            from_str = Config.Config.GetString("NAME_ANONYMOUS_FROM", "Anonymous")
+        else:
+            from_str = session._fromip
+
+        try:
+            with open(filepath, "ab") as fp:
+                if (has_sig):
+                    fp.write('\n')
+                else:
+                    fp.write('\n--\n')
+
+                lastline = '\n\033[m\033[1;%2dm※ 来源:·%s %s·[FROM: %s]\033[m\n' % (color, Config.Config.GetString("BBS_FULL_NAME", "Python BBS"), Config.Config.GetString("NAME_BBS_ENGLISH", "PyBBS"), from_str)
+                fp.write(lastline.encode('gbk'))
+
+        except IOError:
+            pass
 
 from BoardManager import BoardManager

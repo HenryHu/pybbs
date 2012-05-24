@@ -16,6 +16,7 @@ import time
 import os
 import random
 import binascii
+import Post
 
 DEFAULT_GET_POST_COUNT = 20
 
@@ -172,8 +173,8 @@ class Board:
         svc.return_error(400, 'Unknown action')
         return
 
-    def GetBoardPath(self):
-        return Config.BBS_ROOT + 'boards/%s/' % self.name
+    def GetBoardPath(self, filename = ""):
+        return Config.BBS_ROOT + 'boards/%s/%s' % (self.name, filename)
 
     def GetDirPath(self, mode = 'normal'):
         if (mode == 'normal'):
@@ -502,7 +503,7 @@ class Board:
     def DontStat(self):
         return self.CheckFlag(BOARD_POSTSTAT)
 
-    def PostArticle(self, user, title, content, refile, signature_id, anony, mailback):
+    def PostArticle(self, user, title, content, refile, signature_id, anony, mailback, session):
         mycrc = (~binascii.crc32(user.name, 0xffffffff)) & 0xffffffff
         if (self.CheckReadonly()):
             Log.debug("PostArticle: fail: readonly")
@@ -575,6 +576,8 @@ class Board:
             post_file.rootcrc = mycrc
             if (anony):
                 post_file.SetRootPostAnonymous(True)
+
+        Post.Post.AddLogInfo(self.GetBoardPath(post_file.filename), user, anony, False, session)
 
         post_file.title = title.encode('gbk')
         # TODO: outpost ('SS')
