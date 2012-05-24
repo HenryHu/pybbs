@@ -544,10 +544,9 @@ class Board:
             return
 
         post_file = PostEntry()
-        Log.debug("PostArticle title: %s anony: %r" % (title, anony))
+#        Log.debug("PostArticle title: %s anony: %r" % (title, anony))
 
         post_file.filename = self.GetPostFilename(False)
-        print "File: %s" % post_file.filename
         if (not anony):
             post_file.owner = user.name
         else:
