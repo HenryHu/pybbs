@@ -560,6 +560,7 @@ class Board:
         content_encoded = content.encode('gbk')
         try:
             with open(self.GetBoardPath() + post_file.filename, "ab") as f:
+                Post.WriteHeader(f, user, False, self, title, anony, 0, session)
                 f.write(content_encoded)
         except IOError:
             Log.error("PostArticle: write post failed!")
