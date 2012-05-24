@@ -39,7 +39,7 @@ class Config:
             val = Config.parser.get('sysconf', name)
             if (val[0] == '"' and val.endswith('"')):
                 val = val[1:-1]
-            return val
+            return val.decode('gbk')
         else:
             return defval
 

@@ -7,6 +7,7 @@ import Config
 import string
 import os
 import time
+from Log import Log
 
 class Post:
 
@@ -139,10 +140,11 @@ class Post:
                 else:
                     fp.write('\n--\n')
 
-                lastline = '\n\033[m\033[1;%2dm※ 来源:·%s %s·[FROM: %s]\033[m\n' % (color, Config.Config.GetString("BBS_FULL_NAME", "Python BBS"), Config.Config.GetString("NAME_BBS_ENGLISH", "PyBBS"), from_str)
+                lastline = u'\n\033[m\033[1;%2dm※ 来源:·%s %s·[FROM: %s]\033[m\n' % (color, Config.Config.GetString("BBS_FULL_NAME", "Python BBS"), Config.Config.GetString("NAME_BBS_ENGLISH", "PyBBS"), from_str)
                 fp.write(lastline.encode('gbk'))
 
         except IOError:
+            Log.error("Post.AddLogInfo: IOError on %s" % filepath)
             pass
 
 from BoardManager import BoardManager

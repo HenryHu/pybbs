@@ -16,7 +16,6 @@ import time
 import os
 import random
 import binascii
-import Post
 
 DEFAULT_GET_POST_COUNT = 20
 
@@ -577,7 +576,11 @@ class Board:
             if (anony):
                 post_file.SetRootPostAnonymous(True)
 
-        Post.Post.AddLogInfo(self.GetBoardPath(post_file.filename), user, anony, False, session)
+        if (signature_id == 0):
+            has_sig = False
+        else:
+            has_sig = True
+        Post.AddLogInfo(self.GetBoardPath(post_file.filename), user, session, anony, has_sig)
 
         post_file.title = title.encode('gbk')
         # TODO: outpost ('SS')
