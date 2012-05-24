@@ -541,7 +541,7 @@ class Board:
 
         if (signature_id < 0):
             Log.error("random signature: not implemented")
-            return
+            return False
 
         post_file = PostEntry()
 #        Log.debug("PostArticle title: %s anony: %r" % (title, anony))
@@ -562,7 +562,8 @@ class Board:
                 f.write(content_encoded)
         except IOError:
             Log.error("PostArticle: write post failed!")
-            return
+            os.unlink(self.GetBoardPath() + post_file.filename)
+            return False
 
         post_file.eff_size = len(content_encoded)
 
@@ -584,7 +585,7 @@ class Board:
         if (not self.IsJunkBoard()):
             user.AddNumPosts()
 
-        return
+        return True
 
     def AfterPost(self, user, post_file, re_file, anony):
         bdir = self.GetDirPath('normal')
