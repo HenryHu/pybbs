@@ -15,6 +15,7 @@ import fcntl
 import time
 import os
 import random
+import binascii
 
 DEFAULT_GET_POST_COUNT = 20
 
@@ -72,7 +73,7 @@ class PostEntry:
     _fields = [['filename', 1], 'id', 'groupid','reid', 'unsued1',
             'attachflag', 'innflag', ['owner',1, Config.OWNER_LEN], ['realowner', 1, Config.OWNER_LEN],
             'unsued2', 'rootcrc', 'eff_size', 'posttime', 'attachment',
-            ['title',1, Config.ARTICLE_TITLE_LEN], 'level', 'accessed']
+            ['title',1, Config.ARTICLE_TITLE_LEN], 'level', ['accessed', 2, '=12B']]
 
     size = parser.size
 
@@ -88,23 +89,26 @@ class PostEntry:
         else:
             self.unpack(data)
 
+    def CheckFlag(self, pos, flag):
+        return bool(self.accessed[pos] & flag)
+
+    def SetFlag(self, pos, flag):
+        if (flag):
+            self.accessed[pos] |= flag
+        else:
+            self.accessed[pos] &= ~flag
+
     def IsRootPostAnonymous(self):
-        return bool(self.accessed[1] & FILE_ROOTANON)
+        return self.CheckFlag(1, FILE_ROOTANON)
 
     def SetRootPostAnonymous(self, rootanon):
-        if (rootanon):
-            self.accessed[1] |= FILE_ROOTANON
-        else:
-            self.accessed[1] &= ~FILE_ROOTANON
+        return self.SetFlag(1, FILE_ROOTANON)
 
     def NeedMailBack(self):
-        return bool(self.accessed[1] & FILE_MAILBACK);
+        return self.CheckFlag(1, FILE_MAILBACK)
 
     def SetMailBack(self, need):
-        if (need):
-            self.accessed[1] |= FILE_MAILBACK
-        else:
-            self.accessed[1] &= ~FILE_MAILBACK
+        return self.SetFlag(1, FILE_MAILBACK)
 
 class PostLog(CStruct):
     # what the hell! this is board name, not id! why IDLEN+6!
@@ -492,23 +496,26 @@ class Board:
     def DontStat(self):
         return self.CheckFlag(BOARD_POSTSTAT)
 
-    def PostArticle(self, user, title, content, refile, signature_id, anony):
-        mycrc = binascii.crc32(user.name)
+    def PostArticle(self, user, title, content, refile, signature_id, anony, mailback):
+        mycrc = (~binascii.crc32(user.name, 0xffffffff)) & 0xffffffff
         if (self.CheckReadonly()):
+            Log.debug("PostArticle: fail: readonly")
             return False
 
         if (not self.CheckPostPerm(user)):
+            Log.debug("PostArticle: fail: %s can't post on %s" % (user.name, self.name))
             return False
 
         if (self.DeniedUser(user)):
             if (not user.HasPerm(User.PERM_SYSOP)):
+                Log.debug("PostArticle: fail: %s denied on %s" % (user.name, self.name))
                 return False
 
         # filter title: 'Re: ' and '\ESC'
-        while (title[:4] == "Re: "):
-            title = title[4:]
-
         title = title.replace('\033', ' ')
+        if (refile == None):
+            while (title[:4] == "Re: "):
+                title = title[4:]
 
         may_anony = False
         if (refile == None): # not in reply mode
@@ -530,15 +537,28 @@ class Board:
             Log.error("random signature: not implemented")
             return
 
-
         post_file = PostEntry()
-        post_file.filename = self.GetPostFilename()
+        Log.debug("PostArticle title: %s anony: %r" % (title, anony))
+
+        post_file.filename = self.GetPostFilename(False)
+        print "File: %s" % post_file.filename
         if (anony):
             post_file.owner = user.name
         else:
             post_file.owner = self.name
         post_file.realowner = user.name
+
+        if (mailback):
+            post_file.SetMailBack(True)
+
         content_encoded = content.encode('gbk')
+        try:
+            with open(self.GetBoardPath() + post_file.filename, "ab") as f:
+                f.write(content_encoded)
+        except IOError:
+            Log.error("PostArticle: write post failed!")
+            return
+
         post_file.eff_size = len(content_encoded)
 
         if (refile != None):
@@ -550,7 +570,7 @@ class Board:
             if (anony):
                 post_file.SetRootPostAnonymous(True)
 
-        post_file.title = title
+        post_file.title = title.encode('gbk')
         # TODO: outpost ('SS')
         post_file.innflag = 'LL'
 
@@ -764,6 +784,7 @@ class Board:
             return True
         if (Util.SeekInFile(self.GetBoardPath() + "anony_deny_users", user.name)):
             return True
+        return False
 
 from Post import Post
 from BoardManager import BoardManager

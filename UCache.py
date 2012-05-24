@@ -42,7 +42,7 @@ class UserRecord:
         Util.Unpack(self, self.parser.unpack(UCache.uidshm.read(self.size, PASSWD_POS + self.size * self.uid)))
 
     def pack(self):
-        UCache.uidshm.write(self.parser.pack(Util.Pack(self)), PASSWD_POS + self.size * self.uid)
+        UCache.uidshm.write(self.parser.pack(*Util.Pack(self)), PASSWD_POS + self.size * self.uid)
 
     @staticmethod
     def GetUserId(index):
