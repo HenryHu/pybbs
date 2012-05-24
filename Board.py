@@ -562,6 +562,8 @@ class Board:
             with open(self.GetBoardPath() + post_file.filename, "ab") as f:
                 Post.WriteHeader(f, user, False, self, title, anony, 0, session)
                 f.write(content_encoded)
+                if (signature_id > 0 and not anony):
+                    Post.AddSig(f, user, signature_id)
         except IOError:
             Log.error("PostArticle: write post failed!")
             os.unlink(self.GetBoardPath() + post_file.filename)
