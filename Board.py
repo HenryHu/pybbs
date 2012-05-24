@@ -589,6 +589,8 @@ class Board:
                 fcntl.flock(bdirf, fcntl.LOCK_EX)
                 try:
                     nowid = self.GetNextId()
+                    if (nowid < 0):
+                        raise IOError()
                     post_file.id = nowid
                     if (re_file == None):
                         post_file.groupid = nowid
@@ -785,6 +787,9 @@ class Board:
         if (Util.SeekInFile(self.GetBoardPath() + "anony_deny_users", user.name)):
             return True
         return False
+
+    def GetNextId(self):
+        return BCache.GetNextID(self.name)
 
 from Post import Post
 from BoardManager import BoardManager
