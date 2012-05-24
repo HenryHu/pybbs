@@ -149,7 +149,7 @@ class Post:
             pass
 
     @staticmethod
-    def WriteHeader(file, user, in_mail, board, title, anony, mode, session):
+    def WriteHeader(fp, user, in_mail, board, title, anony, mode, session):
         uid = user.name[:20].decode('gbk')
         uname = user.userec.username[:40].decode('gbk')
         bname = board.name.decode('gbk')
@@ -159,7 +159,7 @@ class Post:
             fp.write((u'寄信人: %s (%s)\n', uid, uname).encode('gbk'))
         else:
             if (anony):
-                fake_pid = (binascii.crc32(session.GetID()) % 0xffffffff) % (200000 - 1000) + 1000
+                pid = (binascii.crc32(session.GetID()) % 0xffffffff) % (200000 - 1000) + 1000
                 fp.write((u'发信人: %s (%s%d), 信区: %s\n' % (bname, Config.Config.GetString('NAME_ANONYMOUS', 'Anonymous'), pid, bname)).encode('gbk'))
             else:
                 fp.write((u'发信人: %s (%s), 信区: %s\n' % (uid, uname, bname)).encode('gbk'))
@@ -167,12 +167,12 @@ class Post:
         fp.write((u'标  题: %s\n' % (title)).encode('gbk'))
 
         if (in_mail):
-            fp.write((u'发信站: %s (%24.24s)\n', bbs_name, time.ctime()).encode('gbk'))
-            fp.write((u'来  源: %s \n', session._fromip).encode('gbk'))
+            fp.write((u'发信站: %s (%24.24s)\n' % (bbs_name, time.ctime())).encode('gbk'))
+            fp.write((u'来  源: %s \n' % session._fromip).encode('gbk'))
         elif (mode != 2):
-            fp.write((u'发信站: %s (%24.24s), 站内\n', bbs_name, time.ctime()).encode('gbk'))
+            fp.write((u'发信站: %s (%24.24s), 站内\n' % (bbs_name, time.ctime())).encode('gbk'))
         else:
-            fp.write((u'发信站: %s (%24.24s), 转信\n', bbs_name, time.ctime()).encode('gbk'))
+            fp.write((u'发信站: %s (%24.24s), 转信\n' % (bbs_name, time.ctime())).encode('gbk'))
 
         fp.write('\n')
 
