@@ -180,7 +180,7 @@ class Post:
     def AddSig(fp, user, sig):
         if (sig == 0):
             return
-        sig_fname = user.OwnFile("signatures")
+        sig_fname = user.MyFile("signatures")
         valid_ln = 0
         tmpsig = []
         try:
@@ -203,6 +203,5 @@ class Post:
 
         for i in range(0, valid_ln):
             fp.write(tmpsig[i])
-            fp.write('\n')
 
 from BoardManager import BoardManager
