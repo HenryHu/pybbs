@@ -176,4 +176,33 @@ class Post:
 
         fp.write('\n')
 
+    @staticmethod
+    def AddSig(fp, user, sig):
+        if (sig == 0):
+            return
+        sig_fname = user.OwnFile("signatures")
+        valid_ln = 0
+        tmpsig = []
+        try:
+            with open(sig_fname, "r") as sigfile:
+                fp.write('\n--\n')
+                for i in xrange(0, (sig - 1) * Config.MAXSIGLINES):
+                    line = sigfile.readline()
+                    if (line == ""):
+                        return
+                for i in range(0, Config.MAXSIGLINES):
+                    line = sigfile.readline()
+                    if (line != ""):
+                        if (line[0] != '\n'):
+                            valid_ln = i + 1
+                        tmpsig += [line]
+                    else:
+                        break
+        except IOError:
+            Log.error("Post.AddSig: IOError on %s" % sig_fname)
+
+        for i in range(0, valid_ln):
+            fp.write(tmpsig[i])
+            fp.write('\n')
+
 from BoardManager import BoardManager
