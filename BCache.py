@@ -142,17 +142,19 @@ class BCache:
     def GetNextID(boardname):
         ret = -1
         lockfd = BCache.Lock()
-        if (lockfd == None):
+        if (lockfd < 0):
             Log.warn("BCache lock fail")
             return -1
 
-        bh = BCache.GetBoardHeader(boardname)
-        if (bh != None):
-            bh.nowid= bh.nowid + 1
-            bh.pack()
-            ret = bh.nowid
-        else:
-            Log.warn("GetNextID() fail for board %s" % boardname)
-        BCache.Unlock(lockfd)
+        try:
+            bh = BCache.GetBoardHeader(boardname)
+            if (bh != None):
+                bh.nowid += 1
+                bh.pack()
+                ret = bh.nowid
+            else:
+                Log.warn("GetNextID() fail for board %s" % boardname)
+        finally:
+            BCache.Unlock(lockfd)
         return ret
 
