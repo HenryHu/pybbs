@@ -92,8 +92,8 @@ class PostEntry:
     def CheckFlag(self, pos, flag):
         return bool(self.accessed[pos] & flag)
 
-    def SetFlag(self, pos, flag):
-        if (flag):
+    def SetFlag(self, pos, flag, val):
+        if (val):
             self.accessed[pos] |= flag
         else:
             self.accessed[pos] &= ~flag
@@ -102,13 +102,19 @@ class PostEntry:
         return self.CheckFlag(1, FILE_ROOTANON)
 
     def SetRootPostAnonymous(self, rootanon):
-        return self.SetFlag(1, FILE_ROOTANON)
+        return self.SetFlag(1, FILE_ROOTANON, rootanon)
 
     def NeedMailBack(self):
         return self.CheckFlag(1, FILE_MAILBACK)
 
     def SetMailBack(self, need):
-        return self.SetFlag(1, FILE_MAILBACK)
+        return self.SetFlag(1, FILE_MAILBACK, need)
+
+    def IsMarked(self):
+        return self.CheckFlag(0, FILE_MARKED)
+
+    def Mark(self, mark):
+        return self.SetFlags(0, FILE_MARKED, mark)
 
 class PostLog(CStruct):
     # what the hell! this is board name, not id! why IDLEN+6!
@@ -542,7 +548,7 @@ class Board:
 
         post_file.filename = self.GetPostFilename(False)
         print "File: %s" % post_file.filename
-        if (anony):
+        if (not anony):
             post_file.owner = user.name
         else:
             post_file.owner = self.name
@@ -612,7 +618,7 @@ class Board:
 
         self.UpdateLastPost()
 
-        bread = BReadMgr.LoadBRead(session.GetUser().name)
+        bread = BReadMgr.LoadBRead(user.name)
         if (bread != None):
             bread.Load(self.name)
             bread.MarkRead(post_file.id, self.name)

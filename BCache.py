@@ -3,6 +3,8 @@
 import Config
 import struct
 import mmap
+import os
+import fcntl
 from Util import Util
 from sysv_ipc import *
 
@@ -136,7 +138,7 @@ class BCache:
     def Unlock(lockfd):
         fcntl.flock(lockfd, fcntl.LOCK_UN)
         BCache.SetReadOnly(True)
-        lockfd.close()
+        os.close(lockfd)
     
     @staticmethod
     def GetNextID(boardname):
