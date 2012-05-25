@@ -10,6 +10,7 @@ from Log import Log
 from UCache import UCache
 from Friend import Friend
 from Util import Util
+from errors import *
 
 PERM_BASIC =     000001
 PERM_CHAT =      000002

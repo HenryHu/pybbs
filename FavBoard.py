@@ -5,6 +5,7 @@ from Util import Util
 from BoardManager import BoardManager
 from UserManager import UserManager
 from BCache import BCache
+from errors import *
 
 TYPE_BOARD = 1
 TYPE_DIR = 2

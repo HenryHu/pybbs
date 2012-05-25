@@ -8,6 +8,7 @@ from UCache import UCache
 import time
 import os
 import json
+from errors import *
 
 class Session:
     def GetID(self):

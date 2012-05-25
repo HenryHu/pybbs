@@ -5,6 +5,7 @@ from Util import Util
 import Config
 import time
 import base64
+from errors import *
 
 AUTH_CODE_LEN = 8 # bytes
 AUTH_CODE_VALID = 3600 # seconds
