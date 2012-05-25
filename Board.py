@@ -135,31 +135,23 @@ class Board:
             name = params['name']
             bo = BoardManager.GetBoard(name)
             if (bo == None):
-                svc.send_response(404, 'Board not found')
-                svc.end_headers()
-                return
+                raise NotFound("board not found")
 
         if (action == 'post_list'):
             if (bo == None):
-                svc.send_response(400, 'Lack of board name')
-                svc.end_headers()
-                return
+                raise WrongArgs("lack of board name")
             if (bo.CheckReadPerm(session.GetUser())):
                 bo.GetPostList(svc, session, params)
             else:
-                svc.send_response(403, 'Permission denied')
-                svc.end_headers()
-                return
+                raise NoPerm("permission denied")
         elif (action == 'list'):
             BoardManager.ListBoards(svc, session, params)
         else:
-            svc.return_error(400, 'Unknown action')
-        return
+            raise WrongArgs("unknown action")
 
     @staticmethod
     def POST(svc, session, params, action):
-        svc.return_error(400, 'Unknown action')
-        return
+        raise WrongArgs("unknown action")
 
     def GetBoardPath(self, filename = ""):
         return Config.BBS_ROOT + 'boards/%s/%s' % (self.name, filename)
@@ -277,11 +269,9 @@ class Board:
                 bread.Load(self.name)
                 bread.MarkRead(pe.id, self.name)
             else:
-                svc.send_response(500, 'Error: load failed ')
-                svc.end_headers()
+                raise ServerError("fail to load posts")
         else:
-            svc.send_response(416, 'Out of range')
-            svc.end_headers()
+            raise OutOfRange("invalid post id")
 
         return
 
@@ -291,31 +281,21 @@ class Board:
         if (direction == 'backward'):
             bfwd = False
         next_id = self.GetNextPost(id, bfwd)
-        if (next_id == ERROR_OUT_OF_RANGE):
-            svc.send_response(416, 'Out of range')
-            svc.end_headers()
-        elif next_id == ERROR_OPEN_FAIL:
-            svc.send_response(500, 'Load failed')
-            svc.end_headers()
-        elif next_id == ERROR_NOT_FOUND:
-            svc.send_response(404, 'Not found')
-            svc.end_headers()
-        elif next_id < 1:
-            svc.send_response(500, 'unknown error')
-            svc.end_headers()
+        if next_id < 1:
+            raise ServerError("fail to get next post")
         else:
             svc.send_response(200)
             svc.end_headers()
             nextinfo = {}
             nextinfo['nextid'] = next_id
             svc.wfile.write(json.dumps(nextinfo))
-        
+
     def GetNextPost(self, id, forward):
         self.UpdateBoardInfo()
         if ((id >= 1) and (id <= self.status.total)):
             dirf = open(self.GetDirPath("normal"), 'rb')
             if (dirf == None):
-                return ERROR_OPEN_FAIL
+                raise ServerError("fail to load post")
             pe = self.GetPostEntry(id - 1, "normal", dirf)
             if (forward):
                 i = id + 1
@@ -331,17 +311,15 @@ class Board:
                 else:
                     i = i - 1
             dirf.close()
-            return ERROR_NOT_FOUND
+            raise NotFound("post not found")
         else:
-            return ERROR_OUT_OF_RANGE
+            raise OutOfRange("invalid post id")
 
     def GetAttachmentReq(self, svc, session, params, id):
         mode = Util.GetString(params, 'mode', 'normal')
         offset = Util.GetInt(params, 'offset')
         if (offset <= 0):
-            svc.send_response(400, 'invalid or lack offset')
-            svc.end_headers()
-            return
+            raise WrongArgs("invalid or lacking offset")
         self.UpdateBoardInfo()
         if ((id >= 1) and (id <= self.status.total)):
             pe = self.GetPostEntry(id - 1, mode)
@@ -351,10 +329,7 @@ class Board:
             svc.end_headers()
             svc.wfile.write(json.dumps(attach))
         else:
-            svc.send_response(416, 'Out of range')
-            svc.end_headers()
-
-        return
+            raise OutOfRange("invalid post id")
 
     def UpdateBoardInfo(self):
         self.status.unpack()

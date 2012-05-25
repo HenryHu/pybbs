@@ -26,30 +26,25 @@ class Auth:
     @staticmethod
     def GET(svc, session, params, action):
         if (action == 'auth'):
-            if (not params.has_key('redirect_uri')):
-                svc.send_response(400, 'no redirect_uri')
-                svc.end_headers()
-                return
-            rduri = params['redirect_uri']
-            if (not params.has_key('response_type') or not params.has_key('client_id')):
+            rduri = svc.get_str(params, 'redirect_uri')
+            try:
+                resptype = svc.get_str(params, 'response_type')
+                cid = svc.get_str(params, 'client_id')
+            except WrongArgs:
                 Auth.Error(svc, rduri, 'invalid_request')
                 return
-            resptype = params['response_type']
-            cid = params['client_id']
+
             Auth.Auth(svc, params, rduri, resptype, cid)
             return
         elif (action == 'token'):
-            if (not params.has_key('redirect_uri')):
-                svc.send_response(400, 'no redirect_uri')
-                svc.end_headers()
-                return
-            rduri = params['redirect_uri']
-            if (not params.has_key('grant_type') or not params.has_key('client_id') or not params.has_key('client_secret')):
+            rduri = svc.get_str(params, 'redirect_uri')
+            try:
+                type = svc.get_str(params, 'grant_type')
+                cid = svc.get_str(params, 'client_id')
+                csec = svc.get_str(params, 'client_secret')
+            except WrongArgs:
                 Auth.Error(svc, rduri, 'invalid_request')
                 return
-            type = params['grant_type']
-            cid = params['client_id']
-            csec = params['client_secret']
             Auth.GetToken(svc, params, rduri, type, cid, csec)
             return
         elif (action == 'displaycode'):
@@ -71,11 +66,7 @@ class Auth:
     @staticmethod
     def POST(svc, session, params, action):
         if (action == 'authpage'):
-            if (not params.has_key('redirect_uri')):
-                svc.send_response(400, 'no redirect_uri')
-                svc.end_headers()
-                return
-            rduri = params['redirect_uri']
+            rduri = svc.get_str(params, 'redirect_uri')
             if (not params.has_key('client_id') or not params.has_key('name') or not params.has_key('pass')):
                 svc.send_response(302)
                 svc.send_header('Location', rduri + '?error=invalid_request')
@@ -89,22 +80,16 @@ class Auth:
             # todo: check redirect_uri match client_id
             Auth.AuthPage(svc, rduri, cid, name, pw)
         elif (action == 'pwauth'):
-            svc.return_error(403, 'pwauth is disabled')
-            return
+            raise NoPerm('pwauth is disabled')
             if (not params.has_key('user') or not params.has_key('pass')):
-                print "no name or pass"
-                svc.send_response(403, 'too few arguments')
-                svc.end_headers()
-                return
+                raise NoPerm('too few args')
             name = params['user']
             epw = params['pass']
             pw = base64.b64decode(epw)
 #            print "name: %s pass: %s" % (name, pw)
             user = UserManager.LoadUser(name)
             if (user == None):
-                svc.send_response(403, 'forbidden')
-                svc.end_headers()
-                return
+                raise NoPerm('forbidden')
 
             if (user.Authorize(pw)):
                 session = Session(user, svc.client_address[0])
@@ -119,11 +104,9 @@ class Auth:
                 svc.wfile.write(json.dumps(resp))
                 return
             else:
-                svc.send_response(403, 'forbidden')
-                svc.end_headers()
-                return
+                raise NoPerm('forbidden')
         else:
-            svc.return_error(400, 'Unknown action')
+            raise WrongArgs("unknown action")
 
     @staticmethod
     def Error(svc, rduri, error):

@@ -110,16 +110,14 @@ class User:
                 svc.end_headers()
                 return
 
-            svc.return_error(403, 'normal login disabled, please use OAuth')
-            svc.end_headers()
-            return
+            raise NoPerm("normal login disabled, please use OAuth")
             UserManager.HandleLogin(svc, params['name'], params['pass'])
         else:
-            svc.return_error(400, 'Unknown action')
+            raise WrongArgs("unknown action")
 
     @staticmethod
     def GET(svc, session, params, action):
-        svc.return_error(400, 'Unknown action')
+        raise WrongArgs("unknown action")
 
     @staticmethod
     def OwnFile(userid, str):

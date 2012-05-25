@@ -66,6 +66,7 @@ class Post:
             bo.PostArticle(session.GetUser(), title, content, re_file, signature_id, anony, mailback, session)
             svc.send_response(200)
             svc.end_headers()
+            return
 
         raise WrongArgs("unknown action")
 

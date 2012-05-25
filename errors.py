@@ -12,6 +12,9 @@ class NotFound(Exception):
 class ServerError(Exception):
     pass
 
+class OutOfRange(Exception):
+    pass
+
 class error_handler:
     def __init__(self, svc):
         self.svc = svc
@@ -28,6 +31,8 @@ class error_handler:
             self.svc.return_error(400, value.args[0])
         elif (isinstance(value, NotFound)):
             self.svc.return_error(404, value.args[0])
+        elif (isinstance(value, OutOfRange)):
+            self.svc.return_error(416, value.args[0])
         elif (isinstance(value, ServerError)):
             self.svc.return_error(500, value.args[0])
         else:

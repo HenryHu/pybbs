@@ -24,19 +24,11 @@ class Session:
         if (action == 'verify'):
             SessionManager.VerifySession(svc, session, params)
         else:
-            print "Session.GET!"
-            print params
-            svc.send_response(200)
-            svc.end_headers()
-        return
+            raise WrongArgs("unknown action")
 
     @staticmethod
     def POST(svc, session, params, action):
-        print "Session.POST!"
-        print params
-        svc.send_response(200)
-        svc.end_headers()
-        return
+        raise WrongArgs("unknown action")
 
     def __init__(self, user, fromip):
         self.username = user.name

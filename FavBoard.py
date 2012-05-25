@@ -31,21 +31,17 @@ class FavBoard:
     @staticmethod
     def GET(svc, session, params, action):
         if (session == None):
-            svc.send_response(403, "not logged in")
-            svc.end_headers()
-            return
+            raise NoPerm("login first")
         if (action == "list"):
             FavBoardMgr.ListFavBoards(svc, session, params)
         else:
-            svc.return_error(400, "unknown action")
+            raise WrongArgs("unknown action")
 
     @staticmethod
     def POST(svc, session, params, action):
         if (session == None):
-            svc.send_response(403, "not logged in")
-            svc.end_headers()
-            return
-        svc.return_error(400, "unknown action")
+            raise NoPerm("login first")
+        raise WrongArgs("unknown action")
 
     def GetInfo(self, index, user):
         rfb = {}
