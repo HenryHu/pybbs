@@ -23,13 +23,13 @@ class error_handler:
         if (value == None):
             return True
         if (isinstance(value, NoPerm)):
-            self.svc.return_error(403, value.msg)
+            self.svc.return_error(403, value.args[0])
         elif (isinstance(value, WrongArgs)):
-            self.svc.return_error(400, value.msg)
+            self.svc.return_error(400, value.args[0])
         elif (isinstance(value, NotFound)):
-            self.svc.return_error(404, value.msg)
+            self.svc.return_error(404, value.args[0])
         elif (isinstance(value, ServerError)):
-            self.svc.return_error(500, value.msg)
+            self.svc.return_error(500, value.args[0])
         else:
             self.svc.return_error(500, traceback.format_exc(value))
         return True
