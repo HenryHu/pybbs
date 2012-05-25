@@ -39,7 +39,7 @@ class Config:
             val = Config.parser.get('sysconf', name)
             if (val[0] == '"' and val.endswith('"')):
                 val = val[1:-1]
-            return val
+            return val.decode('gbk')
         else:
             return defval
 
@@ -65,6 +65,7 @@ MAXUSERS = 20000
 MAX_MSG_SIZE = 1024
 MAXFRIENDS = 400
 MAXMESSAGE = 5
+MAXSIGLINES = 6
 IPLEN = 16
 DEFAULTBOARD = "sysop"
 BLESS_BOARD = "happy_birthday"
