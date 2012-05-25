@@ -218,6 +218,7 @@ class Board:
                     post['attachment'] = pe.attachment
                     post['owner'] = Util.gbkDec(pe.owner) # maybe...
                     post['posttime'] = int(pe.filename.split('.')[1])
+                    post['xid'] = pe.id
                     read = True
                     if (bread != None):
                         read = not bread.QueryUnread(pe.id, self.name)
@@ -525,9 +526,7 @@ class Board:
 
         may_anony = False
         if (refile == None): # not in reply mode
-            if (self.name == "Announce"):
-                may_anony = True
-            elif (self.CanAnonyPost()):
+            if (self.CanAnonyPost()):
                 may_anony = True
         else:
             if (self.CanAnonyPost() and mycrc == refile.rootcrc):
