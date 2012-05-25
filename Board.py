@@ -450,7 +450,7 @@ class Board:
     def GetCurrentUsers(self):
         return self.status.currentusers
 
-    def GetLastPost(self):
+    def GetLastPostId(self):
         return self.status.lastpost
 
     def GetUnread(self, user):
@@ -461,7 +461,7 @@ class Board:
             succ = bread.Load(self.name)
             if (not succ):
                 return True
-            return bread.QueryUnread(self.GetLastPost(), self.name)
+            return bread.QueryUnread(self.GetLastPostId(), self.name)
 
     def CheckReadonly(self):
         return self.CheckFlag(BOARD_READONLY)
