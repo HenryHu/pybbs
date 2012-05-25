@@ -8,6 +8,7 @@ import string
 import os
 import binascii
 import time
+from errors import *
 
 class Post:
 
@@ -34,21 +35,36 @@ class Post:
                 elif action == 'get_attach':
                     bo.GetAttachmentReq(svc, session, params, id)
                 else:
-                    svc.send_response(400, 'Unknown action')
-                    svc.end_headers()
+                    raise WrongArgs("unknown action")
             else:
-                svc.send_response(400, 'Lack of post id')
-                svc.end_headers()
-                return
+                raise WrongArgs("lack of post id")
 
     @staticmethod
     def POST(svc, session, params, action):
-        if (session == None): return
-        bo = BoardManager.GetBoardName(svc, params)
-        if (bo == None): return
-        # TODO
-        svc.return_error(400, 'Unknown action')
-        return
+        if (session == None): raise NoPerm("login first")
+        bo = BoardManager.GetBoardByParam(svc, params)
+        if (bo == None): raise NotFound("no such board")
+
+        if (action == "new"):
+            title = svc.get_str(params, "title")
+            content = svc.get_str(params, "content")
+            signature_id = svc.get_int(params, "signature_id", 0)
+            anony = bool(svc.get_int(params, "anonymous", 0))
+            mailback = bool(svc.get_int(params, "mailback", 0))
+            re_id = svc.get_int(params, "re_id", 0)
+            re_xid = svc.get_int(params, "re_xid", 0)
+            re_mode = svc.get_str(params, "re_mode", 'normal')
+            if (re_id != 0 and re_xid == 0):
+                raise WrongArgs("re_xid must be given with re_id")
+
+            if (re_id != 0):
+                re_file = bo.FindPost(re_id, re_xid, re_mode)
+            else:
+                re_file = None
+
+            bo.PostArticle(session.GetUser(), title, content, re_file, signature_id, anony, mailback, session)
+
+        raise WrongArgs("unknown action")
 
     @staticmethod
     def GetAttachmentList(fp):

@@ -34,6 +34,7 @@ from MsgBox import MsgBox
 from FavBoard import FavBoard
 from Log import Log
 import commondata
+from errors import *
 
 class DataService(BaseHTTPRequestHandler):
     classes = { "post"      : Post, 
@@ -106,7 +107,8 @@ class DataService(BaseHTTPRequestHandler):
             return
 
         if (cls in DataService.classes_keys):
-            DataService.classes[cls].POST(self, session, params, op)
+            with error_handler(self):
+                DataService.classes[cls].POST(self, session, params, op)
         else:
             self.log_error('Bad POST %s', self.path)
             self.return_error(400, 'bad request')
@@ -132,10 +134,26 @@ class DataService(BaseHTTPRequestHandler):
             return
 
         if (cls in DataService.classes_keys):
-            DataService.classes[cls].GET(self, session, params, op)
+            with error_handler(self):
+                DataService.classes[cls].GET(self, session, params, op)
         else:
             self.log_error('Bad GET: %s', self.path)
             self.return_error(400, 'bad request')
+
+    def get_int(self, params, name, defval = None):
+        val = self.get_str(params, name, defval)
+        try:
+            return int(val)
+        except ValueError:
+            raise WrongArgs("argument '%s' is not int" % name)
+
+    def get_str(self, params, name, defval = None):
+        if (params.has_key(name)):
+            return params[name]
+        elif (defval == None):
+            raise WrongArgs("lack of argument '%s'" % name)
+        else:
+            return defval
 
 class MyServer(SocketServer.ThreadingMixIn, HTTPServer):
     def __init__(self, server_address, HandlerClass):

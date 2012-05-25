@@ -17,6 +17,7 @@ import os
 import random
 import binascii
 import Post
+from errors import *
 
 DEFAULT_GET_POST_COUNT = 20
 
@@ -69,7 +70,7 @@ FILE_ROOTANON	= 0x10		#/* if the root article was posted anonymously, accessed[1
 GENERATE_POST_SUFIX = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 GENERATE_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 
-class PostEntry:
+class PostEntry(CStruct):
     parser = struct.Struct('%dsIII44sH2s%ds%ds%dsIIII%dsI12s' % (Config.FILENAME_LEN, Config.OWNER_LEN, Config.OWNER_LEN, (34 - Config.OWNER_LEN), Config.STRLEN))
     _fields = [['filename', 1], 'id', 'groupid','reid', 'unsued1',
             'attachflag', 'innflag', ['owner',1, Config.OWNER_LEN], ['realowner', 1, Config.OWNER_LEN],
@@ -77,18 +78,6 @@ class PostEntry:
             ['title',1, Config.ARTICLE_TITLE_LEN], 'level', ['accessed', 2, '=12B']]
 
     size = parser.size
-
-    def unpack(self, data):
-        Util.Unpack(self, PostEntry.parser.unpack(data))
-
-    def pack(self):
-        return PostEntry.parser.pack(*Util.Pack(self))
-
-    def __init__(self, data = None):
-        if (data == None):
-            Util.InitStruct(self)
-        else:
-            self.unpack(data)
 
     def CheckFlag(self, pos, flag):
         return bool(self.accessed[pos] & flag)
@@ -236,15 +225,20 @@ class Board:
 
     def GetPostEntry(self, postid, mode = 'normal', fd = None):
         pe = None
-        if (fd == None):
-            dirf = open(self.GetDirPath(mode), 'rb')
-            dirf.seek(postid * PostEntry.size)
-            pe = PostEntry(dirf.read(PostEntry.size))
-            dirf.close()
-        else:
-            fd.seek(postid * PostEntry.size)
-            pe = PostEntry(fd.read(PostEntry.size))
-        return pe
+        if (postid < 0):
+            return None
+        try:
+            if (fd == None):
+                dirf = open(self.GetDirPath(mode), 'rb')
+                dirf.seek(postid * PostEntry.size)
+                pe = PostEntry(dirf.read(PostEntry.size))
+                dirf.close()
+            else:
+                fd.seek(postid * PostEntry.size)
+                pe = PostEntry(fd.read(PostEntry.size))
+            return pe
+        except Exception:
+            return None
 
     def GetPost(self, svc, session, params, id):
         mode = Util.GetString(params, 'mode', 'normal')
@@ -508,16 +502,16 @@ class Board:
         mycrc = (~binascii.crc32(user.name, 0xffffffff)) & 0xffffffff
         if (self.CheckReadonly()):
             Log.debug("PostArticle: fail: readonly")
-            return False
+            raise NoPerm("board is readonly")
 
         if (not self.CheckPostPerm(user)):
             Log.debug("PostArticle: fail: %s can't post on %s" % (user.name, self.name))
-            return False
+            raise NoPerm("no permission to post")
 
         if (self.DeniedUser(user)):
             if (not user.HasPerm(User.PERM_SYSOP)):
                 Log.debug("PostArticle: fail: %s denied on %s" % (user.name, self.name))
-                return False
+                raise NoPerm("user denied")
 
         # filter title: 'Re: ' and '\ESC'
         title = title.replace('\033', ' ')
@@ -541,7 +535,7 @@ class Board:
 
         if (signature_id < 0):
             Log.error("random signature: not implemented")
-            return False
+            raise WrongArgs("random sig: not implemented")
 
         post_file = PostEntry()
 #        Log.debug("PostArticle title: %s anony: %r" % (title, anony))
@@ -566,7 +560,7 @@ class Board:
         except IOError:
             Log.error("PostArticle: write post failed!")
             os.unlink(self.GetBoardPath() + post_file.filename)
-            return False
+            raise ServerError("fail to write post file")
 
         post_file.eff_size = len(content_encoded)
 
@@ -801,6 +795,27 @@ class Board:
 
     def GetNextId(self):
         return BCache.GetNextID(self.name)
+
+    def FindPost(self, id, xid, mode):
+        post = self.GetPostEntry(id - 1, mode)
+        if (post == None):
+            post = self.GetPostEntry(0, mode)
+
+        if (post == None):
+            return None
+
+        while (post.id != xid):
+            if (post.id < xid):
+                id += 1
+            else:
+                id -= 1
+                if (id == 0):
+                    return None
+            post = self.GetPostEntry(id - 1, mode)
+            if (post == None):
+                return None
+
+        return post
 
 from Post import Post
 from BoardManager import BoardManager
