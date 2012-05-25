@@ -103,7 +103,13 @@ class PostEntry(CStruct):
         return self.CheckFlag(0, FILE_MARKED)
 
     def Mark(self, mark):
-        return self.SetFlags(0, FILE_MARKED, mark)
+        return self.SetFlag(0, FILE_MARKED, mark)
+
+    def CannotReply(self):
+        return self.CheckFlag(1, FILE_READ)
+
+    def SetCannotReply(self, val):
+        return self.SetFlag(1, FILE_READ, val)
 
 class PostLog(CStruct):
     # what the hell! this is board name, not id! why IDLEN+6!
@@ -485,6 +491,9 @@ class Board:
     def CheckReadonly(self):
         return self.CheckFlag(BOARD_READONLY)
 
+    def CheckNoReply(self):
+        return self.CheckFlag(BOARD_NOREPLY)
+
     def CanAnonyPost(self):
         return self.CheckFlag(BOARD_ANNONY)
 
@@ -498,6 +507,11 @@ class Board:
         return self.CheckFlag(BOARD_POSTSTAT)
 
     def PostArticle(self, user, title, content, refile, signature_id, anony, mailback, session):
+        if (refile != None):
+            if (self.CheckNoReply()):
+                raise NoPerm("can't reply in this board")
+            if (refile.CannotReply()):
+                raise NoPerm("can't reply this post")
         mycrc = (~binascii.crc32(user.name, 0xffffffff)) & 0xffffffff
         if (self.CheckReadonly()):
             Log.debug("PostArticle: fail: readonly")
