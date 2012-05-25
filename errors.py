@@ -20,6 +20,8 @@ class error_handler:
         pass
 
     def __exit__(self, type, value, tb):
+        if (value == None):
+            return True
         if (isinstance(value, NoPerm)):
             self.svc.return_error(403, value.msg)
         elif (isinstance(value, WrongArgs)):
