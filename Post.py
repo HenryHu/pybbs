@@ -32,18 +32,20 @@ class Post:
         if (action == 'search'):
             return
         else:
-            if (params.has_key('id')):
-                _id = int(params['id'])
-                if (action == 'view'):
-                    bo.GetPost(svc, session, params, _id)
-                elif action == 'nextid':
-                    bo.GetNextPostReq(svc, session, params, _id)
-                elif action == 'get_attach':
-                    bo.GetAttachmentReq(svc, session, params, _id)
-                else:
-                    raise WrongArgs("unknown action")
+            _id = svc.get_int(params, 'id')
+            if (action == 'view'):
+                bo.GetPost(svc, session, params, _id)
+            elif action == 'nextid':
+                bo.GetNextPostReq(svc, session, params, _id)
+            elif action == 'get_attach':
+                bo.GetAttachmentReq(svc, session, params, _id)
+            elif action == 'quote':
+                xid = svc.get_int(params, 'xid')
+                index_mode = svc.get_str(params, 'index_mode', 'normal')
+                include_mode = svc.get_str(params, 'mode', 'S')
+                bo.QuotePost(svc, _id, xid, include_mode, index_mode)
             else:
-                raise WrongArgs("lack of post id")
+                raise WrongArgs("unknown action")
 
     @staticmethod
     def POST(svc, session, params, action):

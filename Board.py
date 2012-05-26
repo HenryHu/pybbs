@@ -809,6 +809,26 @@ class Board:
 
         return post
 
+    def QuotePost(self, svc, post_id, xid, include_mode, index_mode):
+        post = self.FindPost(post_id, xid, index_mode)
+        if (post == None):
+            raise NotFound("referred post not found")
+        quote = Post.DoQuote(include_mode, self.GetBoardPath(post.filename), True)
+        if (post.title[:3] == "Re:"):
+            quote_title = post.title
+        elif (post.title[:3] == u"├ ".encode('gbk')):
+            quote_title = "Re: " + post.title[3:]
+        elif (post.title[:3] == u"└ ".encode('gbk')):
+            quote_title = "Re: " + post.title[3:]
+        else:
+            quote_title = "Re: " + post.title
+        quote_obj = {}
+        quote_obj['title'] = Util.gbkDec(quote_title)
+        quote_obj['content'] = Util.gbkDec(quote)
+        svc.send_response(200)
+        svc.end_headers()
+        svc.wfile.write(json.dumps(quote_obj))
+
 from Post import Post
 from BoardManager import BoardManager
 
