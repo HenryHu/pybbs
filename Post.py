@@ -54,8 +54,8 @@ class Post:
         if (bo == None): raise NotFound("no such board")
 
         if (action == "new"):
-            title = svc.get_str(params, "title")
-            content = svc.get_str(params, "content")
+            title = svc.get_str(params, "title").decode('utf-8')
+            content = svc.get_str(params, "content").decode('utf-8')
             signature_id = svc.get_int(params, "signature_id", 0)
             anony = bool(svc.get_int(params, "anonymous", 0))
             mailback = bool(svc.get_int(params, "mailback", 0))
