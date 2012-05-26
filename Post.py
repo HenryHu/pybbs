@@ -238,13 +238,14 @@ class Post:
         result = ""
         with open(quote_file, "rb") as inf:
             buf = Post.SkipAttachFgets(inf)
-            match_user = re.match('[^:]*:(.*\))[^)]*$', buf)
+            match_user = re.match('[^:]*: *(.*\))[^)]*$', buf)
             if (match_user):
                 quser = match_user.group(1)
-            if (for_post):
-                result = result + (u"\n【 在 %s 的大作中提到: 】\n".encode('gbk') % quser)
-            else:
-                result = result + (u"\n【 在 %s 的来信中提到: 】\n".encode('gbk') % quser)
+            if (include_mode != 'R'):
+                if (for_post):
+                    result = result + (u"\n【 在 %s 的大作中提到: 】\n".encode('gbk') % quser)
+                else:
+                    result = result + (u"\n【 在 %s 的来信中提到: 】\n".encode('gbk') % quser)
             if (include_mode == 'A'):
                 while (True):
                     buf = Post.SkipAttachFgets(inf)
