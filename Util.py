@@ -140,15 +140,15 @@ class Util:
 
     @staticmethod
     def ReadString(fp):
-        str = ''
+        line = ''
         while 1:
             c = fp.read(1)
             if (c == '\0'):
                 break
             if (c == ''):
                 break
-            str += c
-        return str
+            line += c
+        return line
 
     @staticmethod
     def RandomStr(len):
@@ -240,10 +240,10 @@ class Util:
     @staticmethod
     def GetRecords(path, size, index, count):
         ret = []
-        file = open(path, 'r+b')
-        file.seek(size * (index - 1))
+        fp = open(path, 'r+b')
+        fp.seek(size * (index - 1))
         for i in range(count):
-            ret.append(file.read(size))
+            ret.append(fp.read(size))
         return ret
 
     @staticmethod

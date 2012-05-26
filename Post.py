@@ -7,9 +7,14 @@ import Config
 import string
 import os
 import binascii
+import re
 import time
 from errors import *
 from Log import Log
+
+ATTACHMENT_PAD = '\0\0\0\0\0\0\0\0'
+ATTACHMENT_SIZE = 0
+QUOTELEV = 1
 
 class Post:
 
@@ -28,13 +33,13 @@ class Post:
             return
         else:
             if (params.has_key('id')):
-                id = int(params['id'])
+                _id = int(params['id'])
                 if (action == 'view'):
-                    bo.GetPost(svc, session, params, id)
+                    bo.GetPost(svc, session, params, _id)
                 elif action == 'nextid':
-                    bo.GetNextPostReq(svc, session, params, id)
+                    bo.GetNextPostReq(svc, session, params, _id)
                 elif action == 'get_attach':
-                    bo.GetAttachmentReq(svc, session, params, id)
+                    bo.GetAttachmentReq(svc, session, params, _id)
                 else:
                     raise WrongArgs("unknown action")
             else:
@@ -222,5 +227,106 @@ class Post:
 
         for i in range(0, valid_ln):
             fp.write(tmpsig[i])
+
+    @staticmethod
+    def DoQuote(include_mode, quote_file, for_post):
+        if (quote_file == ""):
+            return "";
+        if (include_mode == 'N'):
+            return "\n";
+        quser = ""
+        result = ""
+        with open(quote_file, "rb") as inf:
+            buf = Post.SkipAttachFgets(inf)
+            match_user = re.match('[^:]*:(.*\))[^)]*$', buf)
+            if (match_user):
+                quser = match_user.group(1)
+            if (for_post):
+                result = result + (u"\n【 在 %s 的大作中提到: 】\n".encode('gbk') % quser)
+            else:
+                result = result + (u"\n【 在 %s 的来信中提到: 】\n".encode('gbk') % quser)
+            if (include_mode == 'A'):
+                while (True):
+                    buf = Post.SkipAttachFgets(inf)
+                    if (buf == ""): break
+                    result += ": %s" % buf
+            else:
+                # skip header
+                while (True):
+                    buf = Post.SkipAttachFgets(inf)
+                    if (buf == "" or buf[0] == '\n'): break
+                if (include_mode == 'R'):
+                    while (True):
+                        buf = Post.SkipAttachFgets(inf)
+                        if (buf == ""): break
+                        if (not Post.IsOriginLine(buf)):
+                            result += buf
+                else:
+                    line_count = 0
+                    while (True):
+                        buf = Post.SkipAttachFgets(inf)
+                        if (buf == "" or buf == "--\n"): break
+                        if (len(buf) > 250):
+                            buf = buf[250] + "\n"
+                        if (not Post.IsGarbageLine(buf)):
+                            result += ": %s" % buf
+                            if (include_mode == 'S'):
+                                line_count += 1
+                                if (line_count >= Config.QUOTED_LINES):
+                                    result += ": ..................."
+                                    break
+        result += "\n"
+        return result
+
+    @staticmethod
+    def SkipAttachFgets(f):
+        ret = ""
+        matchpos = 0
+        while (True):
+            ch = f.read(1)
+            if (ch == ""): break
+            if (ch == ATTACHMENT_PAD[matchpos]):
+                matchpos += 1
+                if (matchpos == ATTACHMENT_SIZE):
+                    ch = f.read(1)
+                    while (ch != '\0'):
+                        ch = f.read(1)
+                    d = f.read(4)
+                    size = struct.unpack('!I', d)[0]
+                    f.seek(size, 1)
+                    ret = ret[:-ATTACHMENT_SIZE]
+                    matchpos = 0
+
+                    continue
+            ret += ch
+            if (ch == '\n'):
+                break
+        return ret
+
+    @staticmethod
+    def IsOriginLine(str):
+        tmp = (u"※ 来源:·%s " % Config.Config.GetString("BBS_FULL_NAME", "Python BBS")).encode('gbk')
+        return tmp in str
+
+    @staticmethod
+    def IsGarbageLine(line):
+        qlevel = 0
+        while (line != "" and (line[0] == ':' or line[0] == '>')):
+            line = line[1:]
+            if (line != "" and line[0] == ' '):
+                line = line[1:]
+                qlevel += 1
+                if (qlevel - 1 >= QUOTELEV):
+                    return True
+        while (line != "" and (line[0] == ' ' or line[0] == '\t')):
+            line = line[1:]
+
+        if (qlevel >= QUOTELEV):
+            if (u"提到:\n".encode('gbk') in line
+                or u": 】\n".encode('gbk') in line
+                or line[3] == "==>"
+                or u"的文章 说".encode('gbk') in line):
+                return True
+        return line != "" and line[0] == '\n'
 
 from BoardManager import BoardManager
