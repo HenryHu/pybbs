@@ -244,6 +244,7 @@ class Board:
             if (postf != None):
                 post = {}
                 post['id'] = id
+                post['xid'] = pe.id
                 post['title'] = Util.gbkDec(pe.title)
                 post['owner'] = Util.gbkDec(pe.owner) # maybe...
                 ret = ''
