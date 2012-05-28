@@ -88,9 +88,7 @@ class FavBoardMgr:
 
         fboards = FavBoardMgr.LoadFavBoards(session.GetUser().name)
         if (fboards == None):
-            svc.send_response(500, "failed to load fav boards")
-            svc.end_headers()
-            return
+            raise ServerError("failed to load fav boards")
 
         fboards.LoadFavBoards()
 
@@ -109,8 +107,7 @@ class FavBoardMgr:
             svc.writedata(result)
             return
         else:
-            svc.send_response(400, "invalid arguments")
-            svc.end_headers()
+            raise WrongArgs('invalid arguments')
 
 class FavBoards:
     def __init__(self, userid):

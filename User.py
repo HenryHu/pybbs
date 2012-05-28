@@ -107,9 +107,7 @@ class User:
         if (action == 'login'):
             ok = False
             if (not (params.has_key('name') and (params.has_key('pass')))):
-                svc.send_response(400, 'Lack of username or password')
-                svc.end_headers()
-                return
+                raise WrongArgs('lack of username or password')
 
             raise NoPerm("normal login disabled, please use OAuth")
             UserManager.HandleLogin(svc, params['name'], params['pass'])

@@ -25,9 +25,7 @@ class Post:
         if (bo == None): return
 
         if (not bo.CheckPostPerm(session.GetUser())):
-            svc.send_response(403, 'Permission denied')
-            svc.end_headers()
-            return
+            raise WrongArgs('permission denied')
 
         if (action == 'search'):
             return
@@ -71,9 +69,7 @@ class Post:
                 re_file = None
 
             bo.PostArticle(session.GetUser(), title, content, re_file, signature_id, anony, mailback, session)
-            svc.send_response(200)
-            svc.end_headers()
-            return
+            svc.writedata('{"result": "ok"}')
 
         raise WrongArgs("unknown action")
 

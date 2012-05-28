@@ -1,5 +1,6 @@
 from BCache import *
 import json
+from errors import *
 
 DEFAULT_LIST_BOARD_COUNT = 20
 
@@ -40,16 +41,11 @@ class BoardManager:
             board = params['board']
             bo = BoardManager.GetBoard(board)
             if (bo == None):
-                svc.send_response(404, 'Board not found')
-                svc.end_headers()
-                return None
+                raise NotFound('board not found')
             else:
                 return bo
         else:
-            svc.send_response(400, 'Lack of board name')
-            svc.end_headers()
-            return None
-
+            raise WrongArgs('lack of board name')
 
     @staticmethod
     def Init():
@@ -78,9 +74,7 @@ class BoardManager:
             svc.writedata(result)
             return
         else:
-            svc.send_response(400, 'invalid arguments')
-            svc.end_headers()
-            return
+            raise WrongArgs('invalid arguments')
 
 
     @staticmethod

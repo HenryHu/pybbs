@@ -1,5 +1,6 @@
 from UCache import UCache
 import json
+from errors import *
 
 class UserManager:
     users = {}
@@ -7,9 +8,7 @@ class UserManager:
     def HandleLogin(svc, username, passwd):
         user = UserManager.LoadUser(username)
         if (user == None):
-            svc.send_response(401, 'Login failed')
-            svc.end_headers()
-            return
+            raise Unauthorized('Login failed')
 
         if (user.Authorize(passwd)):
             session = Session(user, svc.client_address[0])
@@ -19,9 +18,7 @@ class UserManager:
             svc.writedata(json.dumps(ret))
 
         else:
-            svc.send_response(401, 'Login failed')
-            svc.end_headers()
-            return
+            raise Unauthorized('Login failed')
 
     @staticmethod
     def LoadUser(user):

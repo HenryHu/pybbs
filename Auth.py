@@ -67,6 +67,7 @@ class Auth:
             if (not params.has_key('client_id') or not params.has_key('name') or not params.has_key('pass')):
                 svc.send_response(302)
                 svc.send_header('Location', rduri + '?error=invalid_request')
+                svc.send_header('Content-Length', 0)
                 svc.end_headers()
                 return
             cid = params['client_id']
@@ -107,6 +108,7 @@ class Auth:
     def Error(svc, rduri, error):
         svc.send_response(302)
         svc.send_header('Location', rduri + '?error=%s' % error)
+        svc.send_header('Content-Length', 0)
         svc.end_headers()
         return
 
@@ -138,6 +140,7 @@ class Auth:
             code = Auth.RecordSession(session)
             svc.send_response(302)
             svc.send_header('Location', rduri + '?code=' + code)
+            svc.send_header('Content-Length', 0)
             svc.end_headers()
             return
 

@@ -214,8 +214,7 @@ class Board:
                 svc.writedata(result)
                 dirf.close()
         else:
-            svc.send_response(416, 'Out of range')
-            svc.end_headers()
+            raise OutOfRange('out of range')
             
         return
 
