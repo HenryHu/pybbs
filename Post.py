@@ -20,15 +20,15 @@ class Post:
 
     @staticmethod
     def GET(svc, session, params, action):
-        if (session == None): return
+        if (session == None): raise Unauthorized('login first')
         bo = BoardManager.GetBoardByParam(svc, params)
-        if (bo == None): return
+        if (bo == None): raise NotFound('board not found')
 
         if (not bo.CheckPostPerm(session.GetUser())):
             raise WrongArgs('permission denied')
 
         if (action == 'search'):
-            return
+            raise WrongArgs('not implemented')
         else:
             _id = svc.get_int(params, 'id')
             if (action == 'view'):
@@ -47,7 +47,7 @@ class Post:
 
     @staticmethod
     def POST(svc, session, params, action):
-        if (session == None): raise NoPerm("login first")
+        if (session == None): raise Unauthorized("login first")
         bo = BoardManager.GetBoardByParam(svc, params)
         if (bo == None): raise NotFound("no such board")
 

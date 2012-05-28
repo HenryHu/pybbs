@@ -58,7 +58,7 @@ class Auth:
             code = params['code']
             Auth.DisplayCode(svc, code)
         else:
-            svc.return_error(400, 'Unknown action')
+            raise WrongArgs('unknown action')
 
     @staticmethod
     def POST(svc, session, params, action):

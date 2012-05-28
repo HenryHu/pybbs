@@ -135,7 +135,7 @@ class Board:
 
     @staticmethod
     def GET(svc, session, params, action):
-        if (session == None): return
+        if (session == None): raise Unauthorized('login first')
         bo = None
         if (params.has_key('name')):
             name = params['name']
@@ -182,7 +182,6 @@ class Board:
 
         self.UpdateBoardInfo()
         start, end = Util.CheckRange(start, end, count, DEFAULT_GET_POST_COUNT, self.status.total)
-        print start, '   ', end
         if ((start <= end) and (start >= 1) and (end <= self.status.total)):
             bread = BReadMgr.LoadBRead(session.GetUser().name)
             if (bread != None):

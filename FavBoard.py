@@ -32,7 +32,7 @@ class FavBoard:
     @staticmethod
     def GET(svc, session, params, action):
         if (session == None):
-            raise NoPerm("login first")
+            raise Unauthorized("login first")
         if (action == "list"):
             FavBoardMgr.ListFavBoards(svc, session, params)
         else:

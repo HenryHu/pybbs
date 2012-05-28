@@ -59,7 +59,6 @@ class BoardManager:
         count = Util.GetInt(params, 'count')
 
         start, end = Util.CheckRange(start, end, count, DEFAULT_LIST_BOARD_COUNT, BCache.GetBoardCount())
-        print start, ' ', end
         if ((start <= end) and (start >= 1) and (end <= BCache.GetBoardCount())): 
             boards = BoardManager.GetBoards(session, start, end)
             first = True
