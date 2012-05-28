@@ -42,4 +42,5 @@ class error_handler:
             self.svc.return_error(500, value.args[0])
         else:
             self.svc.return_error(500, traceback.format_exc(value))
+            return False
         return True
