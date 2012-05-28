@@ -79,7 +79,7 @@ class DataService(BaseHTTPRequestHandler):
 
     def return_error(self, code, reason):
         self.send_response(code, reason)
-        self.send_response("Content-Length", 0)
+        self.send_header("Content-Length", 0)
         self.end_headers()
 
     def do_POST(self):
