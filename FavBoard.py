@@ -97,17 +97,16 @@ class FavBoardMgr:
         start, end = Util.CheckRange(start, end, count, DEFAULT_LIST_FAVBOARD_COUNT, fboards._count)
         if ((start <= end) and (start >= 1) and (end <= fboards._count)):
             first = True
-            svc.send_response(200, 'OK %d %d' % (start, end))
-            svc.end_headers()
-            svc.wfile.write('[')
+            result = '[\n'
             for index in range(0, fboards._count):
                 fboard = fboards._favboards[index]
                 if (fboard._father == father):
                     if (not first):
-                        svc.wfile.write(',')
+                        result += ',\n'
                     first = False
-                    svc.wfile.write(fboard.GetInfoJSON(index, session.GetUser().name))
-            svc.wfile.write(']')
+                    result += fboard.GetInfoJSON(index, session.GetUser().name)
+            result += '\n'
+            svc.writedata(result)
             return
         else:
             svc.send_response(400, "invalid arguments")

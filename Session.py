@@ -110,10 +110,8 @@ class SessionManager:
         if (session == None):
             svc.return_error(404, "session not found or session timed out")
         else:
-            svc.send_response(200, 'OK')
-            svc.end_headers()
             result = {}
             result['status'] = "ok"
-            svc.wfile.write(json.dumps(result))
+            svc.writedata(json.dumps(result))
 
 from UserManager import UserManager

@@ -67,16 +67,15 @@ class BoardManager:
         if ((start <= end) and (start >= 1) and (end <= BCache.GetBoardCount())): 
             boards = BoardManager.GetBoards(session, start, end)
             first = True
-            svc.send_response(200, 'OK %d %d' % (start, end))
-            svc.end_headers()
-            svc.wfile.write('[')
+            result = '[\n'
             for board in boards:
                 board.UpdateBoardInfo()
                 if (not first):
-                    svc.wfile.write(',')
+                    result += ',\n'
                 first = False
-                svc.wfile.write(board.GetInfoWithUserJSON(session.GetUser().name))
-            svc.wfile.write(']')
+                result += board.GetInfoWithUserJSON(session.GetUser().name)
+            result += '\n]'
+            svc.writedata(result)
             return
         else:
             svc.send_response(400, 'invalid arguments')

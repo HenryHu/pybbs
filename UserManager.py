@@ -16,10 +16,7 @@ class UserManager:
             ret = {}
             ret['session'] = session.GetID()
 
-            svc.send_response(200, 'OK')
-            svc.end_headers()
-
-            svc.wfile.write(json.dumps(ret))
+            svc.writedata(json.dumps(ret))
 
         else:
             svc.send_response(401, 'Login failed')

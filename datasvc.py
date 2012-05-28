@@ -45,6 +45,7 @@ class DataService(BaseHTTPRequestHandler):
                "favboard"   : FavBoard,
               }
     classes_keys = classes.keys()
+    protocol_version = 'HTTP/1.1'
 
     def parse_req(self, req):
         m = re.search("^/(.*)/(.*)$", req)
@@ -65,9 +66,9 @@ class DataService(BaseHTTPRequestHandler):
             return self.client_address[0]
         return ip
         
-    def writedata(self, data, type = ''):
+    def writedata(self, data, type = '', code = 200):
         try:
-            self.send_response(200)
+            self.send_response(code)
             self.send_header('Content-Length', len(data))
             if len(type) > 0:
                 self.send_header('Content-Type', type)

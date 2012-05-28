@@ -51,13 +51,9 @@ class Auth:
         elif (action == 'displaycode'):
             if (not params.has_key('code')):
                 if (params.has_key('error')):
-                    svc.send_response(400, 'auth error')
-                    svc.end_headers()
-                    svc.wfile.write("<h1>Error, reason: %s" % params['error'])
+                    svc.writedata("<h1>Error, reason: %s" % params['error'], code = 400)
                     return
-                svc.send_response(400, 'no auth code')
-                svc.end_headers()
-                svc.wfile.write("Please provide auth code to display")
+                svc.writedata("Please provide auth code to display", code = 400)
                 return
             code = params['code']
             Auth.DisplayCode(svc, code)
@@ -97,12 +93,10 @@ class Auth:
                 # give session, so other info may be recorded
                 code = Auth.RecordSession(session)
                 sessid = Auth.SessionIDFromCode(code)
-                svc.send_response(200)
-                svc.end_headers()
                 resp = {}
                 resp['access_token'] = sessid
                 resp['token_type'] = 'session'
-                svc.wfile.write(json.dumps(resp))
+                svc.writedata(json.dumps(resp))
                 return
             else:
                 raise NoPerm('forbidden')
@@ -174,21 +168,15 @@ class Auth:
         resp['access_token'] = sessid
         resp['token_type'] = 'session'
 
-        svc.send_response(200)
-        svc.end_headers()
-
-        svc.wfile.write(json.dumps(resp))
+        svc.writedata(json.dumps(resp))
         return
 
     @staticmethod
     def DisplayCode(svc, code):
-        svc.send_response(200)
-        svc.end_headers()
-
         fdcode = open(Config.Config.GetString("BBS_DATASVC_ROOT", "") + "displaycode.html", "r")
         dcode = fdcode.read()
         fdcode.close()
-        svc.wfile.write(dcode % code)
+        svc.writedata(dcode % code)
         return
 
     @staticmethod

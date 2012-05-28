@@ -188,15 +188,13 @@ class Board:
             if (bread != None):
                 bread.Load(self.name)
             if (mode == 'normal'):
-                svc.send_response(200, 'OK %d %d' % (start, end))
-                svc.end_headers()
                 dirf = open(self.GetDirPath(mode), 'rb')
                 post = {}
                 first = True
-                svc.wfile.write('[\n');
+                result = '[\n';
                 for i in range(start - 1, end):
                     if (not first):
-                        svc.wfile.write(',\n')
+                        result += ',\n'
                     first = False
                     pe = self.GetPostEntry(i, mode, dirf)
                     post['id'] = i + 1
@@ -211,8 +209,9 @@ class Board:
                         read = not bread.QueryUnread(pe.id, self.name)
                     post['read'] = read
 #                    post['filename'] = pe.filename
-                    svc.wfile.write(json.dumps(post, 'utf-8'))
-                svc.wfile.write('\n]')
+                    result += json.dumps(post, 'utf-8')
+                result += '\n]'
+                svc.writedata(result)
                 dirf.close()
         else:
             svc.send_response(416, 'Out of range')
@@ -245,8 +244,6 @@ class Board:
             pe = self.GetPostEntry(id - 1, mode)
             postf = open(self.GetBoardPath() + pe.filename, 'rb')
             if (postf != None):
-                svc.send_response(200, 'OK')
-                svc.end_headers()
                 post = {}
                 post['id'] = id
                 post['title'] = Util.gbkDec(pe.title)
@@ -269,7 +266,7 @@ class Board:
                 attachlist = Post.GetAttachmentList(postf)
                 post['picattach'] = attachlist[0]
                 post['otherattach'] = attachlist[1]
-                svc.wfile.write(json.dumps(post))
+                svc.writedata(json.dumps(post))
                 postf.close()
                 bread = BReadMgr.LoadBRead(session.GetUser().name)
                 bread.Load(self.name)
@@ -290,11 +287,9 @@ class Board:
         if next_id < 1:
             raise ServerError("fail to get next post")
         else:
-            svc.send_response(200)
-            svc.end_headers()
             nextinfo = {}
             nextinfo['nextid'] = next_id
-            svc.wfile.write(json.dumps(nextinfo))
+            svc.writedata(json.dumps(nextinfo))
 
     def GetNextPost(self, id, forward):
         self.UpdateBoardInfo()
@@ -331,9 +326,7 @@ class Board:
             pe = self.GetPostEntry(id - 1, mode)
             attach = Post.ReadAttachment(self.GetBoardPath() + pe.filename, offset)
             attach = {'name' : attach[0], 'content' : base64.b64encode(attach[1])}
-            svc.send_response(200, 'OK')
-            svc.end_headers()
-            svc.wfile.write(json.dumps(attach))
+            svc.writedata(json.dumps(attach))
         else:
             raise OutOfRange("invalid post id")
 
@@ -825,9 +818,7 @@ class Board:
         quote_obj = {}
         quote_obj['title'] = Util.gbkDec(quote_title)
         quote_obj['content'] = Util.gbkDec(quote)
-        svc.send_response(200)
-        svc.end_headers()
-        svc.wfile.write(json.dumps(quote_obj))
+        svc.writedata(json.dumps(quote_obj))
 
 from Post import Post
 from BoardManager import BoardManager
