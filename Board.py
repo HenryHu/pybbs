@@ -317,6 +317,8 @@ class Board:
                             return i
                         else:
                             last_post = i
+                    if (pxe.groupid == pxe.id): # original post
+                        break
                 if (forward):
                     i = i + 1
                 else:
