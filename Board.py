@@ -311,7 +311,7 @@ class Board:
             while ((i >= 1) and (i <= self.status.total)):
                 pxe = self.GetPostEntry(i - 1, "normal", dirf)
                 if (pxe.groupid == pe.groupid):
-                    if ((only_new and not bread.QueryUnread(pxe.id, self.name)) or (not only_new)):
+                    if ((only_new and bread.QueryUnread(pxe.id, self.name)) or (not only_new)):
                         if (not last_one):
                             dirf.close()
                             return i
