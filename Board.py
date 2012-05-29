@@ -282,7 +282,11 @@ class Board:
         bfwd = True
         if (direction == 'backward'):
             bfwd = False
-        next_id = self.GetNextPost(id, bfwd)
+
+        last_one = bool(svc.get_int(params, 'last_one', 0))
+        only_new = bool(svc.get_int(params, 'only_new', 0))
+        
+        next_id = self.GetNextPost(id, bfwd, last_one, only_new, session.GetUser())
         if next_id < 1:
             raise ServerError("fail to get next post")
         else:
@@ -290,9 +294,10 @@ class Board:
             nextinfo['nextid'] = next_id
             svc.writedata(json.dumps(nextinfo))
 
-    def GetNextPost(self, id, forward):
+    def GetNextPost(self, id, forward, last_one, only_new, user):
         self.UpdateBoardInfo()
         if ((id >= 1) and (id <= self.status.total)):
+            last_post = -1
             dirf = open(self.GetDirPath("normal"), 'rb')
             if (dirf == None):
                 raise ServerError("fail to load post")
@@ -301,17 +306,29 @@ class Board:
                 i = id + 1
             else:
                 i = id - 1
+            if (only_new):
+                bread = BReadMgr.LoadBRead(session.GetUser().name)
             while ((i >= 1) and (i <= self.status.total)):
                 pxe = self.GetPostEntry(i - 1, "normal", dirf)
                 if (pxe.groupid == pe.groupid):
-                    dirf.close()
-                    return i
+                    if ((only_new and not bread.QueryUnread(pxe.id, self.name)) or (not only_new)):
+                        if (not last_one):
+                            dirf.close()
+                            return i
+                        else:
+                            last_post = i
                 if (forward):
                     i = i + 1
                 else:
                     i = i - 1
             dirf.close()
-            raise NotFound("post not found")
+            if (last_one):
+                if (last_post != -1):
+                    return last_post
+                else:
+                    raise NotFound("post not found")
+            else:
+                raise NotFound("post not found")
         else:
             raise OutOfRange("invalid post id")
 
