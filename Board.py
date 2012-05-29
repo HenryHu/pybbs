@@ -307,7 +307,7 @@ class Board:
             else:
                 i = id - 1
             if (only_new):
-                bread = BReadMgr.LoadBRead(session.GetUser().name)
+                bread = BReadMgr.LoadBRead(user.name)
             while ((i >= 1) and (i <= self.status.total)):
                 pxe = self.GetPostEntry(i - 1, "normal", dirf)
                 if (pxe.groupid == pe.groupid):
