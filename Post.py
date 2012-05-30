@@ -70,8 +70,8 @@ class Post:
 
             bo.PostArticle(session.GetUser(), title, content, re_file, signature_id, anony, mailback, session)
             svc.writedata('{"result": "ok"}')
-
-        raise WrongArgs("unknown action")
+        else:
+            raise WrongArgs("unknown action")
 
     @staticmethod
     def GetAttachmentList(fp):
