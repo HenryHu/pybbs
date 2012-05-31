@@ -323,7 +323,7 @@ class Post:
         if (qlevel >= QUOTELEV):
             if (u"提到:\n".encode('gbk') in line
                 or u": 】\n".encode('gbk') in line
-                or line[3] == "==>"
+                or line[:3] == "==>"
                 or u"的文章 说".encode('gbk') in line):
                 return True
         return line != "" and line[0] == '\n'
