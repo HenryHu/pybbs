@@ -23,6 +23,9 @@ class Session:
     def GetUser(self):
         return self.user
 
+    def Timeout(self):
+        return (datetime.datetime.now() - self.created > SESSION_TIMEOUT)
+
     @staticmethod
     def GET(svc, session, params, action):
         if (action == 'verify'):
@@ -34,13 +37,15 @@ class Session:
     def POST(svc, session, params, action):
         raise WrongArgs("unknown action")
 
-    def __init__(self, user, fromip, _sessionid = None):
+    def __init__(self, user, fromip, _sessionid = None, _created = None):
         self.username = user.name
         self.uid = UCache.SearchUser(self.username)
         if (_sessionid is None):
             self.sessionid = Util.RandomStr(SESSIONID_LEN)
+            self.created = datetime.datetime.now()
         else:
             self.sessionid = _sessionid
+            self.created = _created
         self.user = UserManager.LoadUser(user.name)
         self._userinfo = None
         self.utmpent = -1
@@ -113,7 +118,7 @@ class SessionManager:
         conn = SessionManager.ConnectDB()
 
         now = datetime.datetime.now()
-        conn.execute("insert into sessions values (?, ?, ?, ?, ?, ?)", session.sessionid, session.username, now, now, session._fromip, session._fromip)
+        conn.execute("insert into sessions values (?, ?, ?, ?, ?, ?)", (session.sessionid, session.username, now, now, session._fromip, session._fromip))
 
         conn.commit()
         conn.close()
@@ -123,7 +128,7 @@ class SessionManager:
         conn = SessionManager.ConnectDB()
 
         now = datetime.datetime.now()
-        conn.execute("update sessions set last_seen = ?, last_ip = ? where id = ?", now, session._fromip, session.sessionid)
+        conn.execute("update sessions set last_seen = ?, last_ip = ? where id = ?", (now, session._fromip, session.sessionid))
         conn.commit()
         conn.close()
 
@@ -145,28 +150,28 @@ class SessionManager:
 
     @staticmethod
     def GetSession(id, fromip):
+        now = datetime.datetime.now()
         if (id not in SessionManager.sessions):
             conn = SessionManager.ConnectDB()
 
             try:
-                for row in conn.execute("select * from sessions where id = ?", id):
+                for row in conn.execute("select * from sessions where id = ?", (id, )):
                     username = row['username']
                     user = UserManager.LoadUser(username)
                     if (user is None):
                         continue
                     created = row['created']
-                    now = datetime.datetime.now()
-                    diff = now - created
-                    if (diff > SESSION_TIMEOUT):
-                        Log.info("session timeout: %s" % id)
+                    session = Session(user, fromip, id, created)
+                    if (session.Timeout()):
                         return None
-                    session = Session(user, fromip, id)
                     return session
                 return None
             finally:
                 conn.close()
 
         session = SessionManager.sessions[id]
+        if (session.Timeout()):
+            return None
         session._fromip = fromip
         SessionManager.Update(session)
         return session
