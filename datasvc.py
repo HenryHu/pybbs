@@ -118,7 +118,7 @@ class DataService(BaseHTTPRequestHandler):
     def GetSession(self, params):
         if (params.has_key('session')):
             sid = params['session']
-            return SessionManager.GetSession(sid)
+            return SessionManager.GetSession(sid, self.client_address[0])
         else:
             return None
 

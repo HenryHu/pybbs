@@ -8,6 +8,9 @@ from UCache import UCache
 import time
 import os
 import json
+import sqlite3
+import datetime
+from Log import Log
 from errors import *
 
 class Session:
@@ -31,16 +34,22 @@ class Session:
     def POST(svc, session, params, action):
         raise WrongArgs("unknown action")
 
-    def __init__(self, user, fromip):
+    def __init__(self, user, fromip, _sessionid = None):
         self.username = user.name
         self.uid = UCache.SearchUser(self.username)
-        self.sessionid = Util.RandomStr(SESSIONID_LEN)
+        if (_sessionid is None):
+            self.sessionid = Util.RandomStr(SESSIONID_LEN)
+        else:
+            self.sessionid = _sessionid
         self.user = UserManager.LoadUser(user.name)
         self._userinfo = None
         self.utmpent = -1
         self._fromip = fromip
         SessionManager.Insert(self)
-
+        if (_sessionid is None):
+            SessionManager.Record(self)
+        else:
+            SessionManager.Update(self)
 
     def InitNewUserInfo(self):
         userinfo = UserInfo()
@@ -100,10 +109,67 @@ class SessionManager:
         SessionManager.sessions[session.sessionid] = session
 
     @staticmethod
-    def GetSession(id):
+    def Record(session):
+        conn = SessionManager.ConnectDB()
+
+        now = datetime.datetime.now()
+        conn.execute("insert into sessions values (?, ?, ?, ?, ?, ?)", session.sessionid, session.username, now, now, session._fromip, session._fromip)
+
+        conn.commit()
+        conn.close()
+
+    @staticmethod
+    def Update(session):
+        conn = SessionManager.ConnectDB()
+
+        now = datetime.datetime.now()
+        conn.execute("update sessions set last_seen = ?, last_ip = ? where id = ?", now, session._fromip, session.sessionid)
+        conn.commit()
+        conn.close()
+
+    @staticmethod
+    def ConnectDB():
+        conn = sqlite3.connect(BBS_ROOT + "auth.db", detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES)
+        conn.row_factory = sqlite3.Row
+        try:
+            conn.execute("select * from sessions")
+        except sqlite3.OperationalError:
+            SessionManager.InitDB(conn);
+
+        return conn
+
+    @staticmethod
+    def InitDB(conn):
+        conn.execute("create table sessions(id text, username text, created timestamp, last_seen timestamp, login_ip text, last_ip text)")
+        conn.commit()
+
+    @staticmethod
+    def GetSession(id, fromip):
         if (id not in SessionManager.sessions):
-            return None
-        return SessionManager.sessions[id]
+            conn = SessionManager.ConnectDB()
+
+            try:
+                for row in conn.execute("select * from sessions where id = ?", id):
+                    username = row['username']
+                    user = UserManager.LoadUser(username)
+                    if (user is None):
+                        continue
+                    created = row['created']
+                    now = datetime.datetime.now()
+                    diff = now - created
+                    if (diff > SESSION_TIMEOUT):
+                        Log.info("session timeout: %s" % id)
+                        return None
+                    session = Session(user, fromip, id)
+                    return session
+                return None
+            finally:
+                conn.close()
+
+        session = SessionManager.sessions[id]
+        session._fromip = fromip
+        SessionManager.Update(session)
+        return session
 
     @staticmethod
     def VerifySession(svc, session, params):
