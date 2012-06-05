@@ -236,6 +236,8 @@ class Board:
 
     def GetPost(self, svc, session, params, id):
         mode = Util.GetString(params, 'mode', 'normal')
+        if (mode == 'junk' or mode == 'deleted'):
+            raise NoPerm("invalid mode!")
         self.UpdateBoardInfo()
         if ((id >= 1) and (id <= self.status.total)):
             pe = None
@@ -821,6 +823,8 @@ class Board:
         return post
 
     def QuotePost(self, svc, post_id, xid, include_mode, index_mode):
+        if (index_mode == 'junk' or index_mode == 'deleted'):
+            raise NoPerm("invalid index_mode!")
         post = self.FindPost(post_id, xid, index_mode)
         if (post == None):
             raise NotFound("referred post not found")
