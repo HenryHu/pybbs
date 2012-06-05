@@ -71,6 +71,9 @@ class DataService(BaseHTTPRequestHandler):
             if ('jsonp' in self._params):
                 jsonp = self._params['jsonp']
                 data = '%s(%s);' % (jsonp, data)
+            elif ('jsoncallback' in self._params):
+                jsonp = self._params['jsoncallback']
+                data = '%s(%s);' % (jsonp, data)
         try:
             self.send_response(code)
             self.send_header('Content-Length', len(data))
