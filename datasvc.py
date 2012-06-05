@@ -76,6 +76,7 @@ class DataService(BaseHTTPRequestHandler):
                 data = '%s(%s);' % (jsonp, data)
         try:
             self.send_response(code)
+            self.send_header('Access-Control-Allow-Origin', '*')
             self.send_header('Content-Length', len(data))
             if len(type) > 0:
                 self.send_header('Content-Type', type)
