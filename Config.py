@@ -2,6 +2,7 @@
 from ConfigParser import *
 from StringIO import *
 from Log import Log
+import datetime
 
 class Config:
     @staticmethod
@@ -79,6 +80,7 @@ LEN_FRIEND_EXP = 15
 
 REFRESH_TIME = 30 # time between friend list update
 USER_TITLE_LEN = 18 # used in UCache
+SESSION_TIMEOUT = datetime.timedelta(30)
 
 XMPP_IDLE_TIME = 300
 XMPP_LONG_IDLE_TIME = 1800
