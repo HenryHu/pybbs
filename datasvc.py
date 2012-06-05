@@ -67,6 +67,10 @@ class DataService(BaseHTTPRequestHandler):
         return ip
         
     def writedata(self, data, type = '', code = 200):
+        if (self._params):
+            if ('jsonp' in self._params):
+                jsonp = self._params['jsonp']
+                data = '%s(%s);' % (jsonp, data)
         try:
             self.send_response(code)
             self.send_header('Content-Length', len(data))
@@ -100,6 +104,7 @@ class DataService(BaseHTTPRequestHandler):
         
         params = dict(params.items() + postvars.items())
         session = self.GetSession(params)
+        self._params = params
 
         try:
             cls, op = self.parse_req(req)
@@ -127,6 +132,7 @@ class DataService(BaseHTTPRequestHandler):
         params = dict(cgi.parse_qsl(url_tuple[3]))
         req = url_tuple[2]
         session = self.GetSession(params)
+        self._params = params
 
         try:
             cls, op = self.parse_req(req)
