@@ -87,6 +87,7 @@ class DataService(BaseHTTPRequestHandler):
 
     def return_error(self, code, reason):
         self.send_response(code, reason)
+        self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header("Content-Length", 0)
         self.end_headers()
 
