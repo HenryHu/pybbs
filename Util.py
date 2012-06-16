@@ -332,7 +332,7 @@ def fixterm_handler(exc):
         for c in exc.object[exc.start:]:
             pos = pos + 1
             if (ci == 0):
-                if (ord(c) <= 128):
+                if (ord(c) < 128):
                     s += c
                     break
                 else:
