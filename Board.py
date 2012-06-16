@@ -494,49 +494,27 @@ class Board:
     def DontStat(self):
         return self.CheckFlag(BOARD_POSTSTAT)
 
-    def PreparePostArticle(self, user, refile, anony, detail_mode):
-        if (detail_mode):
-            detail = {}
+    def PreparePostArticle(self, user, refile, anony):
+        detail = {}
         if (refile != None):
             if (self.CheckNoReply()):
-                if (detail_mode):
-                    detail['reply'] = 1
-                    return detail
-                else:
-                    raise NoPerm("can't reply in this board")
+                raise NoPerm("can't reply in this board")
             if (refile.CannotReply()):
-                if (detail_mode):
-                    detail['reply'] = 1
-                    return detail
-                else:
-                    raise NoPerm("can't reply this post")
+                raise NoPerm("can't reply this post")
         if (self.CheckReadonly()):
             Log.debug("PostArticle: fail: readonly")
-            if (detail_mode):
-                detail['post'] = 1
-                return detail
-            else:
-                raise NoPerm("board is readonly")
+            raise NoPerm("board is readonly")
         if (not self.CheckPostPerm(user)):
             Log.debug("PostArticle: fail: %s can't post on %s" % (user.name, self.name))
-            if (detail_mode):
-                detail['post'] = 1
-                return detail
-            else:
-                raise NoPerm("no permission to post")
+            raise NoPerm("no permission to post")
         if (self.DeniedUser(user)):
             if (not user.HasPerm(User.PERM_SYSOP)):
                 Log.debug("PostArticle: fail: %s denied on %s" % (user.name, self.name))
-                if (detail_mode):
-                    detail['post'] = 1
-                    return detail
-                else:
-                    raise NoPerm("user denied")
+                raise NoPerm("user denied")
 
         if anony:
             if not self.MayAnonyPost(user, refile):
-                if (detail_mode):
-                    detail['anonymous'] = 1
+                detail['anonymous'] = 1
 
         return detail
 
@@ -558,7 +536,7 @@ class Board:
 
     def PostArticle(self, user, title, content, refile, signature_id, anony, mailback, session):
         # check permission
-        self.PreparePostArticle(user, refile, anony, False)
+        self.PreparePostArticle(user, refile, anony)
 
         # filter title: 'Re: ' and '\ESC'
         title = title.replace('\033', ' ')

@@ -51,7 +51,7 @@ class Post:
                 refile = Post.GetReplyFile(svc, params, bo)
                 user = session.GetUser()
                 
-                detail = bo.PreparePostArticle(user, refile, anony, True)
+                detail = bo.PreparePostArticle(user, refile, anony)
                 result = {"error": detail}
                 svc.writedata(json.dumps(result))
             else:
