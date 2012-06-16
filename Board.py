@@ -357,6 +357,7 @@ class Board:
     def GetInfo(self):
         rboard = {}
         rboard['name'] = self.name
+        rboard['title'] = self.GetTitle()
         rboard['id'] = self.index
         rboard['BM'] = self.GetBM()
         rboard['total'] = self.GetTotal()
@@ -453,6 +454,9 @@ class Board:
                 return True
 
         return False
+
+    def GetTitle(self):
+        return Util.gbkDec(self.header.title)
 
     def GetBM(self):
         return self.header.BM
