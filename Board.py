@@ -14,6 +14,7 @@ from cstruct import CStruct
 import fcntl
 import time
 import os
+import re
 import random
 import binascii
 from errors import *
@@ -357,7 +358,12 @@ class Board:
     def GetInfo(self):
         rboard = {}
         rboard['name'] = self.name
-        rboard['title'] = self.GetTitle()
+        title = self.GetTitle()
+        result = re.match('([0-9]+)\[([^]]*)\] *([^ ]*) *(.*)', title)
+        rboard['major'] = result.group(1)
+        rboard['minor'] = result.group(2)
+        rboard['outpost'] = result.group(3)
+        rboard['desc'] = result.group(4)
         rboard['id'] = self.index
         rboard['BM'] = self.GetBM()
         rboard['total'] = self.GetTotal()
