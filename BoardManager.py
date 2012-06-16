@@ -37,15 +37,12 @@ class BoardManager:
 
     @staticmethod
     def GetBoardByParam(svc, params):
-        if (params.has_key('board')):
-            board = params['board']
-            bo = BoardManager.GetBoard(board)
-            if (bo == None):
-                raise NotFound('board not found')
-            else:
-                return bo
+        board = svc.get_str(params, 'board')
+        bo = BoardManager.GetBoard(board)
+        if (bo == None):
+            raise NotFound('board not found')
         else:
-            raise WrongArgs('lack of board name')
+            return bo
 
     @staticmethod
     def Init():
