@@ -101,7 +101,7 @@ class Post:
             while (start != offset):
                 # read the name
                 name = Util.ReadString(fp)
-                attach = {'name': Util.gbkDec(name), 'offset:': offset}
+                attach = {'name': Util.gbkDec(name), 'offset': offset}
                 if (Post.IsPictureAttach(name)):
                     picturelist.append(attach)
                 else:
