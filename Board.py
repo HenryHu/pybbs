@@ -368,6 +368,8 @@ class Board:
         rboard['BM'] = self.GetBM()
         rboard['total'] = self.GetTotal()
         rboard['currentusers'] = self.GetCurrentUsers()
+        rboard['anony_post'] = int(self.CanAnonyPost())
+        rboard['anony_reply'] = int(self.CanAnonyReply())
         return rboard
 
     def GetInfoWithUser(self, user):
