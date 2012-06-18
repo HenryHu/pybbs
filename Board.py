@@ -359,7 +359,7 @@ class Board:
         rboard = {}
         rboard['name'] = self.name
         title = self.GetTitle()
-        result = re.match('([0-9]+)\[([^]]*)\] *([^ ]*) *(.*)', title)
+        result = re.match('([0-9]*)\[([^]]*)\] *([^ ]*) *(.*)', title)
         rboard['major'] = result.group(1)
         rboard['minor'] = result.group(2)
         rboard['outpost'] = result.group(3)
