@@ -104,6 +104,8 @@ class Core(i.CoreInterface):
 
     def handle_stream_closed(self):
         self.state.trigger(StreamClosed)
+        if (self.resources):
+            self.resources.unbind(self.authJID)
         self.root = None
         self.close()
 
