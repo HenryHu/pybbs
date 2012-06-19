@@ -280,7 +280,8 @@ class Resources(object):
     def unbind(self, jid):
         """Destroy a registered binding."""
 
-        del self._bound[jid]
+        if (jid in self._bound):
+            del self._bound[jid]
         routes = self._routes.get(jid.bare)
         if routes:
            if jid in routes:

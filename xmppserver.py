@@ -29,7 +29,7 @@ class XMPPServer(xmpp.Plugin):
 
         if (not self.rosters.allow_login(self.authJID.bare)):
             Log.warn("user %s login denied" % self._userid)
-            self.unbind_res()
+#            self.unbind_res()
             self.stream_error('policy-violation', 'Login denied. Too many logins?')
             return
         Log.debug("%s: session start" % unicode(self.authJID))
@@ -63,7 +63,7 @@ class XMPPServer(xmpp.Plugin):
         Log.debug("%s: session end" % unicode(self.authJID))
         if (self._session):
             self._session.Unregister()
-        self.unbind_res()
+#        self.unbind_res()
         self.rosters.unregister_conn(self)
 
     @xmpp.iq('{urn:xmpp:ping}ping')
