@@ -220,7 +220,11 @@ class Bind(plugin.Feature):
         assert iq.get('type') == 'set'
         self.jid = self.resources.bind(self.get_resource(iq), self)
         self.iq('result', iq, self.E.bind(self.E.jid(unicode(self.jid))))
+        self.one(StreamClosed, self.handle_close)
         return self.trigger(StreamBound)
+
+    def handle_close(self):
+        self.resources.unbind(self.jid)
 
     ### ---------- Client ----------
 
@@ -283,10 +287,11 @@ class Resources(object):
         del self._bound[jid]
         routes = self._routes.get(jid.bare)
         if routes:
-           if len(routes) > 1:
-               routes.remove(jid)
-           else:
-               del self._routes[jid.bare]
+           if jid in routes:
+               if len(routes) > 1:
+                   routes.remove(jid)
+               else:
+                   del self._routes[jid.bare]
         return self
 
     def routes(self, jid):
