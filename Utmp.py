@@ -55,19 +55,19 @@ class Utmp:
             #return 0;
         #except BusyError:
             #return -1;
-        Log.debug("Utmp.Lock enter()")
+#        Log.debug("Utmp.Lock enter()")
         lockf = os.open(Config.BBS_ROOT + "UTMP", os.O_RDWR | os.O_CREAT, 0600)
         if (lockf < 0):
             Log.error("Fail to open lock file!")
             raise Exception("fail to lock!")
         Util.FLock(lockf, shared = False)
-        Log.debug("Utmp.Lock succ()")
+#        Log.debug("Utmp.Lock succ()")
         return lockf
 
     @staticmethod
     def Unlock(lockf):
         #SemLock.Unlock(Config.UCACHE_SEMLOCK)
-        Log.debug("Utmp.Unlock")
+#        Log.debug("Utmp.Unlock")
         Util.FUnlock(lockf)
         os.close(lockf)
 
