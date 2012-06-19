@@ -7,13 +7,14 @@ import json
 import base64
 from BCache import *
 import User
-from BRead import BReadMgr
+import BRead
 from Error import *
 from Log import Log
 from cstruct import CStruct
 import fcntl
 import time
 import os
+import re
 import random
 import binascii
 from errors import *
@@ -183,7 +184,7 @@ class Board:
         self.UpdateBoardInfo()
         start, end = Util.CheckRange(start, end, count, DEFAULT_GET_POST_COUNT, self.status.total)
         if ((start <= end) and (start >= 1) and (end <= self.status.total)):
-            bread = BReadMgr.LoadBRead(session.GetUser().name)
+            bread = BRead.BReadMgr.LoadBRead(session.GetUser().name)
             if (bread != None):
                 bread.Load(self.name)
             if (mode == 'normal'):
@@ -269,7 +270,7 @@ class Board:
                 post['otherattach'] = attachlist[1]
                 svc.writedata(json.dumps(post))
                 postf.close()
-                bread = BReadMgr.LoadBRead(session.GetUser().name)
+                bread = BRead.BReadMgr.LoadBRead(session.GetUser().name)
                 bread.Load(self.name)
                 bread.MarkRead(pe.id, self.name)
             else:
@@ -309,7 +310,7 @@ class Board:
             else:
                 i = id - 1
             if (only_new):
-                bread = BReadMgr.LoadBRead(user.name)
+                bread = BRead.BReadMgr.LoadBRead(user.name)
             while ((i >= 1) and (i <= self.status.total)):
                 pxe = self.GetPostEntry(i - 1, "normal", dirf)
                 if (pxe.groupid == pe.groupid):
@@ -357,10 +358,18 @@ class Board:
     def GetInfo(self):
         rboard = {}
         rboard['name'] = self.name
+        title = self.GetTitle()
+        result = re.match('([0-9 ]*)\[([^]]*)\] *([^ ]*) *(.*)', title)
+        rboard['major'] = result.group(1)
+        rboard['minor'] = result.group(2)
+        rboard['outpost'] = result.group(3)
+        rboard['desc'] = result.group(4)
         rboard['id'] = self.index
         rboard['BM'] = self.GetBM()
         rboard['total'] = self.GetTotal()
         rboard['currentusers'] = self.GetCurrentUsers()
+        rboard['anony_post'] = int(self.CanAnonyPost())
+        rboard['anony_reply'] = int(self.CanAnonyReply())
         return rboard
 
     def GetInfoWithUser(self, user):
@@ -454,6 +463,9 @@ class Board:
 
         return False
 
+    def GetTitle(self):
+        return Util.gbkDec(self.header.title)
+
     def GetBM(self):
         return self.header.BM
 
@@ -467,7 +479,7 @@ class Board:
         return self.status.lastpost
 
     def GetUnread(self, user):
-        bread = BReadMgr.LoadBRead(user)
+        bread = BRead.BReadMgr.LoadBRead(user)
         if (bread == None):
             return True
         else:
@@ -494,31 +506,32 @@ class Board:
     def DontStat(self):
         return self.CheckFlag(BOARD_POSTSTAT)
 
-    def PostArticle(self, user, title, content, refile, signature_id, anony, mailback, session):
+    def PreparePostArticle(self, user, refile, anony):
+        detail = {}
         if (refile != None):
             if (self.CheckNoReply()):
                 raise NoPerm("can't reply in this board")
             if (refile.CannotReply()):
                 raise NoPerm("can't reply this post")
-        mycrc = (~binascii.crc32(user.name, 0xffffffff)) & 0xffffffff
         if (self.CheckReadonly()):
             Log.debug("PostArticle: fail: readonly")
             raise NoPerm("board is readonly")
-
         if (not self.CheckPostPerm(user)):
             Log.debug("PostArticle: fail: %s can't post on %s" % (user.name, self.name))
             raise NoPerm("no permission to post")
-
         if (self.DeniedUser(user)):
             if (not user.HasPerm(User.PERM_SYSOP)):
                 Log.debug("PostArticle: fail: %s denied on %s" % (user.name, self.name))
                 raise NoPerm("user denied")
 
-        # filter title: 'Re: ' and '\ESC'
-        title = title.replace('\033', ' ')
-        if (refile == None):
-            while (title[:4] == "Re: "):
-                title = title[4:]
+        if anony:
+            if not self.MayAnonyPost(user, refile):
+                detail['anonymous'] = 1
+
+        return detail
+
+    def MayAnonyPost(self, user, refile):
+        mycrc = (~binascii.crc32(user.name, 0xffffffff)) & 0xffffffff
 
         may_anony = False
         if (refile == None): # not in reply mode
@@ -531,8 +544,21 @@ class Board:
                 if (self.CanAnonyReply()):
                     may_anony = True
 
-        if (not may_anony):
-            anony = False
+        return may_anony
+
+    def PostArticle(self, user, title, content, refile, signature_id, anony, mailback, session):
+        # check permission
+        self.PreparePostArticle(user, refile, anony)
+
+        # filter title: 'Re: ' and '\ESC'
+        title = title.replace('\033', ' ')
+        if (refile == None):
+            while (title[:4] == "Re: "):
+                title = title[4:]
+
+        if anony:
+            if not self.MayAnonyPost(user, refile):
+                anony = False
 
         if (signature_id < 0):
             Log.error("random signature: not implemented")
@@ -570,6 +596,7 @@ class Board:
             if (refile.IsRootPostAnonymous()):
                 post_file.SetRootPostAnonymous(True)
         else:
+            mycrc = (~binascii.crc32(user.name, 0xffffffff)) & 0xffffffff
             post_file.rootcrc = mycrc
             if (anony):
                 post_file.SetRootPostAnonymous(True)
@@ -622,7 +649,7 @@ class Board:
 
         self.UpdateLastPost()
 
-        bread = BReadMgr.LoadBRead(user.name)
+        bread = BRead.BReadMgr.LoadBRead(user.name)
         if (bread != None):
             bread.Load(self.name)
             bread.MarkRead(post_file.id, self.name)

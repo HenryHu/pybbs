@@ -65,10 +65,7 @@ class Auth:
         if (action == 'authpage'):
             rduri = svc.get_str(params, 'redirect_uri')
             if (not params.has_key('client_id') or not params.has_key('name') or not params.has_key('pass')):
-                svc.send_response(302)
-                svc.send_header('Location', rduri + '?error=invalid_request')
-                svc.send_header('Content-Length', 0)
-                svc.end_headers()
+                Auth.Error(svc, rduri, 'invalid_request')
                 return
             cid = params['client_id']
             name = params['name']

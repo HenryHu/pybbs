@@ -9,6 +9,7 @@ import os
 import binascii
 import re
 import time
+import json
 from errors import *
 from Log import Log
 
@@ -17,6 +18,20 @@ ATTACHMENT_SIZE = 0
 QUOTELEV = 1
 
 class Post:
+    @staticmethod
+    def GetReplyFile(svc, params, board):
+        re_id = svc.get_int(params, "re_id", 0)
+        re_xid = svc.get_int(params, "re_xid", 0)
+        re_mode = svc.get_str(params, "re_mode", 'normal')
+        if (re_id != 0 and re_xid == 0):
+            raise WrongArgs("re_xid must be given with re_id")
+
+        if (re_id != 0):
+            re_file = board.FindPost(re_id, re_xid, re_mode)
+        else:
+            re_file = None
+
+        return re_file
 
     @staticmethod
     def GET(svc, session, params, action):
@@ -29,6 +44,18 @@ class Post:
 
         if (action == 'search'):
             raise WrongArgs('not implemented')
+        elif action == 'prepare':
+            for_action = svc.get_str(params, 'for')
+            if for_action == 'new':
+                anony = bool(svc.get_int(params, "anonymous", 0))
+                refile = Post.GetReplyFile(svc, params, bo)
+                user = session.GetUser()
+                
+                detail = bo.PreparePostArticle(user, refile, anony)
+                result = {"error": detail}
+                svc.writedata(json.dumps(result))
+            else:
+                raise WrongArgs("unknown action to prepare")
         else:
             _id = svc.get_int(params, 'id')
             if (action == 'view'):
@@ -57,17 +84,8 @@ class Post:
             signature_id = svc.get_int(params, "signature_id", 0)
             anony = bool(svc.get_int(params, "anonymous", 0))
             mailback = bool(svc.get_int(params, "mailback", 0))
-            re_id = svc.get_int(params, "re_id", 0)
-            re_xid = svc.get_int(params, "re_xid", 0)
-            re_mode = svc.get_str(params, "re_mode", 'normal')
-            if (re_id != 0 and re_xid == 0):
-                raise WrongArgs("re_xid must be given with re_id")
-
-            if (re_id != 0):
-                re_file = bo.FindPost(re_id, re_xid, re_mode)
-            else:
-                re_file = None
-
+            re_file = Post.GetReplyFile(svc, params, bo)
+            
             bo.PostArticle(session.GetUser(), title, content, re_file, signature_id, anony, mailback, session)
             svc.writedata('{"result": "ok"}')
         else:
@@ -83,7 +101,7 @@ class Post:
             while (start != offset):
                 # read the name
                 name = Util.ReadString(fp)
-                attach = {'name': Util.gbkDec(name), 'offset:': offset}
+                attach = {'name': Util.gbkDec(name), 'offset': offset}
                 if (Post.IsPictureAttach(name)):
                     picturelist.append(attach)
                 else:
