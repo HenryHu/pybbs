@@ -5,7 +5,8 @@
 
 from __future__ import absolute_import
 import sasl, weakref, random, hashlib, base64
-from . import plugin, xml, interfaces as i, core as c
+from . import plugin, xml, interfaces as i
+from core import StreamClosed
 from .prelude import *
 
 __all__ = (
@@ -220,7 +221,7 @@ class Bind(plugin.Feature):
         assert iq.get('type') == 'set'
         self.jid = self.resources.bind(self.get_resource(iq), self)
         self.iq('result', iq, self.E.bind(self.E.jid(unicode(self.jid))))
-        self.one(c.StreamClosed, self.handle_close)
+        self.one(StreamClosed, self.handle_close)
         return self.trigger(StreamBound)
 
     def handle_close(self):
