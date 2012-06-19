@@ -173,7 +173,7 @@ class Rosters(Thread):
                 if (show != None):
                     elem.append(conn.E.show(show))
                 try:
-                    conn.send(conn.authJID.bare, elem)
+                    conn.send(conn.authJID, elem)
                 except Exception as e:
                     Log.error("Exception caught when faking response from %s/%s to %r" % (jid, session_info.get_res(), conn.authJID.bare))
                     traceback.print_exc()
