@@ -37,7 +37,7 @@ import commondata
 from errors import *
 
 class DataService(BaseHTTPRequestHandler):
-    classes = { "post"      : Post, 
+    classes = {"post"       : Post,
                "board"      : Board,
                "session"    : Session,
                "user"       : User,
@@ -65,7 +65,7 @@ class DataService(BaseHTTPRequestHandler):
         except KeyError:
             return self.client_address[0]
         return ip
-        
+
     def writedata(self, data, type = '', code = 200):
         if (self._params):
             if ('jsonp' in self._params):
@@ -105,7 +105,7 @@ class DataService(BaseHTTPRequestHandler):
             postvars = dict(urlparse.parse_qsl(self.rfile.read(length), keep_blank_values=1))
         else:
             postvars = {}
-        
+
         params = dict(params.items() + postvars.items())
         session = self.GetSession(params)
         self._params = params
@@ -204,7 +204,7 @@ def main():
         server.serve_forever()
     except:
         pass
-        
+
 if __name__ == '__main__':
-    main()   
+    main()
 
