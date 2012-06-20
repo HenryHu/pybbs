@@ -381,7 +381,7 @@ class Rosters(Thread):
             if (session._userinfo.mode == modes.XMPP):
                 count += 1'''
         try:
-            count = len(self._resources.routes(xml.jid(jid)))
+            count = len(self._resources.routes(xml.jid(jid))) - 1
         except NoRoute:
             count = 0
 
