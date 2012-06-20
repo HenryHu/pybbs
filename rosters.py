@@ -375,8 +375,17 @@ class Rosters(Thread):
         return userid, sessionid
 
     def allow_login(self, jid):
-        sessions = self.get_bbs_online(jid)
-        if len(sessions) >= Config.Config.GetInt("XMPP_TOTAL_LOGIN_LIMIT", 5):
+        '''sessions = self.get_bbs_online(jid)
+        count = 0
+        for session in sessions:
+            if (session._userinfo.mode == modes.XMPP):
+                count += 1'''
+        try:
+            count = len(self._resources.routes(xml.jid(jid)))
+        except NoRoute:
+            count = 0
+
+        if count >= Config.Config.GetInt("XMPP_TOTAL_LOGIN_LIMIT", 5):
             return False
         # may add other checks here
         return True
