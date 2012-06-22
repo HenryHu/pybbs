@@ -124,7 +124,12 @@ class User:
 
     @staticmethod
     def GET(svc, session, params, action):
-        raise WrongArgs("unknown action")
+        if (session == None): raise Unauthorized('login first')
+        if (action == 'query'):
+            userid = svc.get_str(params, 'id')
+            User.QueryUser(svc, params, userid)
+        else:
+            raise WrongArgs("unknown action")
 
     @staticmethod
     def OwnFile(userid, str):
@@ -362,5 +367,13 @@ class User:
             self.userec.firstlogin = int(time.time()) - 7 * 86400
 
         self.userec.pack()
+
+    @staticmethod
+    def QueryUser(svc, params, userid):
+        user = UserManager.LoadUser(userid)
+        if (user is None):
+            raise NotFound("user %s not found" % userid)
+        info = user.GetInfo()
+        svc.writedata(json.dumps(info))
 
 from UserManager import UserManager
