@@ -1,7 +1,7 @@
 from Config import *
 from UserInfo import UserInfo
 from Util import Util
-from Utmp import Utmp
+import Utmp
 import modes
 import User
 from UCache import UCache
@@ -89,7 +89,7 @@ class Session:
     def Register(self):
         # register this session (so TERM users can see me)
         userinfo = self.InitNewUserInfo()
-        self.utmpent = Utmp.GetNewUtmpEntry(userinfo)
+        self.utmpent = Utmp.Utmp.GetNewUtmpEntry(userinfo)
         if (self.utmpent == -1):
             return None
 
@@ -103,8 +103,11 @@ class Session:
         if (self.utmpent < 0):
             Log.error("Unregister() without Register() or failed!")
             return False
-        Utmp.Clear(self.utmpent, self.uid, self._userinfo.pid)
+        Utmp.Utmp.Clear(self.utmpent, self.uid, self._userinfo.pid)
         return True
+
+    def RecordLogin(self, count = False):
+        self.user.RecordLogin(self._fromip, self._userinfo, count)
 
 class SessionManager:
     sessions = {}
@@ -164,6 +167,7 @@ class SessionManager:
                     session = Session(user, fromip, id, created)
                     if (session.Timeout()):
                         return None
+                    session.RecordLogin()
                     return session
                 return None
             finally:
@@ -174,6 +178,7 @@ class SessionManager:
             return None
         session._fromip = fromip
         SessionManager.Update(session)
+        session.RecordLogin()
         return session
 
     @staticmethod

@@ -39,6 +39,7 @@ class XMPPServer(xmpp.Plugin):
             raise Exception("How can that be!")
         self._peer_addr = self.getpeername()
         self._session = Session(self._user, self._peer_addr[0])
+        self._session.RecordLogin()
         # insert into global session list!
         self._userinfo = self._session.Register()
         self._loginid = self._session.utmpent
