@@ -2,6 +2,7 @@
 
 import json
 import hashlib
+import time
 
 import Config
 import Defs
@@ -46,6 +47,13 @@ PERM_DISS =       02000000000
 PERM_DENYMAIL =          04000000000
 PERM_MALE =                  010000000000
 
+LIFE_DAY_USER =           120
+LIFE_DAY_YEAR =          365
+LIFE_DAY_LONG =           666
+LIFE_DAY_SYSOP =          120
+LIFE_DAY_NODIE =          999
+LIFE_DAY_NEW =            15
+LIFE_DAY_SUICIDE =        3
 
 # these are flags in userec.flags[0] 
 PAGER_FLAG   = 0x1  # /* true if pager was OFF last session */
@@ -144,6 +152,9 @@ class User:
         if (self.userec.userlevel & perm != 0):
             return True
         return False
+
+    def ClearPerm(self, perm):
+        self.userec.userlevel &= ~perm
 
     def HasFlag(self, flag):
         if (self.userec.flags & flag != 0):
@@ -254,8 +265,101 @@ class User:
                 userinfo.userid == self.name)
 
     def AddNumPosts(self):
+        self.userec.unpack()
         self.userec.numposts += 1
         self.userec.pack()
 
+    def ComputeLife(self):
+        self.userec.unpack()
+        if ((self.HasPerm(PERM_XEMPT) or self.HasPerm(PERM_CHATCLOAK)) and not self.HasPerm(PERM_SUICIDE)):
+            return LIFE_DAY_NODIE;
+
+        if (self.HasPerm(PERM_ANNOUNCE) or self.HasPerm(PERM_OBOARDS)):
+            return LIFE_DAY_SYSOP;
+
+        value = (int(time.time()) - self.userec.lastlogin) / 60
+        if (value == 0):
+            value = 1
+
+        if (self.name == "new"):
+            # maybe one day, we can register new user...
+            # but, "new"?....
+            return (LIFE_DAY_NEW - value) / 60
+
+        day_min = 60 * 24
+        if (self.HasPerm(PERM_SUICIDE) or self.userec.numlogins <= 3):
+            return (LIFE_DAY_SUICIDE * day_min - value) / day_min
+
+        if (not self.HasPerm(PERM_LOGINOK)):
+            return (LIFE_DAY_NEW * day_min - value) / day_min
+
+        return ((LIFE_DAY_USER + 1) * day_min - value) / day_min
+
+    def ComputePerf(self):
+        if (self.name == "guest"):
+            return -9999
+        self.userec.unpack()
+
+        reg_days = (int(time.time()) - self.userec.firstlogin) / 86400 + 1
+        perf = int((1. * self.userec.numposts / self.userec.numlogins + 1. * self.userec.numlogins / reg_days) * 10)
+        if (perf < 0):
+            perf = 0
+        return perf
+
+    def ComputeExp(self):
+        if (self.name == "guest"):
+            return -9999
+        self.userec.unpack()
+
+        reg_days = (int(time.time()) - self.userec.firstlogin) / 86400
+        exp = self.userec.numposts + self.userec.numlogins / 5 + reg_days / 86400 + self.userec.stay / 3600
+        if (exp < 0):
+            exp = 0
+        return exp
+
+    def GetInfo(self):
+        info = {}
+        info['userid'] = Util.gbkDec(self.name)
+        info['nick'] = Util.gbkDec(self.userec.username)
+        info['numlogins'] = self.userec.numlogins
+        info['numposts'] = self.userec.numposts
+        info['lastlogin'] = time.ctime(self.userec.lastlogin)
+        info['lasthost'] = self.userec.lasthost
+        info['exp'] = self.ComputeExp()
+        info['perf'] = self.ComputePerf()
+        info['life'] = self.ComputeLife()
+        plan = self.GetPlan()
+        if (plan is not None):
+            info['plan'] = plan
+        return info
+
+    def GetPlan(self):
+        plan_file = self.MyFile("plans")
+        try:
+            with open(plan_file, "r") as f:
+                return Util.gbkDec(plan_file.read())
+        except IOError:
+            return None
+
+    def RecordLogin(self, fromip, userinfo, count):
+        self.userec.unpack()
+        if (userinfo is None or not userinfo.invisible):
+            self.userec.lasthost = fromip
+            self.userec.lastlogin = int(time.time())
+            if (count):
+                self.userec.numlogins += 1
+
+        if (self.userec.numlogins < 1):
+            self.userec.numlogins = 1
+        if (self.userec.numposts < 0):
+            self.userec.numposts = 0
+        if (self.userec.stay < 0):
+            self.userec.stay = 1
+        # login? so you still want to live...
+        self.ClearPerm(PERM_SUICIDE)
+        if (self.userec.firstlogin == 0):
+            self.userec.firstlogin = int(time.time()) - 7 * 86400
+
+        self.userec.pack()
 
 from UserManager import UserManager
