@@ -28,7 +28,7 @@ USEREC_USERID_POS = 0
 
 class UserRecord:
     parser = struct.Struct('=%dsbBI16sII%ds2s%ds%ds%ds%dsIIIi8sIiiII' % (Config.IDLEN + 2, Config.OLDPASSLEN, Config.NAMELEN, Config.MAXCLUB/32 * 4, Config.MAXCLUB / 32 * 4, Config.MD5PASSLEN))
-    _fields = [['userid', 1], 'flags', 'title', 'firstlogin', 'lasthost', 'numlogins', 'numposts', 'passwd', 'padding', ['username', 1], ['club_read_rights', 2, '=%dI' % (Config.MAXCLUB/32)], ['club_write_rights', 2, '=%dI' % (Config.MAXCLUB/32)], 'md5passwd', 'userlevel', 'lastlogin', 'stay', 'signature', ['userdef', 2, '=2I'], 'notedate', 'noteline', 'notemode', 'exittime', 'usedspace']
+    _fields = [['userid', 1], 'flags', 'title', 'firstlogin', ['lasthost', 1], 'numlogins', 'numposts', 'passwd', 'padding', ['username', 1], ['club_read_rights', 2, '=%dI' % (Config.MAXCLUB/32)], ['club_write_rights', 2, '=%dI' % (Config.MAXCLUB/32)], 'md5passwd', 'userlevel', 'lastlogin', 'stay', 'signature', ['userdef', 2, '=2I'], 'notedate', 'noteline', 'notemode', 'exittime', 'usedspace']
     uid = 0
 
     # struct userec

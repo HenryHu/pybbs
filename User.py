@@ -312,7 +312,7 @@ class User:
         self.userec.unpack()
 
         reg_days = (int(time.time()) - self.userec.firstlogin) / 86400
-        exp = self.userec.numposts + self.userec.numlogins / 5 + reg_days / 86400 + self.userec.stay / 3600
+        exp = self.userec.numposts + self.userec.numlogins / 5 + reg_days + self.userec.stay / 3600
         if (exp < 0):
             exp = 0
         return exp
@@ -323,7 +323,8 @@ class User:
         info['nick'] = Util.gbkDec(self.userec.username)
         info['numlogins'] = self.userec.numlogins
         info['numposts'] = self.userec.numposts
-        info['lastlogin'] = time.ctime(self.userec.lastlogin)
+        info['lastlogintime'] = time.ctime(self.userec.lastlogin)
+        info['lastlogin'] = self.userec.lastlogin
         info['lasthost'] = self.userec.lasthost
         info['exp'] = self.ComputeExp()
         info['perf'] = self.ComputePerf()
@@ -337,7 +338,7 @@ class User:
         plan_file = self.MyFile("plans")
         try:
             with open(plan_file, "r") as f:
-                return Util.gbkDec(plan_file.read())
+                return Util.gbkDec(f.read())
         except IOError:
             return None
 
