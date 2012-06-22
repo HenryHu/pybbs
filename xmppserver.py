@@ -63,7 +63,7 @@ class XMPPServer(xmpp.Plugin):
         Log.debug("%s: session end" % unicode(self.authJID))
         if (self._session):
             self._session.Unregister()
-#        self.unbind_res()
+        self.unbind_res()
         self.rosters.unregister_conn(self)
 
     @xmpp.iq('{urn:xmpp:ping}ping')
