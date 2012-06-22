@@ -9,6 +9,7 @@ import Config
 import MsgBox
 import xmpp
 import modes
+import Util
 
 __disco_info_ns__ = 'http://jabber.org/protocol/disco#info'
 __vcard_ns__ = 'vcard-temp'
@@ -228,8 +229,24 @@ class XMPPServer(xmpp.Plugin):
 
             form_target = UCache.UCache.formalize_jid(target)
             name = form_target.partition('@')[0]
+            user = UserManager.LoadUser(name)
+            info = user.GetInfo()
+            desc = '''\r
+Logins: %d\r
+Posts: %d\r
+Last login: %s from %s\r
+Experience: %d\r
+Performance: %d\r
+Life: %d\r
+''' % (info['numlogins'], info['numposts'], info['lastlogintime'], 
+        info['lasthost'], info['exp'], info['perf'], info['life'])
+            if ('plan' in info):
+                desc += "Plan:\r%s" % (info['plan'].replace('\n', '\r\n'))
+
             vcard = self.E.vCard({'xmlns': 'vcard-temp'},
-                self.E('FN', name))
+                self.E('FN', name),
+                self.E('NICKNAME', Util.Util.RemoveTags(info['nick'])),
+                self.E('DESC', Util.Util.RemoveTags(desc)))
 
             if (iq.get('to') == None):
                 return self.iq('result', iq, vcard)
