@@ -1,4 +1,5 @@
 from UCache import UCache
+from UserMemo import UserMemoMgr
 import json
 from errors import *
 
