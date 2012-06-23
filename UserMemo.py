@@ -1,25 +1,80 @@
+import Config
+import os
+from Util import Util
+import struct
+from errors import *
+import User
+import mmap
+
 class UserMemo:
+    parser = struct.Struct('=%ds2s%ds%ds%ds%dscBBB%dsI%ds%ds%ds%ds%ds3si%dsBB2sI%ds%ds%dsBBBBBB%dsB%ds%ds41s44sIi' % (Config.IDLEN + 2, Config.STRLEN - 16, Config.NAMELEN, Config.STRLEN, Config.STRLEN, Config.STRLEN, Config.MOBILE_NUMBER_LEN, Config.STRLEN, Config.STRLEN, Config.STRLEN, Config.STRLEN, Config.STRLEN, Config.STRLEN, Config.STRLEN, Config.STRLEN, Config.STRLEN, Config.STRLEN, Config.STRLEN))
+    _fields = [['userid', 1], '__reserved', ['realemail', 1], ['realname', 1], ['address', 1], ['email', 1], 'gender', 'birthyear', 'birthmonth', 'birthday', ['reg_email', 1], 'mobileregistered', ['mobilenumber', 1], ['OICQ', 1], ['ICQ', 1], ['MSN', 1], ['homepage', 1], 'pad1', 'userface_img', ['userface_url', 1], 'userface_width', 'userface_height', 'pad2', 'group', ['country', 1], ['province', 1], ['city', 1], 'shengxiao', 'bloodtype', 'religion', 'profession', 'married', 'education', ['graduateschool', 1], 'character', ['photo_url', 1], ['telephone', 1], ['smsprefix', 1], ['smsend', 1], 'smsdef', 'signum']
+    size = parser.size
+
     _memo = None
     _name = ""
-    def __init__(self, userid):
+    def __init__(self, userid, data = None):
         self._name = userid
-        self.Load()
+        if (data is None):
+            self.Load()
+            self.unpack()
+        else:
+            self.unpack(data)
 
     def Load(self):
-        fname = User.OwnFile(self._name, "usermemo")
-        fmemo = open(fname, "r+b")
-        if (fmemo == None):
-            return False
+        fname = User.User.OwnFile(self._name, "usermemo")
 
-        fstat = os.stat(fname)
+        try:
+            os.stat(fname)
+        except IOError:
+            data = self.read()
+            if (data is None):
+                raise ServerError("can't load usermemo for %s" % self._name)
+
+            try:
+                with open(fname, "wb") as f:
+                    f.write(data)
+            except IOError:
+                raise ServerError("can't write usermemo for %s" % self._name)
+
+        try:
+            fmemo = open(fname, "r+b")
+        except IOError:
+            raise ServerError("can't open usermemo for %s" % self._name)
 
         self._memo = Util.Mmap(fmemo, mmap.PROT_READ | mmap.PROT_WRITE, mmap.MAP_SHARED)
-        if (self._memo == None):
-            fmemo.close()
-            return False
-
         fmemo.close()
+        if (self._memo == None):
+            raise ServerError("can't mmap usermemo for %s" % self._name)
+
         return True
+
+    def read(self):
+        datafile = User.User.OwnFile(self._name, ".userdata")
+        try:
+            with open(datafile, "rb") as f:
+                return f.read(self.size)
+        except IOError:
+            try:
+                self.userid = self._name
+                data = self.pack(False)
+                with open(datafile, "wb") as f:
+                    f.write(data)
+                return data
+            except IOError:
+                return None
+
+    def unpack(self, data = None):
+        if (data is None):
+            Util.Unpack(self, self.parser.unpack(self._memo.read(self.size)))
+        else:
+            Util.Unpack(self, self.parser.unpack(data))
+
+    def pack(self, write = True):
+        if (write):
+            self._memo.write(self.parser.pack(*Util.Pack(self)))
+        else:
+            return self.parser.pack(*Util.Pack(self))
 
 class UserMemoMgr:
     _usermemo_set = {}

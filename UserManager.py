@@ -39,7 +39,11 @@ class UserManager:
         if (userec == None):
             return None
 
-        ruser = User(user, userec)
+        umemo = UserMemoMgr.LoadUsermemo(user)
+        if (umemo is None):
+            return None
+
+        ruser = User(user, userec, umemo)
         return ruser
 
 from Session import Session

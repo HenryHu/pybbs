@@ -106,9 +106,10 @@ class User:
     name = ''
     userec = None
 
-    def __init__(self, user, userec):
+    def __init__(self, user, userec, umemo):
         self.name = user
         self.userec = userec
+        self.memo = umemo
 
     @staticmethod
     def POST(svc, session, params, action):
