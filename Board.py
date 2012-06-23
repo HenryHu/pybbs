@@ -561,8 +561,11 @@ class Board:
                 anony = False
 
         if (signature_id < 0):
-            Log.error("random signature: not implemented")
-            raise WrongArgs("random sig: not implemented")
+            signum = user.GetSignatureCount()
+            if (signum == 0):
+                signature_id = 0
+            else:
+                signature_id = random.randint(1, signum)
 
         post_file = PostEntry()
 #        Log.debug("PostArticle title: %s anony: %r" % (title, anony))
