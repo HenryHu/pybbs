@@ -377,4 +377,7 @@ class User:
         info = user.GetInfo()
         svc.writedata(json.dumps(info))
 
+    def GetSignatureCount(self):
+        return self.memo.signum
+
 from UserManager import UserManager
