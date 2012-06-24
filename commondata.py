@@ -70,7 +70,7 @@ class CommonData:
             try:
                 CommonData.publicshm = SharedMemory(Config.PUBLIC_SHMKEY, size = PUBLICSHM_SIZE)
             except ExistentialError:
-                Log.Error("time daemon not started")
+                Log.error("time daemon not started")
                 raise Exception("Initialization failed: publicshm not created")
 
     @staticmethod
