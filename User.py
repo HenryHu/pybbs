@@ -272,12 +272,9 @@ class User:
                 userinfo.userid == self.name)
 
     def AddNumPosts(self):
-        self.userec.unpack()
         self.userec.numposts += 1
-        self.userec.pack()
 
     def ComputeLife(self):
-        self.userec.unpack()
         if ((self.HasPerm(PERM_XEMPT) or self.HasPerm(PERM_CHATCLOAK)) and not self.HasPerm(PERM_SUICIDE)):
             return LIFE_DAY_NODIE;
 
@@ -305,7 +302,6 @@ class User:
     def ComputePerf(self):
         if (self.name == "guest"):
             return -9999
-        self.userec.unpack()
 
         reg_days = (int(time.time()) - self.userec.firstlogin) / 86400 + 1
         perf = int((1. * self.userec.numposts / self.userec.numlogins + 1. * self.userec.numlogins / reg_days) * 10)
@@ -316,7 +312,6 @@ class User:
     def ComputeExp(self):
         if (self.name == "guest"):
             return -9999
-        self.userec.unpack()
 
         reg_days = (int(time.time()) - self.userec.firstlogin) / 86400
         exp = self.userec.numposts + self.userec.numlogins / 5 + reg_days + self.userec.stay / 3600
@@ -350,7 +345,6 @@ class User:
             return None
 
     def RecordLogin(self, fromip, userinfo, count):
-        self.userec.unpack()
         if (userinfo is None or not userinfo.invisible):
             self.userec.lasthost = fromip
             self.userec.lastlogin = int(time.time())
@@ -368,8 +362,6 @@ class User:
         if (self.userec.firstlogin == 0):
             self.userec.firstlogin = int(time.time()) - 7 * 86400
 
-        self.userec.pack()
-
     @staticmethod
     def QueryUser(svc, params, userid):
         user = UserManager.UserManager.LoadUser(userid)
@@ -377,4 +369,13 @@ class User:
             raise NotFound("user %s not found" % userid)
         info = user.GetInfo()
         svc.writedata(json.dumps(info))
+
+    def GetSignatureCount(self):
+        return self.memo.signum
+
+    def SetSigID(self, sigid):
+        self.userec.signature = sigid
+
+    def GetSigID(self):
+        return self.userec.signature
 

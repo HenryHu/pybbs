@@ -10,6 +10,7 @@ import binascii
 import re
 import time
 import json
+import random
 from errors import *
 from Log import Log
 
@@ -218,8 +219,17 @@ class Post:
 
     @staticmethod
     def AddSig(fp, user, sig):
+        user.SetSigID(sig)
         if (sig == 0):
             return
+
+        if (sig < 0):
+            signum = user.GetSignatureCount()
+            if (signum == 0):
+                sig = 0
+            else:
+                sig = random.randint(1, signum)
+
         sig_fname = user.MyFile("signatures")
         valid_ln = 0
         tmpsig = []

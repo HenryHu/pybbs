@@ -322,6 +322,18 @@ class Util:
             return False
         return False
 
+    @staticmethod
+    def InitFields(cls):
+        base = 0
+        for field in cls._fields:
+            name = field[0]
+            ftype = field[1]
+            size = ftype.size
+            ftype.setbase(base)
+            base += size
+            setattr(cls, name, ftype)
+        cls.size = base
+
 def fixterm_handler(exc):
     if isinstance(exc, (UnicodeDecodeError)):
         s = u""

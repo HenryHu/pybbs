@@ -5,6 +5,7 @@ from Util import Util
 import UtmpHead
 from Log import Log
 import Config
+from cstruct import *
 
 '''
 struct public_data {
@@ -31,41 +32,34 @@ UNUSED_POS = MAX_WWWGUEST_POS + 4
 
 PUBLICSHM_SIZE = UNUSED_POS + 1004
 
+@init_fields
 class CommonData:
-    parser = struct.Struct('=iiiII')
-    _fields = ['nowtime', 'sysconfimg_version', 'www_guest_count', 'max_user', 'max_wwwguest']
+    _fields = [
+        ['nowtime', I32()],
+        ['sysconfimg_version', I32()],
+        ['www_guest_count', I32()],
+        ['max_user', U32()],
+        ['max_wwwguest', U32()],
+        ['unused', FixStr(1004)],
+    ]
     publicshm = None
 
-    @staticmethod
-    def GetWWWGuestCount():
-        return Util.SHMGetInt(CommonData.publicshm, WWW_GUEST_COUNT_POS)
+    def read(self, pos, len):
+        return CommonData.publicshm.read(len, pos)
 
-    @staticmethod
-    def GetMaxUser():
-        return Util.SHMGetUInt(CommonData.publicshm, MAX_USER_POS)
-
-    @staticmethod
-    def SetMaxUser(max_user):
-        return Util.SHMPutUInt(CommonData.publicshm, MAX_USER_POS, max_user)
-
-    @staticmethod
-    def GetMaxWWWUser():
-        return Util.SHMGetUInt(CommonData.publicshm, MAX_WWWGUEST_POS)
-
-    @staticmethod
-    def SetMaxWWWUser(max_www):
-        return Util.SHMSetUInt(CommonData.publicshm, MAX_WWWGUEST_POS, max_www)
+    def write(self, pos, data):
+        CommonData.publicshm.write(data, pos)
 
     @staticmethod
     def SaveMaxUser():
-        CommonData.SetMaxUser(UtmpHead.UtmpHead.GetNumber() + CommonData.GetWWWGuestCount())
-        CommonData.SetMaxWWWGuest(CommonData.GetWWWGuestCount())
+        CommonData().max_user = UtmpHead.UtmpHead.GetNumber() + CommonData().www_guest_count
+        CommonData().max_wwwguest = CommonData().www_guest_count
         with open(Config.BBS_ROOT + "etc/maxuser", "w") as fmaxuser:
-            fmaxuser.write("%d %d" % (CommonData.GetMaxUser(), CommonData.GetMaxWWWGuest()))
+            fmaxuser.write("%d %d" % (CommonData().max_user, CommonData().max_wwwguest))
 
     @staticmethod
     def UpdateMaxUser():
-        if (UtmpHead.UtmpHead.GetNumber() + CommonData.GetWWWGuestCount() > CommonData.GetMaxUser()):
+        if (UtmpHead.UtmpHead.GetNumber() + CommonData().www_guest_count > CommonData().max_user):
             CommonData.SetReadonly(0)
             CommonData.SaveMaxUser()
             CommonData.SetReadonly(1)
@@ -76,7 +70,7 @@ class CommonData:
             try:
                 CommonData.publicshm = SharedMemory(Config.PUBLIC_SHMKEY, size = PUBLICSHM_SIZE)
             except ExistentialError:
-                Log.Error("time daemon not started")
+                Log.error("time daemon not started")
                 raise Exception("Initialization failed: publicshm not created")
 
     @staticmethod

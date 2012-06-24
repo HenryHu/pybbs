@@ -2,6 +2,7 @@ import struct
 from Util import Util
 import Config
 from sysv_ipc import SharedMemory, ExistentialError
+from cstruct import *
 
 UCACHE_HASHSIZE = 330000
 UCACHE_HASHKCHAR = 3
@@ -26,27 +27,41 @@ PASSWD_POS = USER_TITLE_POS + 255 * Config.USER_TITLE_LEN + 2 # align
 
 USEREC_USERID_POS = 0
 
-class UserRecord:
-    parser = struct.Struct('=%dsbBI16sII%ds2s%ds%ds%ds%dsIIIi8sIiiII' % (Config.IDLEN + 2, Config.OLDPASSLEN, Config.NAMELEN, Config.MAXCLUB/32 * 4, Config.MAXCLUB / 32 * 4, Config.MD5PASSLEN))
-    _fields = [['userid', 1], 'flags', 'title', 'firstlogin', ['lasthost', 1], 'numlogins', 'numposts', 'passwd', 'padding', ['username', 1], ['club_read_rights', 2, '=%dI' % (Config.MAXCLUB/32)], ['club_write_rights', 2, '=%dI' % (Config.MAXCLUB/32)], 'md5passwd', 'userlevel', 'lastlogin', 'stay', 'signature', ['userdef', 2, '=2I'], 'notedate', 'noteline', 'notemode', 'exittime', 'usedspace']
-    uid = 0
-
-    # struct userec
-    size = parser.size
-
+@init_fields
+class UserRecord(object):
+    _fields = [
+        ['userid' , Str(Config.IDLEN + 2)],
+        ['flags' , I8()],
+        ['title' , U8()],
+        ['firstlogin' , U32()],
+        ['lasthost' , Str(16)],
+        ['numlogins' , U32()],
+        ['numposts' , U32()],
+        ['passwd' , FixStr(Config.OLDPASSLEN)],
+        ['padding' , FixStr(2)],
+        ['username' , Str(Config.NAMELEN)],
+        ['club_read_rights' , Array(I32, Config.MAXCLUB / 32)],
+        ['club_write_rights' , Array(I32, Config.MAXCLUB / 32)],
+        ['md5passwd' , FixStr(Config.MD5PASSLEN)],
+        ['userlevel' , U32()],
+        ['lastlogin' , U32()],
+        ['stay' , U32()],
+        ['signature' , I32()],
+        ['userdef' , Array(I32, 2)],
+        ['notedate' , U32()],
+        ['noteline' , I32()],
+        ['notemode' , I32()],
+        ['exittime' , U32()],
+        ['usedspace' , U32()]
+    ]
     def __init__(self, uid):
         self.uid = uid - 1 # 0 internal
-        self.unpack()
 
-    def unpack(self):
-        Util.Unpack(self, self.parser.unpack(UCache.uidshm.read(self.size, PASSWD_POS + self.size * self.uid)))
+    def read(self, pos, len):
+        return UCache.uidshm.read(len, PASSWD_POS + self.size * self.uid + pos)
 
-    def pack(self):
-        UCache.uidshm.write(self.parser.pack(*Util.Pack(self)), PASSWD_POS + self.size * self.uid)
-
-    @staticmethod
-    def GetUserId(index):
-        return Util.SHMGetString(UCache.uidshm, PASSWD_POS + UserRecord.size * index + USEREC_USERID_POS, Config.IDLEN + 2)
+    def write(self, pos, data):
+        UCache.uidshm.write(data, PASSWD_POS + self.size * self.uid + pos)
 
 class UCache:
     uidshm = None
@@ -66,7 +81,7 @@ class UCache:
     def SearchUser(name):
         i = UCache.GetHashHead(UCache.Hash(name))
         while (i):
-            if (name.lower() == UserRecord.GetUserId(i-1).lower()):
+            if (name.lower() == UserRecord(i).userid.lower()):
                 return i
             i = UCache.GetNext(i-1)
         return 0
