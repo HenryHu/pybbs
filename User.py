@@ -12,6 +12,7 @@ from UCache import UCache
 from Friend import Friend
 from Util import Util
 from errors import *
+import UserManager
 
 PERM_BASIC =     000001
 PERM_CHAT =      000002
@@ -119,7 +120,7 @@ class User:
                 raise WrongArgs('lack of username or password')
 
             raise NoPerm("normal login disabled, please use OAuth")
-            UserManager.HandleLogin(svc, params['name'], params['pass'])
+            UserManager.UserManager.HandleLogin(svc, params['name'], params['pass'])
         else:
             raise WrongArgs("unknown action")
 
@@ -371,10 +372,9 @@ class User:
 
     @staticmethod
     def QueryUser(svc, params, userid):
-        user = UserManager.LoadUser(userid)
+        user = UserManager.UserManager.LoadUser(userid)
         if (user is None):
             raise NotFound("user %s not found" % userid)
         info = user.GetInfo()
         svc.writedata(json.dumps(info))
 
-from UserManager import UserManager

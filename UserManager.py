@@ -1,5 +1,5 @@
 from UCache import UCache
-from UserMemo import UserMemoMgr
+import UserMemo
 import json
 from errors import *
 
@@ -40,7 +40,7 @@ class UserManager:
         if (userec == None):
             return None
 
-        umemo = UserMemoMgr.LoadUsermemo(user)
+        umemo = UserMemo.UserMemoMgr.LoadUsermemo(user)
         if (umemo is None):
             return None
 

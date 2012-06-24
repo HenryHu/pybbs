@@ -1,6 +1,6 @@
 import time
 
-from UserManager import UserManager
+import UserManager
 import UserInfo
 from Session import Session
 from Log import Log
@@ -35,7 +35,7 @@ class XMPPServer(xmpp.Plugin):
             return
         Log.debug("%s: session start" % unicode(self.authJID))
         # Login the user
-        self._user = UserManager.LoadUser(self._userid)
+        self._user = UserManager.UserManager.LoadUser(self._userid)
         if (self._user == None):
             raise Exception("How can that be!")
         self._peer_addr = self.getpeername()
@@ -229,7 +229,7 @@ class XMPPServer(xmpp.Plugin):
 
             form_target = UCache.UCache.formalize_jid(target)
             name = form_target.partition('@')[0]
-            user = UserManager.LoadUser(name)
+            user = UserManager.UserManager.LoadUser(name)
             info = user.GetInfo()
             desc = '''\r
 Logins: %d\r
