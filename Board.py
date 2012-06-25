@@ -158,7 +158,22 @@ class Board:
 
     @staticmethod
     def POST(svc, session, params, action):
-        raise WrongArgs("unknown action")
+        if (session == None): raise Unauthorized('login first')
+        bo = None
+        if (params.has_key('name')):
+            name = params['name']
+            bo = BoardManager.GetBoard(name)
+            if (bo == None):
+                raise NotFound("board %s not found" % name)
+        if (action == 'clear_unread'):
+            if (bo == None):
+                raise WrongArgs("lack of board name")
+            to = svc.get_int(params, 'to', 0)
+            if (not bo.CheckReadPerm(session.GetUser())):
+                raise NoPerm("permission denied")
+            bo.ClearUnread(session.GetUser(), to)
+        else:
+            raise WrongArgs("unknown action")
 
     def GetBoardPath(self, filename = ""):
         return Config.BBS_ROOT + 'boards/%s/%s' % (self.name, filename)
