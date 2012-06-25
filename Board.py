@@ -478,15 +478,27 @@ class Board:
     def GetLastPostId(self):
         return self.status.lastpost
 
-    def GetUnread(self, user):
+    def LoadBReadFor(self, user):
         bread = BRead.BReadMgr.LoadBRead(user)
         if (bread == None):
+            return False
+        succ = bread.Load(self.name)
+        if (not succ):
+            return False
+        return True
+
+    def GetUnread(self, user):
+        if (not self.LoadBReadFor(user)):
             return True
+        return bread.QueryUnread(self.GetLastPostId(), self.name)
+
+    def ClearUnread(self, user, to = 0):
+        if (not self.LoadBReadFor(user)):
+            return False
+        if (to == 0):
+            return bread.Clear(self.name)
         else:
-            succ = bread.Load(self.name)
-            if (not succ):
-                return True
-            return bread.QueryUnread(self.GetLastPostId(), self.name)
+            return bread.ClearTo(to, self.name)
 
     def CheckReadonly(self):
         return self.CheckFlag(BOARD_READONLY)

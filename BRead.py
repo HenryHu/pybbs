@@ -294,12 +294,13 @@ class BRead:
             return False
         entry = self.FindCacheEntry(board)
         if (entry == -1):
-            return
+            return False
         bh = BCache.GetBoardHeader(boardname)
         self._cache[entry]._list[0] = bh.nowid
         self._cache[entry]._list[1] = 0
         self._cache[entry]._changed = 1
         self._cache[entry].Commit()
+        return True
 
     def ClearTo(self, index, boardname):
         board = BoardManager.GetBoard(boardname)
@@ -308,7 +309,7 @@ class BRead:
             return False
         entry = self.FindCacheEntry(board)
         if (entry == -1):
-            return
+            return False
         n = 0
         while (n < BRC_MAXNUM and self._cache[entry]._list[n] != 0):
             if (index >= self._cache[entry]._list[n]):
@@ -320,6 +321,7 @@ class BRead:
                 self._cache[entry]._list[n+1] = 0
             self._cache[entry]._changed = 1
             self._cache[entry].Commit()
+        return True
 
 class BReadMgr:
     _breads = {}
