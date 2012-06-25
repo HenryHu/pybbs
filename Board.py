@@ -172,6 +172,8 @@ class Board:
             if (not bo.CheckReadPerm(session.GetUser())):
                 raise NoPerm("permission denied")
             bo.ClearUnread(session.GetUser(), to)
+            result = {"result": "ok"}
+            svc.writedata(json.dumps(result))
         else:
             raise WrongArgs("unknown action")
 
