@@ -65,7 +65,7 @@ class BoardManager:
                 if (not first):
                     result += ',\n'
                 first = False
-                result += board.GetInfoWithUserJSON(session.GetUser().name)
+                result += board.GetInfoWithUserJSON(session.GetUser())
             result += '\n]'
             svc.writedata(result)
             return

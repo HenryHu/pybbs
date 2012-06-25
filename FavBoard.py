@@ -102,7 +102,7 @@ class FavBoardMgr:
                     if (not first):
                         result += ',\n'
                     first = False
-                    result += fboard.GetInfoJSON(index, session.GetUser().name)
+                    result += fboard.GetInfoJSON(index, session.GetUser())
             result += '\n]'
             svc.writedata(result)
             return
