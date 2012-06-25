@@ -214,12 +214,12 @@ class Board:
 
         self.UpdateBoardInfo()
         if (mode == 'normal'):
-            total = self.tatus.total
+            total = self.status.total
         else:
             total = self.PostCount(mode)
 
         start, end = Util.CheckRange(start, end, count, DEFAULT_GET_POST_COUNT, total)
-        if ((start <= end) and (start >= 1) and (end <= self.status.total)):
+        if ((start <= end) and (start >= 1) and (end <= total)):
             bread = BRead.BReadMgr.LoadBRead(session.GetUser().name)
             if (bread != None):
                 bread.Load(self.name)
@@ -229,10 +229,12 @@ class Board:
                 first = True
                 result = '[\n';
                 for i in range(start - 1, end):
+                    pe = self.GetPostEntry(i, mode, dirf)
+                    if (pe is None):
+                        continue
                     if (not first):
                         result += ',\n'
                     first = False
-                    pe = self.GetPostEntry(i, mode, dirf)
                     post['id'] = i + 1
                     post['title'] = Util.gbkDec(pe.title)
                     post['attachflag'] = pe.attachflag
