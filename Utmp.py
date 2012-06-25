@@ -4,7 +4,7 @@ import struct
 import random
 import time
 import signal
-from User import User
+import User
 from UCache import UCache
 from sysv_ipc import *
 from UtmpHead import UtmpHead
@@ -154,7 +154,7 @@ class Utmp:
                         except OSError:
                             username = Utmp.GetUserId(n)
                             Utmp.Clear2(n+1)
-                            User.RemoveMsgCount(username)
+                            User.User.RemoveMsgCount(username)
             UtmpHead.SetReadOnly(1)
         finally: # lock is important!
             Utmp.Unlock(utmpfd)

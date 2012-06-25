@@ -1,4 +1,5 @@
 from UCache import UCache
+import User
 import UserMemo
 import json
 from errors import *
@@ -44,8 +45,7 @@ class UserManager:
         if (umemo is None):
             return None
 
-        ruser = User(user, userec, umemo)
+        ruser = User.User(user, userec, umemo)
         return ruser
 
 from Session import Session
-from User import User

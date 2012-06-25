@@ -2,6 +2,7 @@ from Log import Log
 from User import User
 from Util import Util
 from BoardManager import BoardManager
+from BCache import BCache
 import Config
 import os
 import mmap
