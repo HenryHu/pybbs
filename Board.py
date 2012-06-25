@@ -191,6 +191,12 @@ class Board:
             return self.GetBoardPath() + '.DELETED'
         if (mode == 'junk'):
             return self.GetBoardPath() + '.JUNK'
+        if (mode == 'zhiding'):
+            return self.GetBoardPath() + '.DINGDIR'
+        if (mode == 'thread'):
+            return self.GetBoardPath() + '.THREAD'
+        if (mode == 'origin'):
+            return self.GetBoardPath() + '.ORIGIN'
 
     def GetPostList(self, svc, session, params):
         mode = Util.GetString(params, 'mode', 'normal')
@@ -204,7 +210,7 @@ class Board:
             bread = BRead.BReadMgr.LoadBRead(session.GetUser().name)
             if (bread != None):
                 bread.Load(self.name)
-            if (mode == 'normal'):
+            if (mode == 'normal' or mode == 'digest' or mode == 'mark' or mode == 'zhiding' or mode == 'thread' or mode == 'origin'):
                 dirf = open(self.GetDirPath(mode), 'rb')
                 post = {}
                 first = True
