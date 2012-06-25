@@ -130,6 +130,9 @@ class User:
         if (action == 'query'):
             userid = svc.get_str(params, 'id')
             User.QueryUser(svc, params, userid)
+        elif (action == "signature_id"):
+            sigid = session.GetUser().GetSigID()
+            svc.write(json.dumps({"signature_id" : sigid}))
         else:
             raise WrongArgs("unknown action")
 

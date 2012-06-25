@@ -53,7 +53,7 @@ class Post:
                 user = session.GetUser()
                 
                 detail = bo.PreparePostArticle(user, refile, anony)
-                result = {"error": detail}
+                result = {"error": detail, "signature_id" : user.GetSigID()}
                 svc.writedata(json.dumps(result))
             else:
                 raise WrongArgs("unknown action to prepare")
