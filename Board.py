@@ -198,6 +198,14 @@ class Board:
         if (mode == 'origin'):
             return self.GetBoardPath() + '.ORIGIN'
 
+    def PostCount(self, mode = 'normal'):
+        dir_path = self.GetDirPath(mode)
+        try:
+            st = os.stat(dir_path)
+            return st.st_size / PostEntry.size
+        except:
+            return 0
+
     def GetPostList(self, svc, session, params):
         mode = Util.GetString(params, 'mode', 'normal')
         start = Util.GetInt(params, 'start')
@@ -205,7 +213,12 @@ class Board:
         count = Util.GetInt(params, 'count')
 
         self.UpdateBoardInfo()
-        start, end = Util.CheckRange(start, end, count, DEFAULT_GET_POST_COUNT, self.status.total)
+        if (mode == 'normal'):
+            total = self.tatus.total
+        else:
+            total = self.PostCount(mode)
+
+        start, end = Util.CheckRange(start, end, count, DEFAULT_GET_POST_COUNT, total)
         if ((start <= end) and (start >= 1) and (end <= self.status.total)):
             bread = BRead.BReadMgr.LoadBRead(session.GetUser().name)
             if (bread != None):
