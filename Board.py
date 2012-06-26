@@ -223,7 +223,7 @@ class Board:
             bread = BRead.BReadMgr.LoadBRead(session.GetUser().name)
             if (bread != None):
                 bread.Load(self.name)
-            if (mode == 'normal' or mode == 'digest' or mode == 'mark' or mode == 'zhiding' or mode == 'thread' or mode == 'origin'):
+            if (mode == 'normal' or mode == 'digest' or mode == 'mark' or mode == 'sticky' or mode == 'thread' or mode == 'origin'):
                 dirf = open(self.GetDirPath(mode), 'rb')
                 post = {}
                 first = True
