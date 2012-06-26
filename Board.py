@@ -191,7 +191,7 @@ class Board:
             return self.GetBoardPath() + '.DELETED'
         if (mode == 'junk'):
             return self.GetBoardPath() + '.JUNK'
-        if (mode == 'zhiding'):
+        if (mode == 'sticky'):
             return self.GetBoardPath() + '.DINGDIR'
         if (mode == 'thread'):
             return self.GetBoardPath() + '.THREAD'
