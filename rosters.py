@@ -45,8 +45,8 @@ class Updater(Thread):
                         self._rosters._conns[conn].check_msg()
                     new_msgs = False
             except Exception as e:
-                Log.error("Exception caught in rosters.msg_checker")
-                traceback.print_exc()
+                Log.error("Exception caught in rosters.msg_checker: %r" % e)
+                Log.error(traceback.format_exc())
             update_condition.release()
 
 class Rosters(Thread):
@@ -112,8 +112,8 @@ class Rosters(Thread):
             try:
                 self.update_sessions()
             except Exception as e:
-                Log.error("Exception caught in rosters.updater")
-                traceback.print_exc()
+                Log.error("Exception caught in rosters.updater: %r" % e)
+                Log.error(traceback.format_exc())
 
     def set_resources(self, resources):
         if (self._resources == None):
@@ -143,7 +143,7 @@ class Rosters(Thread):
                 conn.send(jid, elem)
             except Exception as e:
                 Log.error("Exception caught when broadcasting from %r to %r..." % (conn.authJID, jid))
-                traceback.print_exc()
+                Log.error(traceback.format_exc())
 
     def probe(self, conn):
         """Ask everybody this account is subscribed to for a status
@@ -159,7 +159,7 @@ class Rosters(Thread):
                     conn.send(jid, elem)
                 except Exception as e:
                     Log.error("Exception caught when probing XMPP user %r: %r" % (jid, e))
-                    traceback.print_exc()
+                    Log.error(traceback.format_exc())
 #            if (jid != conn.authJID.bare): # bug somewhere, if they are equal..
             for session_info in self.get_bbs_online(jid):
                 if (not sender.CanSee(session_info._userinfo)):
@@ -176,7 +176,7 @@ class Rosters(Thread):
                     conn.send(conn.authJID, elem)
                 except Exception as e:
                     Log.error("Exception caught when faking response from %s/%s to %r" % (jid, session_info.get_res(), conn.authJID.bare))
-                    traceback.print_exc()
+                    Log.error(traceback.format_exc())
 
     def send(self, conn, to, elem):
         """Send a subscription request or response."""
@@ -242,7 +242,7 @@ class Rosters(Thread):
                 route.handle(elem)
             except Exception as e:
                 Log.error("send error: %r" % e)
-                traceback.print_exc()
+                Log.error(traceback.format_exc())
 
     def get_user(self, jid):
         userid = UCache.UCache.formalize_jid(jid).partition('@')[0]
@@ -279,7 +279,7 @@ class Rosters(Thread):
                     self.transmit(hisjid, elem)
                 except Exception as e:
                     Log.error("notify error: %r" % e)
-                    traceback.print_exc()
+                    Log.error(traceback.format_exc())
 
     def update_sessions(self):
         Log.debug("updating sessions")

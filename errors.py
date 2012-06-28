@@ -41,6 +41,6 @@ class error_handler:
         elif (isinstance(value, ServerError)):
             self.svc.return_error(500, value.args[0])
         else:
-            self.svc.return_error(500, traceback.format_exc(value))
+            self.svc.return_error(500, traceback.format_exc())
             return False
         return True
