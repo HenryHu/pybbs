@@ -137,14 +137,15 @@ class XMPPServer(xmpp.Plugin):
 #            Log.debug("total: %d read: %d" % (msg_count, self._read_msgs))
             for i in range(self._read_msgs, msg_count):
                 msghead = msgbox.LoadMsgHead(i, all = False)
-                msgtext = msgbox.LoadMsgText(msghead)
+                if (time.time() - msghead.time < 5):
+                    msgtext = msgbox.LoadMsgText(msghead)
 #                Log.debug("from: %s text: %s" % (msghead.id, msgtext))
 
-                # got a new message! send it!
-                elem = self.E.message({'from': self.make_jid(msghead.id), 
-                                       'to': unicode(self.authJID)},
-                                      self.E.body(msgtext))
-                self.recv(unicode(self.authJID), elem)
+                    # got a new message! send it!
+                    elem = self.E.message({'from': self.make_jid(msghead.id), 
+                                           'to': unicode(self.authJID)},
+                                          self.E.body(msgtext))
+                    self.recv(unicode(self.authJID), elem)
             # clear unread...
             for i in range(msg_count):
                 if (msgbox.GetUnreadMsg() < 0):
