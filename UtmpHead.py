@@ -1,6 +1,7 @@
 import Config
 import struct
 import sysv_ipc
+from cstruct import *
 
 NEXT_POS = 0
 HASHHEAD_POS = NEXT_POS + Config.USHM_SIZE * 4
@@ -10,8 +11,24 @@ LISTPREV_POS = LISTHEAD_POS + 4
 LISTNEXT_POS = LISTPREV_POS + 4 * Config.USHM_SIZE
 UPTIME_POS = LISTNEXT_POS + 4 * Config.USHM_SIZE
 
+@init_fields
 class UtmpHead:
     utmphead = None
+    _fields = [
+        ['next', Array(I32, Config.USHM_SIZE)],
+        ['hashhead', Array(I32, Config.UTMP_HASHSIZE + 1)],
+        ['number', I32()],
+        ['listhead', I32()],
+        ['list_prev', Array(I32, Config.USHM_SIZE)],
+        ['list_next', Array(I32, Config.USHM_SIZE)],
+        ['uptime', I32()],
+    ]
+
+    def read(self, pos, len):
+        return UtmpHead.utmphead.read(len, pos)
+
+    def write(self, pos, data):
+        UtmpHead.utmphead.write(data, pos)
 
     @staticmethod
     def GetInt(pos, idx = 0):
