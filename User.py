@@ -169,6 +169,9 @@ class User:
     def IsBM(self):
         return self.HasPerm(PERM_BOARDS)
 
+    def IsSuperBM(self):
+        return self.HasPerm(PERM_OBOARDS)
+
     def IsSECANC(self):
         # 'special permission 5' 'BM: ZIXIAs'
         return self.HasPerm(PERM_SECANC)

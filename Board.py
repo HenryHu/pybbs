@@ -919,6 +919,21 @@ class Board:
         quote_obj['content'] = Util.gbkDec(quote)
         svc.writedata(json.dumps(quote_obj))
 
+    @staticmethod
+    def IsBM(user, bmstr):
+        if (user.IsSuperBM() or user.IsSysop()):
+            return True
+        if (not user.IsBM()):
+            return False
+        return Board.IsBMs(user.name, bmstr)
+
+    @staticmethod
+    def IsBMs(userid, bmstr):
+        for item in re.split('[,: ;|&()\0\n]', bmstr):
+            if (userid == item):
+                return True
+        return False
+
 from Post import Post
 from BoardManager import BoardManager
 

@@ -1,6 +1,7 @@
 from BCache import *
 import json
 from errors import *
+import Board
 
 DEFAULT_LIST_BOARD_COUNT = 20
 
@@ -14,7 +15,7 @@ class BoardManager:
             bh = BoardHeader(i+1)
             if (bh.filename != ''):
                 bs = BoardStatus(i+1)
-                board = Board(bh, bs, i+1)
+                board = Board.Board(bh, bs, i+1)
                 BoardManager.boards[bh.filename] = board
                 BoardManager._iboards[i+1] = board
         BoardManager.s_boards = BoardManager.boards.keys()
@@ -27,7 +28,7 @@ class BoardManager:
             return BoardManager._iboards[index]
         else:
             return None
-    
+
     @staticmethod
     def GetBoard(name):
         if (BoardManager.boards.has_key(name)):
@@ -89,5 +90,3 @@ class BoardManager:
 #            else:
 #                print "No See Perm: %s at %s" % (user.name, board.name)
         return ret
-
-from Board import Board
