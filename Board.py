@@ -18,6 +18,7 @@ import re
 import random
 import binascii
 from errors import *
+import digest
 
 DEFAULT_GET_POST_COUNT = 20
 
@@ -133,6 +134,7 @@ class Board:
         self.status = bs
         self.name = bh.filename
         self.index = idx
+        self.digest = digest.Digest(self, "0Announce/groups/%s" % bh.ann_path)
 
     @staticmethod
     def GET(svc, session, params, action):

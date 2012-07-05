@@ -163,6 +163,16 @@ class User:
             return True
         return False
 
+    def IsSysop(self):
+        return self.HasPerm(PERM_SYSOP)
+
+    def IsBM(self):
+        return self.HasPerm(PERM_BOARDS)
+
+    def IsSECANC(self):
+        # 'special permission 5' 'BM: ZIXIAs'
+        return self.HasPerm(PERM_SECANC)
+
     def ClearPerm(self, perm):
         self.userec.userlevel &= ~perm
 
