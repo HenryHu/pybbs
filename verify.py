@@ -49,7 +49,7 @@ def verifyUtmpHead():
     for i in range(1, USHM_SIZE):
         allset.add(i)
     ok = True
-    i = UtmpHead.GetListHead()
+    i = UtmpHead().listhead
     if (i == 0):
         Log.error("Empty header!")
         return False

@@ -44,7 +44,15 @@ class DigestItem:
         except:
             return False
 
-    def names_path():
+    def GetModTime(self):
+        try:
+            st = os.stat(self.realpath())
+            mtime = st.st_mtime
+        except:
+            mtime = time.time()
+        return mtime
+
+    def names_path(self):
         return "%s/.Names" % self.realpath()
 
     def realpath(self):
@@ -107,9 +115,9 @@ class DigestItem:
                         continue
                     if (item.title.find("(BM: BMS)") != -1):
                         bms_only += 1
-                    if (item.title.find("(BM: SYSOPS)") != -1):
+                    elif (item.title.find("(BM: SYSOPS)") != -1):
                         sysop_only += 1
-                    if (item.title.find("(BM: ZIXIAs)") != -1):
+                    elif (item.title.find("(BM: ZIXIAs)") != -1):
                         zixia_only += 1
                     if (item.fname.find("!@#$%") != -1):
                         parts = re.split('[!@#$%]', item.fname)
@@ -130,7 +138,6 @@ class DigestItem:
                     item.zixia_only = zixia_only
                     item.host = hostname
                     self.items += [item]
-                    print "item: ", vars(item), _id
                     item = DigestItem(self.path())
                     hostname = ''
                 elif (key == "Host"):
@@ -163,6 +170,8 @@ class DigestItem:
                 or self.mtitle.find("(BM: SYSOPS)") != -1):
             need_perm = True # take effect at next level...
 
+        if (len(route) == 0):
+            return self
         target = route[0] - 1
         _id = target
         if (_id >= len(self.items)):
@@ -185,7 +194,7 @@ class DigestItem:
             else:
                 return None
 
-    def GetRange(self, user, route, has_perm, need_perm, start, end):
+    def GetRange(self, user, route, start, end, has_perm = False, need_perm = False):
         self.CheckUpdate()
 
         # only for permission check
@@ -235,11 +244,22 @@ class DigestItem:
         info = {}
         info['mtitle'] = Util.gbkDec(self.mtitle)
         info['title'] = Util.gbkDec(self.title)
-        info['host'] = self.host
-        info['port'] = self.port
         info['attach'] = self.attachpos
+        if (self.host != ''):
+            info['host'] = self.host
+            info['port'] = self.port
+            info['type'] = 'link'
+        elif (self.IsDir()):
+            info['type'] = 'dir'
+        elif (self.IsFile()):
+            info['type'] = 'file'
+        else:
+            info['type'] = 'other'
+        info['mtime'] = int(self.GetModTime())
+        return info
 
     def GetInfoForUser(self, user):
         info = self.GetInfo()
         info['id'] = self.EffectiveId(user) + 1
+        return info
 
