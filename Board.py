@@ -8,6 +8,7 @@ import base64
 from BCache import *
 import User
 import BRead
+import BoardManager
 from Error import *
 from Log import Log
 from cstruct import CStruct
@@ -142,7 +143,7 @@ class Board:
         bo = None
         if (params.has_key('name')):
             name = params['name']
-            bo = BoardManager.GetBoard(name)
+            bo = BoardManager.BoardManager.GetBoard(name)
             if (bo == None):
                 raise NotFound("board not found")
 
@@ -154,7 +155,7 @@ class Board:
             else:
                 raise NoPerm("permission denied")
         elif (action == 'list'):
-            BoardManager.ListBoards(svc, session, params)
+            BoardManager.BoardManager.ListBoards(svc, session, params)
         else:
             raise WrongArgs("unknown action")
 
@@ -164,7 +165,7 @@ class Board:
         bo = None
         if (params.has_key('name')):
             name = params['name']
-            bo = BoardManager.GetBoard(name)
+            bo = BoardManager.BoardManager.GetBoard(name)
             if (bo == None):
                 raise NotFound("board %s not found" % name)
         if (action == 'clear_unread'):
@@ -935,5 +936,4 @@ class Board:
         return False
 
 from Post import Post
-from BoardManager import BoardManager
 

@@ -1,8 +1,8 @@
 from Log import Log
 from User import User
 from Util import Util
-from BoardManager import BoardManager
 from BCache import BCache
+import BoardManager
 import Config
 import os
 import mmap
@@ -147,7 +147,7 @@ class BRead:
 
     def QueryUnread(self,index, boardname):
 #        Log.debug("QueryUnread: %s %d" % (boardname, index))
-        board = BoardManager.GetBoard(boardname)
+        board = BoardManager.BoardManager.GetBoard(boardname)
         if (board == None):
             Log.error("Fail to load board %s for unread?" % boardname)
             return False
@@ -174,7 +174,7 @@ class BRead:
         return False
 
     def MarkRead(self, index, board):
-        board = BoardManager.GetBoard(board)
+        board = BoardManager.BoardManager.GetBoard(board)
         if (board == None):
             return False
 
@@ -247,7 +247,7 @@ class BRead:
         return True
 
     def Load(self, boardname):
-        board = BoardManager.GetBoard(boardname)
+        board = BoardManager.BoardManager.GetBoard(boardname)
         if (board == None):
             Log.error("cannot found board %s" % boardname)
             return False
@@ -289,7 +289,7 @@ class BRead:
         return True
 
     def Clear(self, boardname):
-        board = BoardManager.GetBoard(boardname)
+        board = BoardManager.BoardManager.GetBoard(boardname)
         if (board == None):
             Log.error("Fail to load board %s for clear" % boardname)
             return False
@@ -304,7 +304,7 @@ class BRead:
         return True
 
     def ClearTo(self, index, boardname):
-        board = BoardManager.GetBoard(boardname)
+        board = BoardManager.BoardManager.GetBoard(boardname)
         if (board == None):
             Log.error("Fail to load board %s for clear_to" % boardname)
             return False

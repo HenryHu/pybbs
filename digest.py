@@ -1,7 +1,9 @@
 import re
 import os
 import stat
+import time
 import Config
+import Board
 from Util import Util
 from Log import Log
 
@@ -147,12 +149,12 @@ class DigestItem:
         f.close()
         return 1
 
-    def GetItem(self, user, route, has_perm, need_perm):
+    def GetItem(self, user, route, has_perm = False, need_perm = False):
         self.CheckUpdate()
 
         # for normal items, permission does not matter
         if (self.mtitle.find("(BM:") != -1):
-            if (Board.IsBM(user, self.mtitle[4:],) or user.IsSysop()):
+            if (Board.Board.IsBM(user, self.mtitle[4:],) or user.IsSysop()):
                 has_perm = True
             elif (need_perm and not has_perm):
                 return None
