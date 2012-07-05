@@ -1,6 +1,8 @@
 import re
 import os
 import stat
+import Config
+from Log import Log
 
 class Digest:
     def __init__(self, board, path):
@@ -27,14 +29,14 @@ class DigestItem:
 
     def IsDir(self):
         try:
-            st = os.stat(self.path())
+            st = os.stat(Config.BBS_ROOT + '/' + self.path())
             return stat.S_ISDIR(st.st_mode)
         except:
             return False
 
     def IsFile(self):
         try:
-            st = os.stat(self.path())
+            st = os.stat(Config.BBS_ROOT + '/' + self.path())
             return stat.S_ISREG(st.st_mode)
         except:
             return False
@@ -43,7 +45,7 @@ class DigestItem:
         return "%s/%s" % (self.basepath, self.fname)
 
     def CheckUpdate(self):
-        names_path = "%s/.Names" % self.path()
+        names_path = "%s/%s/.Names" % (Config.BBS_ROOT, self.path())
         try:
             stat = os.stat(names_path)
             if (stat.st_mtime > self.update_time):
@@ -56,7 +58,7 @@ class DigestItem:
         return True
 
     def LoadNames(self):
-        names_path = "%s/.Names" % self.path()
+        names_path = "%s/%s/.Names" % (Config.BBS_ROOT, self.path())
         try:
             f = open(names_path, "r")
         except IOError:
@@ -67,17 +69,17 @@ class DigestItem:
 
         item = DigestItem(self.path())
 
+        hostname = ''
+        _id = 0
+        bms_only = 0
+        sysop_only = 0
+        zixia_only = 0
         while (True):
             line = f.readline()
             if (line == ""): break
             npos = line.find("\n")
             if (npos != -1): line = line[:npos]
 
-            hostname = None
-            _id = 0
-            bms_only = 0
-            sysop_only = 0
-            zixia_only = 0
             if (line[:1] == '#'):
                 if (line[:8] == "# Title="):
                     if (not self.mtitle):
@@ -121,8 +123,9 @@ class DigestItem:
                     item.zixia_only = zixia_only
                     item.host = hostname
                     self.items += [item]
+                    print "item: ", vars(item), _id
                     item = DigestItem(self.path())
-                    hostname = None
+                    hostname = ''
                 elif (key == "Host"):
                     hostname = value
                 elif (key == "Port"):
@@ -141,7 +144,7 @@ class DigestItem:
 
     def GetItem(self, user, route):
         self.CheckUpdate()
-        target = route[0]
+        target = route[0] - 1
         _id = target
         if (_id >= len(self.items)):
             return None
@@ -157,12 +160,14 @@ class DigestItem:
             if (item.IsDir()):
                 if (not item.CheckUpdate()):
                     return None
-                return item.GetItem(self, user, route[1:])
+                return item.GetItem(user, route[1:])
             else:
                 return None
 
     def EffectiveId(self, user):
         _id = self.id
+        if (user.IsSysop()):
+            return _id
         if (not user.IsSysop()):
             _id -= self.sysop_only
         if (not user.IsBM()):
