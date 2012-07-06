@@ -1,17 +1,17 @@
 import re
 import os
 import stat
+import json
 import time
 import Config
 import Board
+import Post
+import BoardManager
 from Util import Util
 from Log import Log
+from errors import *
 
-class Digest:
-    def __init__(self, board, path):
-        self.board = board
-        self.path = path
-        self.root = DigestItem(self.path)
+DEFAULT_DIGEST_LIST_COUNT = 20
 
 class DigestItem:
     def __init__(self, basepath):
@@ -209,6 +209,8 @@ class DigestItem:
         parent = self.GetItem(user, route, has_perm, need_perm)
         if (not parent):
             return []
+        if (not parent.IsDir()):
+            return []
 
         result = []
         _id = start - 1
@@ -262,4 +264,90 @@ class DigestItem:
         info = self.GetInfo()
         info['id'] = self.EffectiveId(user) + 1
         return info
+
+class Digest:
+    root = DigestItem("0Announce")
+    def __init__(self, board, path):
+        self.board = board
+        self.path = path
+        self.root = DigestItem(self.path)
+
+    @staticmethod
+    def GET(svc, session, params, action):
+        if (session is None): raise Unauthorized('login first')
+        user = session.GetUser()
+        boardname = svc.get_str(params, 'board', '')
+        if (boardname):
+            board = BoardManager.BoardManager.GetBoard(boardname)
+            if (board is None): raise NotFound('board %s not found' % boardname)
+            if (not board.CheckReadPerm(user)):
+                raise NoPerm('permission denied')
+            basenode = board.root
+            has_perm = user.IsDigestMgr() or user.IsSysop() or user.IsSuperBM()
+        else:
+            basenode = Digest.root
+            has_perm = user.IsDigestMgr()
+
+        if (action == "list"):
+            route = svc.get_str(params, 'route')
+            start = svc.get_int(params, 'start', 1)
+            end = svc.get_int(params, 'end', start + DEFAULT_DIGEST_LIST_COUNT - 1)
+            Digest.List(svc, basenode, route, start, end, session, has_perm)
+            return
+        elif (action == "view"):
+            route = svc.get_str(params, 'route')
+            Digest.View(svc, basenode, route, session, has_perm)
+            return
+        else:
+            raise WrongArgs('unknown action %s' % action)
+
+    @staticmethod
+    def ParseRoute(route):
+        ret = []
+        items = re.split('-', route)
+        # first item: 'x'
+        items = items[1:]
+        for item in items:
+            try:
+                ret += [int(item)]
+            except:
+                raise WrongArgs('fail to parse route element: %s' % item)
+        return ret
+
+    @staticmethod
+    def List(svc, basenode, route, start, end, session, has_perm):
+        route_array = Digest.ParseRoute(route)
+        parent = basenode.GetItem(session.GetUser(), route_array, has_perm)
+        if (not parent):
+            raise WrongArgs('route %s does not exist!' % route)
+        if (not parent.IsDir()):
+            raise WrongArgs('route %s does not point to a dir!' % route)
+        items = basenode.GetRange(session.GetUser(), route_array, start, end, has_perm)
+        result = {}
+        result['parent'] = parent.GetInfoForUser(session.GetUser())
+        result['count'] = len(items)
+        result_list = []
+        for item in items:
+            result_list += [item.GetInfoForUser(session.GetUser())]
+        result['items'] = result_list
+
+        svc.writedata(json.dumps(result))
+
+    @staticmethod
+    def View(svc, basenode, route, session, has_perm):
+        route_array = Digest.ParseRoute(route)
+        item = basenode.GetItem(session.GetUser(), route_array, has_perm)
+        if (not item):
+            raise WrongArgs('route %s does not exist!' % route)
+        if (not item.IsFile()):
+            raise WrongArgs('route %s does not point to a file' % route)
+        result = {}
+        result['item'] = item.GetInfoForUser(session.GetUser())
+        postinfo = Post.Post(item.realpath())
+        result['content'] = postinfo.GetContent()
+        attachlist = postinfo.GetAttachList()
+        result['picattach'] = attachlist[0]
+        result['otherattach'] = attachlist[1]
+        svc.writedata(json.dumps(result))
+
 

@@ -32,6 +32,7 @@ from Session import SessionManager
 from Auth import Auth
 from MsgBox import MsgBox
 from FavBoard import FavBoard
+from digest import Digest
 from Log import Log
 import commondata
 from errors import *
@@ -43,6 +44,7 @@ class DataService(BaseHTTPRequestHandler):
                "user"       : User,
                "auth"       : Auth,
                "favboard"   : FavBoard,
+               "digest"     : Digest,
               }
     classes_keys = classes.keys()
     protocol_version = 'HTTP/1.1'

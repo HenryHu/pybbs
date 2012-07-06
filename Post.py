@@ -19,6 +19,26 @@ ATTACHMENT_SIZE = 0
 QUOTELEV = 1
 
 class Post:
+    def __init__(self, path):
+        self.path = path
+        self.textlen = 0
+
+    def GetContent(self):
+        content = Post.ReadPostText(self.path)
+        self.textlen = content[1]
+        return content[0]
+
+    def GetAttachList(self):
+        return Post.GetAttachmentList(self.path, self.textlen)
+
+    def GetInfo(self):
+        info = {}
+        info['content'] = self.GetContent()
+        attachlist = self.GetAttachList()
+        info['picattach'] = attachlist[0]
+        info['otherattach'] = attachlist[1]
+        return info
+
     @staticmethod
     def GetReplyFile(svc, params, board):
         re_id = svc.get_int(params, "re_id", 0)
@@ -93,11 +113,15 @@ class Post:
             raise WrongArgs("unknown action")
 
     @staticmethod
-    def GetAttachmentList(fp):
+    def GetAttachmentList(path, base = 0):
+        try:
+            fp = open(path, 'rb')
+        except IOError:
+            raise ServerError('fail to load post')
         picturelist = []
         attachlist = []
         try:
-            start = 0
+            start = base
             offset = Post.SeekAttachment(fp, start)
             while (start != offset):
                 # read the name
@@ -355,5 +379,27 @@ class Post:
                 or u"的文章 说".encode('gbk') in line):
                 return True
         return line != "" and line[0] == '\n'
+
+    @staticmethod
+    def ReadPostText(path):
+        try:
+            postf = open(path, 'rb')
+        except IOError:
+            raise ServerError("fail to load post")
+        try:
+            ret = ''
+            while (True):
+                data = postf.read(512)
+                i = data.find('\0')
+                if (i != -1):
+                    ret = ret + data[:i]
+                    break
+                else:
+                    ret = ret + data
+                    if (len(data) < 512):
+                        break
+        finally:
+            postf.close()
+        return (Util.gbkDec(ret), len(ret))
 
 from BoardManager import BoardManager

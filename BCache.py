@@ -105,7 +105,7 @@ class BCache:
                     if (bh.filename != ''):
                         bs = BoardStatus(i)
                         # TODO
-                fd = BCache.Unlock()
+                BCache.Unlock(fd)
 
         return
 

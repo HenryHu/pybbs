@@ -282,40 +282,22 @@ class Board:
             raise NoPerm("invalid mode!")
         self.UpdateBoardInfo()
         if ((id >= 1) and (id <= self.status.total)):
-            pe = None
             pe = self.GetPostEntry(id - 1, mode)
-            postf = open(self.GetBoardPath() + pe.filename, 'rb')
-            if (postf != None):
-                post = {}
-                post['id'] = id
-                post['xid'] = pe.id
-                post['title'] = Util.gbkDec(pe.title)
-                post['owner'] = Util.gbkDec(pe.owner) # maybe...
-                ret = ''
-                while (True):
-                    data = postf.read(512)
-                    i = data.find('\0')
-                    if (i != -1):
-                        ret = ret + data[:i]
-                        break
-                    else:
-                        ret = ret + data
-                        if (len(data) < 512):
-                            break
-
-                post['content'] = Util.gbkDec(ret)
-
-                postf.seek(0)
-                attachlist = Post.GetAttachmentList(postf)
-                post['picattach'] = attachlist[0]
-                post['otherattach'] = attachlist[1]
-                svc.writedata(json.dumps(post))
-                postf.close()
-                bread = BRead.BReadMgr.LoadBRead(session.GetUser().name)
-                bread.Load(self.name)
-                bread.MarkRead(pe.id, self.name)
-            else:
-                raise ServerError("fail to load posts")
+            postpath = self.GetBoardPath() + pe.filename
+            post = {}
+            post['id'] = id
+            post['xid'] = pe.id
+            post['title'] = Util.gbkDec(pe.title)
+            post['owner'] = Util.gbkDec(pe.owner) # maybe...
+            postinfo = Post(postpath)
+            post['content'] = postinfo.GetContent()
+            attachlist = postinfo.GetAttachList()
+            post['picattach'] = attachlist[0]
+            post['otherattach'] = attachlist[1]
+            svc.writedata(json.dumps(post))
+            bread = BRead.BReadMgr.LoadBRead(session.GetUser().name)
+            bread.Load(self.name)
+            bread.MarkRead(pe.id, self.name)
         else:
             raise OutOfRange("invalid post id")
 
