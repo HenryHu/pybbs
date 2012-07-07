@@ -2,6 +2,7 @@ import re
 import os
 import stat
 import json
+import struct
 import time
 import Config
 import Board
@@ -59,7 +60,10 @@ class DigestItem:
         return "%s/%s" % (Config.BBS_ROOT, self.path())
 
     def path(self):
-        return "%s/%s" % (self.basepath, self.fname)
+        if (self.fname):
+            return "%s/%s" % (self.basepath, self.fname)
+        else:
+            return self.basepath
 
     def CheckUpdate(self):
         try:
@@ -268,8 +272,8 @@ class DigestItem:
     def GetAttachLink(self, session):
         _hash = Util.HashGen(self.path(), "python nb")
         filename = ''
-        for ch in _hash[:8]:
-            filename += "%02x" % ord(ch)
+        for i in range(2):
+            filename += "%0x" % struct.unpack('=I', _hash[i*4:(i+1)*4])
         link = "http://%s/bbscon.php?b=xattach&f=%s" % (session.GetMirror(Config.Config.GetInt('ATTACHMENT_PORT', 80)), filename)
 
         linkfile = "%s/boards/xattach/%s" % (Config.BBS_ROOT, filename)
