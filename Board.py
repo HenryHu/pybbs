@@ -146,14 +146,13 @@ class Board:
             bo = BoardManager.BoardManager.GetBoard(name)
             if (bo == None):
                 raise NotFound("board not found")
+            if (not bo.CheckReadPerm(session.GetUser())):
+                raise NoPerm("permission denied")
 
         if (action == 'post_list'):
             if (bo == None):
                 raise WrongArgs("lack of board name")
-            if (bo.CheckReadPerm(session.GetUser())):
-                bo.GetPostList(svc, session, params)
-            else:
-                raise NoPerm("permission denied")
+            bo.GetPostList(svc, session, params)
         elif (action == 'list'):
             BoardManager.BoardManager.ListBoards(svc, session, params)
         elif (action == 'note' or action == 'secnote'):
@@ -173,12 +172,12 @@ class Board:
             bo = BoardManager.BoardManager.GetBoard(name)
             if (bo == None):
                 raise NotFound("board %s not found" % name)
+            if (not bo.CheckReadPerm(session.GetUser())):
+                raise NoPerm("permission denied")
         if (action == 'clear_unread'):
             if (bo == None):
                 raise WrongArgs("lack of board name")
             to = svc.get_int(params, 'to', 0)
-            if (not bo.CheckReadPerm(session.GetUser())):
-                raise NoPerm("permission denied")
             bo.ClearUnread(session.GetUser(), to)
             result = {"result": "ok"}
             svc.writedata(json.dumps(result))
