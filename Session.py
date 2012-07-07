@@ -115,10 +115,7 @@ class Session:
             server = Config.GetString("BBSDOMAIN", "")
         if (not server):
             raise ServerError("can't get server domain")
-        if (port):
-            return "%s:%d" % (server, port)
-        else:
-            return server
+        return server
 
 class SessionManager:
     sessions = {}
