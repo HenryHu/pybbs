@@ -282,7 +282,7 @@ class Digest:
             if (board is None): raise NotFound('board %s not found' % boardname)
             if (not board.CheckReadPerm(user)):
                 raise NoPerm('permission denied')
-            basenode = board.root
+            basenode = board.digest.root
             has_perm = user.IsDigestMgr() or user.IsSysop() or user.IsSuperBM()
         else:
             basenode = Digest.root

@@ -156,6 +156,11 @@ class Board:
                 raise NoPerm("permission denied")
         elif (action == 'list'):
             BoardManager.BoardManager.ListBoards(svc, session, params)
+        elif (action == 'note' or action == 'secnote'):
+            if (bo == None):
+                raise WrongArgs("lack of board name")
+            result = {'content' : bo.GetNote((action == 'secnote'))}
+            svc.writedata(json.dumps(result))
         else:
             raise WrongArgs("unknown action")
 
@@ -901,6 +906,18 @@ class Board:
         quote_obj['title'] = Util.gbkDec(quote_title)
         quote_obj['content'] = Util.gbkDec(quote)
         svc.writedata(json.dumps(quote_obj))
+
+    def GetNote(self, secret = False):
+        if (not secret):
+            notes_path = "%s/vote/%s/notes" % (Config.BBS_ROOT, self.name)
+        else:
+            notes_path = "%s/vote/%s/secnotes" % (Config.BBS_ROOT, self.name)
+
+        try:
+            with open(notes_path, 'rb') as f:
+                return Util.gbkDec(f.read())
+        except:
+            raise NotFound('board note does not exist')
 
     @staticmethod
     def IsBM(user, bmstr):
