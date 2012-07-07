@@ -10,6 +10,8 @@ import stat
 import mmap
 import string
 import re
+import hashlib
+import Defs
 
 class Util:
     gbkDecoder = codecs.getdecoder('gbk')
@@ -333,6 +335,16 @@ class Util:
             base += size
             setattr(cls, name, ftype)
         cls.size = base
+
+    @staticmethod
+    def HashGen(data, key):
+        ''' igenpass() '''
+        m = hashlib.md5()
+        m.update(Defs.PASSMAGIC)
+        m.update(data)
+        m.update(Defs.PASSMAGIC)
+        m.update(key)
+        return m.digest()
 
 def fixterm_handler(exc):
     if isinstance(exc, (UnicodeDecodeError)):

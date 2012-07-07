@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 
 import json
-import hashlib
 import time
 
 import Config
-import Defs
 import modes
 from Log import Log
 from UCache import UCache
@@ -148,13 +146,7 @@ class User:
         return "%s/cache/home/%s/%s/%s" % (Config.BBS_ROOT, userid[0].upper(), userid, str)
 
     def Authorize(self, password):
-        m = hashlib.md5()
-        m.update(Defs.PASSMAGIC)
-        m.update(password)
-        m.update(Defs.PASSMAGIC)
-        m.update(self.name)
-        ret = m.digest()
-        return (ret == self.userec.md5passwd)
+        return (Util.HashGen(password, self.name) == self.userec.md5passwd)
 
     def HasPerm(self, perm):
         if (perm == 0):
