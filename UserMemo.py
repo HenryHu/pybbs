@@ -76,6 +76,48 @@ class UserMemo:
         else:
             return self.parser.pack(*Util.Pack(self))
 
+    def GetInfo(self):
+        info = {}
+        info['userid'] = Util.gbkDec(self.userid)
+        info['realemail'] = Util.gbkDec(self.realemail)
+        info['realname'] = Util.gbkDec(self.realname)
+        info['address'] = Util.gbkDec(self.address)
+        info['email'] = Util.gbkDec(self.email)
+        info['gender'] = self.gender
+        info['birthyear'] = self.birthyear
+        info['birthmonth'] = self.birthmonth
+        info['birthday'] = self.birthday
+        info['reg_email'] = Util.gbkDec(self.reg_email)
+        info['mobileregistered'] = self.mobileregistered
+        info['mobilenumber'] = Util.gbkDec(self.mobilenumber)
+        info['OICQ'] = Util.gbkDec(self.OICQ)
+        info['ICQ'] = Util.gbkDec(self.ICQ)
+        info['MSN'] = Util.gbkDec(self.MSN)
+        info['homepage'] = Util.gbkDec(self.homepage)
+        info['userface_img'] = self.userface_img
+        info['userface_url'] = Util.gbkDec(self.userface_url)
+        info['userface_width'] = self.userface_width
+        info['userface_height'] = self.userface_height
+        info['group'] = self.group
+        info['country'] = Util.gbkDec(self.country)
+        info['province'] = Util.gbkDec(self.province)
+        info['city'] = Util.gbkDec(self.city)
+        info['shengxiao'] = self.shengxiao
+        info['bloodtype'] = self.bloodtype
+        info['religion'] = self.religion
+        info['profession'] = self.profession
+        info['married'] = self.married
+        info['education'] = self.education
+        info['graduateschool'] = Util.gbkDec(self.graduateschool)
+        info['character'] = self.character
+        info['photo_url'] = Util.gbkDec(self.photo_url)
+        info['telephone'] = Util.gbkDec(self.telephone)
+        info['smsprefix'] = Util.gbkDec(self.smsprefix)
+        info['smsend'] = Util.gbkDec(self.smsend)
+        info['smsdef'] = self.smsdef
+        info['signum'] = self.signum
+        return info
+
 class UserMemoMgr:
     _usermemo_set = {}
     @staticmethod

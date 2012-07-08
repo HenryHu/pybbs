@@ -126,8 +126,18 @@ class User:
     def GET(svc, session, params, action):
         if (session == None): raise Unauthorized('login first')
         if (action == 'query'):
-            userid = svc.get_str(params, 'id')
-            User.QueryUser(svc, params, userid)
+            userid = svc.get_str(params, 'id', '')
+            if (not userid):
+                userid = session.GetUser().name
+            User.QueryUser(svc, userid)
+        elif (action == 'query'):
+            userid = svc.get_str(params, 'id', '')
+            if (not userid):
+                userid = session.GetUser().name
+            else:
+                if (not session.GetUser().IsSysop()):
+                    raise NoPerm("permission denied")
+            User.DetailUser(svc, userid)
         elif (action == "signature_id"):
             sigid = session.GetUser().GetSigID()
             svc.writedata(json.dumps({"signature_id" : sigid}))
@@ -374,11 +384,19 @@ class User:
             self.userec.firstlogin = int(time.time()) - 7 * 86400
 
     @staticmethod
-    def QueryUser(svc, params, userid):
+    def QueryUser(svc, userid):
         user = UserManager.UserManager.LoadUser(userid)
         if (user is None):
             raise NotFound("user %s not found" % userid)
         info = user.GetInfo()
+        svc.writedata(json.dumps(info))
+
+    @staticmethod
+    def DetailUser(svc, userid):
+        user = UserManager.UserManager.LoadUser(userid)
+        if (user is None):
+            raise NotFound("user %s not found" % userid)
+        info = user.memo.GetInfo()
         svc.writedata(json.dumps(info))
 
     def GetSignatureCount(self):
