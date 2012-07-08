@@ -130,7 +130,7 @@ class User:
             if (not userid):
                 userid = session.GetUser().name
             User.QueryUser(svc, userid)
-        elif (action == 'query'):
+        elif (action == 'detail'):
             userid = svc.get_str(params, 'id', '')
             if (not userid):
                 userid = session.GetUser().name
