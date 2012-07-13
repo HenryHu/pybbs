@@ -298,6 +298,8 @@ class Board:
             attachlist = postinfo.GetAttachList()
             post['picattach'] = attachlist[0]
             post['otherattach'] = attachlist[1]
+            if (attachlist[0] or attachlist[1]):
+                post['attachlink'] = Post.GetAttachLink(session, self, pe)
             svc.writedata(json.dumps(post))
             bread = BRead.BReadMgr.LoadBRead(session.GetUser().name)
             bread.Load(self.name)

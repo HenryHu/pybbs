@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 
 import json
-import hashlib
 import time
 
 import Config
-import Defs
 import modes
 from Log import Log
 from UCache import UCache
@@ -128,8 +126,18 @@ class User:
     def GET(svc, session, params, action):
         if (session == None): raise Unauthorized('login first')
         if (action == 'query'):
-            userid = svc.get_str(params, 'id')
-            User.QueryUser(svc, params, userid)
+            userid = svc.get_str(params, 'id', '')
+            if (not userid):
+                userid = session.GetUser().name
+            User.QueryUser(svc, userid)
+        elif (action == 'detail'):
+            userid = svc.get_str(params, 'id', '')
+            if (not userid):
+                userid = session.GetUser().name
+            else:
+                if (not session.GetUser().IsSysop()):
+                    raise NoPerm("permission denied")
+            User.DetailUser(svc, userid)
         elif (action == "signature_id"):
             sigid = session.GetUser().GetSigID()
             svc.writedata(json.dumps({"signature_id" : sigid}))
@@ -148,13 +156,7 @@ class User:
         return "%s/cache/home/%s/%s/%s" % (Config.BBS_ROOT, userid[0].upper(), userid, str)
 
     def Authorize(self, password):
-        m = hashlib.md5()
-        m.update(Defs.PASSMAGIC)
-        m.update(password)
-        m.update(Defs.PASSMAGIC)
-        m.update(self.name)
-        ret = m.digest()
-        return (ret == self.userec.md5passwd)
+        return (Util.HashGen(password, self.name) == self.userec.md5passwd)
 
     def HasPerm(self, perm):
         if (perm == 0):
@@ -382,11 +384,19 @@ class User:
             self.userec.firstlogin = int(time.time()) - 7 * 86400
 
     @staticmethod
-    def QueryUser(svc, params, userid):
+    def QueryUser(svc, userid):
         user = UserManager.UserManager.LoadUser(userid)
         if (user is None):
             raise NotFound("user %s not found" % userid)
         info = user.GetInfo()
+        svc.writedata(json.dumps(info))
+
+    @staticmethod
+    def DetailUser(svc, userid):
+        user = UserManager.UserManager.LoadUser(userid)
+        if (user is None):
+            raise NotFound("user %s not found" % userid)
+        info = user.memo.GetInfo()
         svc.writedata(json.dumps(info))
 
     def GetSignatureCount(self):

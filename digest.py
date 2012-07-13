@@ -2,6 +2,7 @@ import re
 import os
 import stat
 import json
+import struct
 import time
 import Config
 import Board
@@ -59,7 +60,10 @@ class DigestItem:
         return "%s/%s" % (Config.BBS_ROOT, self.path())
 
     def path(self):
-        return "%s/%s" % (self.basepath, self.fname)
+        if (self.fname):
+            return "%s/%s" % (self.basepath, self.fname)
+        else:
+            return self.basepath
 
     def CheckUpdate(self):
         try:
@@ -265,6 +269,23 @@ class DigestItem:
         info['id'] = self.EffectiveId(user) + 1
         return info
 
+    def GetAttachLink(self, session):
+        _hash = Util.HashGen(self.path(), "python nb")
+        filename = ''
+        for i in range(2):
+            filename += "%0x" % struct.unpack('=I', _hash[i*4:(i+1)*4])
+        link = "http://%s/bbscon.php?b=xattach&f=%s" % (session.GetMirror(Config.Config.GetInt('ATTACHMENT_PORT', 80)), filename)
+
+        linkfile = "%s/boards/xattach/%s" % (Config.BBS_ROOT, filename)
+        target = "../../%s" % self.path()
+        try:
+            os.symlink(target, linkfile)
+        except:
+            # we should not omit other errors
+            # anyway...
+            pass
+        return link
+
 class Digest:
     root = DigestItem("0Announce")
     def __init__(self, board, path):
@@ -348,6 +369,8 @@ class Digest:
         attachlist = postinfo.GetAttachList()
         result['picattach'] = attachlist[0]
         result['otherattach'] = attachlist[1]
+        if (attachlist[0] or attachlist[1]):
+            result['attachlink'] = item.GetAttachLink(session)
         svc.writedata(json.dumps(result))
 
 

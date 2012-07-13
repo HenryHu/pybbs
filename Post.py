@@ -402,4 +402,8 @@ class Post:
             postf.close()
         return (Util.gbkDec(ret), len(ret))
 
+    @staticmethod
+    def GetAttachLink(session, board, postentry):
+        return "http://%s/bbscon.php?b=%s&f=%s" % (session.GetMirror(Config.Config.GetInt('ATTACHMENT_PORT', 80)), board.name, postentry.filename)
+
 from BoardManager import BoardManager

@@ -109,6 +109,14 @@ class Session:
     def RecordLogin(self, count = False):
         self.user.RecordLogin(self._fromip, self._userinfo, count)
 
+    def GetMirror(self, port = 0):
+        server = Config.GetString("BBS_WEBDOMAIN", "")
+        if (not server):
+            server = Config.GetString("BBSDOMAIN", "")
+        if (not server):
+            raise ServerError("can't get server domain")
+        return server
+
 class SessionManager:
     sessions = {}
 
