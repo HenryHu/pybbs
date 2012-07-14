@@ -82,6 +82,9 @@ class DataService(BaseHTTPRequestHandler):
             self.send_header('Content-Length', len(data))
             if len(type) > 0:
                 self.send_header('Content-Type', type)
+            else:
+                self.send_header('Content-Type', 'text/html; charset=UTF-8')
+
             self.end_headers()
             self.wfile.write(data)
         except:
@@ -178,7 +181,7 @@ class MyServer(SocketServer.ThreadingMixIn, HTTPServer):
         ctx = SSL.Context(SSL.SSLv23_METHOD)
         fpem = Config.GetString('BBS_DATASVC_CERT', 'server.pem')
         ctx.use_privatekey_file(fpem)
-        ctx.use_certificate_file(fpem)
+        ctx.use_certificate_chain_file(fpem)
         self.socket = SSL.Connection(ctx, socket.socket(self.address_family, self.socket_type))
         self.server_bind()
         self.server_activate()
