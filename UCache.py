@@ -1,5 +1,6 @@
 import struct
 from Util import Util
+from Log import Log
 import Config
 from sysv_ipc import SharedMemory, ExistentialError
 from cstruct import *
