@@ -71,11 +71,13 @@ class UCache:
     def Init():
         if (UCache.uidshm == None):
             try:
+                Log.info("Attaching to UCACHE shared memory")
                 UCache.uidshm = SharedMemory(Config.Config.GetInt("UCACHE_SHMKEY", 3696), size = UCache.UIDSHM_SIZE)
             except ExistentialError:
-                print "Init UCache SHM"
+                Log.info("Creating UCACHE shared memory")
                 # not implemented!
                 raise Exception("Not implemented: Init UCache SHM")
+            Log.info("UCache initialization finished")
 
     @staticmethod
     def SearchUser(name):

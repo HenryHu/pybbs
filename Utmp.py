@@ -25,11 +25,16 @@ class Utmp:
     def Init():
         if (Utmp.utmpshm == None):
             try:
+                Log.info("attaching to UTMP shared memory")
                 Utmp.utmpshm = SharedMemory(Config.Config.GetInt("UTMP_SHMKEY", 3699), size = UTMPFILE_SIZE)
+                Log.info("attaching to UTMPHEAD shared memory")
                 UtmpHead.utmphead = SharedMemory(Config.Config.GetInt("UTMPHEAD_SHMKEY", 3698), size = UTMPHEAD_SIZE);
             except ExistentialError:
+                Log.info("Creating UTMP shared memory")
                 Utmp.utmpshm = SharedMemory(Config.Config.GetInt("UTMP_SHMKEY", 3699), size = UTMPFILE_SIZE, flags = IPC_CREAT, mode = 0660, init_character='\0')
+                Log.info("Creating UTMPHEAD shared memory")
                 UtmpHead.utmphead = SharedMemory(Config.Config.GetInt("UTMPHEAD_SHMKEY", 3698), UTMPHEAD_SIZE, flags = IPC_CREAT, mode = 0660, init_character='\0')
+                Log.info("Initializing UTMPHEAD shared memory")
                 fd = Utmp.Lock()
                 UtmpHead.SetNumber(0)
                 UtmpHead.SetHashHead(0, 1)
@@ -37,6 +42,9 @@ class Utmp:
                     UtmpHead.SetNext(i, i+2)
                 UtmpHead.SetNext(Config.USHM_SIZE - 1, 0)
                 Utmp.Unlock(fd)
+            Log.info("Utmp initialization finished")
+        else:
+            Log.info("Utmp already initialized")
 
     @staticmethod
     def Hash(userid):
