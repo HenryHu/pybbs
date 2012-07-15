@@ -33,7 +33,7 @@ class Utmp:
                 Log.info("Creating UTMP shared memory")
                 Utmp.utmpshm = SharedMemory(Config.Config.GetInt("UTMP_SHMKEY", 3699), size = UTMPFILE_SIZE, flags = IPC_CREAT, mode = 0660, init_character='\0')
                 Log.info("Creating UTMPHEAD shared memory")
-                UtmpHead.utmphead = SharedMemory(Config.Config.GetInt("UTMPHEAD_SHMKEY", 3698), UTMPHEAD_SIZE, flags = IPC_CREAT, mode = 0660, init_character='\0')
+                UtmpHead.utmphead = SharedMemory(Config.Config.GetInt("UTMPHEAD_SHMKEY", 3698), size = UTMPHEAD_SIZE, flags = IPC_CREAT, mode = 0660, init_character='\0')
                 Log.info("Initializing UTMPHEAD shared memory")
                 fd = Utmp.Lock()
                 UtmpHead.SetNumber(0)
