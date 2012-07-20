@@ -6,43 +6,83 @@ import mmap
 import os
 import fcntl
 from Util import Util
+from Log import Log
 from sysv_ipc import *
+from cstruct import *
 
-class BoardHeader:
-    parser = struct.Struct('=%ds%ds%dsIIIIIli128sib195s' % (Config.STRLEN, Config.BM_LEN, Config.STRLEN))
-    _fields = [['filename', 1], ['BM', 1], ['title', 1], 'level', 'nowid', 'clubnum', 'flag', 'adv_club', 'createtime', 'toptitle', ['ann_path',1], 'group', 'title_level', ['des',1]]
+@init_fields
+class BoardHeader(object):
+    '''struct boardheader'''
+#    parser = struct.Struct('=%ds%ds%dsIIIIIli128sib195s' % (Config.STRLEN, Config.BM_LEN, Config.STRLEN))
+#    _fields = [['filename', 1], ['BM', 1], ['title', 1], 'level', 'nowid', 'clubnum', 'flag', 'adv_club', 'createtime', 'toptitle', ['ann_path',1], 'group', 'title_level', ['des',1]]
+#    size = parser.size
 
-    # struct boardheader
-    size = parser.size
+    _fields = [
+            ['filename', Str(Config.STRLEN)],
+            ['BM', Str(Config.BM_LEN)],
+            ['title', Str(Config.STRLEN)],
+            ['level', U32()],
+            ['nowid', U32()],
+            ['clubnum', U32()],
+            ['flag', U32()],
+            ['adv_club', U32()],
+            ['createtime', U32()],
+            ['toptitle', I32()],
+            ['ann_path', Str(128)],
+            ['group', I32()],
+            ['title_level', I8()],
+            ['des', Str(195)]
+    ]
 
-    def unpack(self):
-        Util.Unpack(self, BoardHeader.parser.unpack(BCache.bcache[self.idx * BoardHeader.parser.size:(self.idx + 1) * BoardHeader.parser.size]))
-        return
+    def read(self, pos, len):
+        return BCache.bcache[self.idx * self.size + pos:self.idx * self.size + pos + len]
 
-    def pack(self):
-        BCache.bcache[self.idx * BoardHeader.parser.size:(self.idx + 1) * BoardHeader.parser.size] = BoardHeader.parser.pack(*Util.Pack(self))
+    def write(self, pos, data):
+        BCache.bcache[self.idx * self.size + pos : self.idx * self.size + pos + len(data)] = data
+
+#    def unpack(self):
+#        Util.Unpack(self, BoardHeader.parser.unpack(BCache.bcache[self.idx * BoardHeader.parser.size:(self.idx + 1) * BoardHeader.parser.size]))
+#        return
+
+#    def pack(self):
+#        BCache.bcache[self.idx * BoardHeader.parser.size:(self.idx + 1) * BoardHeader.parser.size] = BoardHeader.parser.pack(*Util.Pack(self))
 
     def __init__(self, idx):
         self.idx = idx - 1 # we start from 0 here...
-        self.unpack()
+#        self.unpack()
 
-class BoardStatus:
-    parser = struct.Struct('=iiiiii')
-    _fields = ['total', 'lastpost', 'updatemark', 'updatetitle', 'updateorigin', 'currentusers']
+@init_fields
+class BoardStatus(object):
+    '''struct boardheader'''
+#    parser = struct.Struct('=iiiiii')
+#    _fields = ['total', 'lastpost', 'updatemark', 'updatetitle', 'updateorigin', 'currentusers']
+#    size = parser.size
+    _fields = [
+            ['total', I32()],
+            ['lastpost', I32()],
+            ['updatemark', I32()],
+            ['updatetitle', I32()],
+            ['updateorigin', I32()],
+            ['currentusers', I32()]
+    ]
 
-    # struct boardheader
-    size = parser.size
 
-    def unpack(self):
-        Util.Unpack(self, BoardStatus.parser.unpack(BCache.brdshm.read(self.size, 4 + self.size * self.idx)))
-        return
+    def read(self, pos, len):
+        return BCache.brdshm.read(len, 4 + self.size * self.idx + pos)
 
-    def pack(self):
-        BCache.brdshm.write(BoardStatus.parser.pack(*Util.Pack(self)), 4 + self.size * self.idx)
+    def write(self, pos, data):
+        BCache.brdshm.write(data, 4 + self.size * self.idx + pos)
+
+#    def unpack(self):
+#        Util.Unpack(self, BoardStatus.parser.unpack(BCache.brdshm.read(self.size, 4 + self.size * self.idx)))
+#        return
+
+#    def pack(self):
+#        BCache.brdshm.write(BoardStatus.parser.pack(*Util.Pack(self)), 4 + self.size * self.idx)
 
     def __init__(self, idx):
         self.idx = idx - 1 # we start from 0 here...
-        self.unpack()
+#        self.unpack()
 
 class BCache:
     bcache = None

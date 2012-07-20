@@ -381,7 +381,7 @@ class Board:
             raise OutOfRange("invalid post id")
 
     def UpdateBoardInfo(self):
-        self.status.unpack()
+#        self.status.unpack()
         return
 
     def GetInfo(self):
@@ -718,10 +718,10 @@ class Board:
 
     def UpdateLastPost(self):
         (post_cnt, last_post) = self.GetLastPost()
-        self.status.unpack()
+#        self.status.unpack()
         self.status.lastpost = last_post
         self.status.total = post_cnt
-        self.status.pack()
+#        self.status.pack()
         return True
 
     def GetLastPost(self):
@@ -835,7 +835,7 @@ class Board:
         elif (item == 'title'):
             status.updatetitle = value
 
-        status.pack()
+#        status.pack()
 
         return True
 
