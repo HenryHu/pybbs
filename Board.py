@@ -219,7 +219,6 @@ class Board:
         end = Util.GetInt(params, 'end')
         count = Util.GetInt(params, 'count')
 
-        self.UpdateBoardInfo()
         if (mode == 'normal'):
             total = self.status.total
         else:
@@ -284,7 +283,6 @@ class Board:
         mode = Util.GetString(params, 'mode', 'normal')
         if (mode == 'junk' or mode == 'deleted'):
             raise NoPerm("invalid mode!")
-        self.UpdateBoardInfo()
         if ((id >= 1) and (id <= self.status.total)):
             pe = self.GetPostEntry(id - 1, mode)
             postpath = self.GetBoardPath() + pe.filename
@@ -327,7 +325,6 @@ class Board:
             svc.writedata(json.dumps(nextinfo))
 
     def GetNextPost(self, id, forward, last_one, only_new, user):
-        self.UpdateBoardInfo()
         if ((id >= 1) and (id <= self.status.total)):
             last_post = -1
             dirf = open(self.GetDirPath("normal"), 'rb')
@@ -371,7 +368,6 @@ class Board:
         offset = Util.GetInt(params, 'offset')
         if (offset <= 0):
             raise WrongArgs("invalid or lacking offset")
-        self.UpdateBoardInfo()
         if ((id >= 1) and (id <= self.status.total)):
             pe = self.GetPostEntry(id - 1, mode)
             attach = Post.ReadAttachment(self.GetBoardPath() + pe.filename, offset)
@@ -379,10 +375,6 @@ class Board:
             svc.writedata(json.dumps(attach))
         else:
             raise OutOfRange("invalid post id")
-
-    def UpdateBoardInfo(self):
-#        self.status.unpack()
-        return
 
     def GetInfo(self):
         rboard = {}

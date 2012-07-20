@@ -52,7 +52,6 @@ class FavBoard:
             rfb['type'] = 'board'
             board = BoardManager.GetBoardByIndex(self._index + 1)
             if (board != None):
-                board.UpdateBoardInfo()
                 rfb['binfo'] = board.GetInfoWithUser(user)
         else:
             rfb['type'] = 'dir'

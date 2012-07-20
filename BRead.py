@@ -1,7 +1,7 @@
 from Log import Log
 from User import User
 from Util import Util
-from BCache import BCache
+import BCache
 import BoardManager
 import Config
 import os
@@ -296,7 +296,7 @@ class BRead:
         entry = self.FindCacheEntry(board)
         if (entry == -1):
             return False
-        bh = BCache.GetBoardHeader(boardname)
+        bh = BCache.BCache.GetBoardHeader(boardname)
         self._cache[entry]._list[0] = bh.nowid
         self._cache[entry]._list[1] = 0
         self._cache[entry]._changed = 1

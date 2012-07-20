@@ -62,7 +62,6 @@ class BoardManager:
             first = True
             result = '[\n'
             for board in boards:
-                board.UpdateBoardInfo()
                 if (not first):
                     result += ',\n'
                 first = False
