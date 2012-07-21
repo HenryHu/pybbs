@@ -747,7 +747,7 @@ class Board:
                 ret = False
             if (not ret or (bh.group == 0)):
                 break
-            bh = BoardHeader(bh.group)
+            bh = BCache.BoardHeader(bh.group)
 
         return ret
 
@@ -797,7 +797,7 @@ class Board:
         myid = BCache.BCache.GetBoardNum(self.name)
         if (myid == 0):
             return False
-        status = BoardStatus(myid)
+        status = BCache.BoardStatus(myid)
 
         value = 0
         if (item == 'origin'):
@@ -819,7 +819,7 @@ class Board:
         if (need_update):
             value = 1
 
-        status = BoardStatus(myid)
+        status = BCache.BoardStatus(myid)
         if (item == 'origin'):
             status.updateorigin = value
         elif (item == 'mark'):
