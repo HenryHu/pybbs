@@ -5,7 +5,7 @@ import Config
 import struct
 import json
 import base64
-from BCache import *
+import BCache
 import User
 import BRead
 import BoardManager
@@ -794,7 +794,7 @@ class Board:
         return 0
 
     def GetUpdate(self, item):
-        myid = BCache.GetBoardNum(self.name)
+        myid = BCache.BCache.GetBoardNum(self.name)
         if (myid == 0):
             return False
         status = BoardStatus(myid)
@@ -812,7 +812,7 @@ class Board:
         return True
 
     def SetUpdate(self, item, need_update):
-        myid = BCache.GetBoardNum(self.name)
+        myid = BCache.BCache.GetBoardNum(self.name)
         if (myid == 0):
             return False
         value = 0
@@ -857,7 +857,7 @@ class Board:
         return False
 
     def GetNextId(self):
-        return BCache.GetNextID(self.name)
+        return BCache.BCache.GetNextID(self.name)
 
     def FindPost(self, id, xid, mode):
         post = self.GetPostEntry(id - 1, mode)
