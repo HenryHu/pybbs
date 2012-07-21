@@ -192,7 +192,6 @@ class BCache:
             bh = BCache.GetBoardHeader(boardname)
             if (bh != None):
                 bh.nowid += 1
-                bh.pack()
                 ret = bh.nowid
             else:
                 Log.warn("GetNextID() fail for board %s" % boardname)
