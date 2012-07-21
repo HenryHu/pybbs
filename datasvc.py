@@ -90,11 +90,12 @@ class DataService(BaseHTTPRequestHandler):
         except:
             pass
 
-    def return_error(self, code, reason):
+    def return_error(self, code, reason, data = ''):
         self.send_response(code, reason)
         self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header("Content-Length", 0)
+        self.send_header("Content-Length", len(data))
         self.end_headers()
+        self.wfile.write(data)
 
     def do_POST(self):
         url_tuple = urlparse.urlsplit(self.path)

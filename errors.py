@@ -1,3 +1,4 @@
+from Log import Log
 import traceback
 
 class NoPerm(Exception):
@@ -41,6 +42,8 @@ class error_handler:
         elif (isinstance(value, ServerError)):
             self.svc.return_error(500, value.args[0])
         else:
-            self.svc.return_error(500, traceback.format_exc())
+            info = "".join(traceback.format_exception(type, value, tb))
+            Log.error("Unexpected exception! %s" % info)
+            self.svc.return_error(500, "Unexpected server exception", info);
             return False
         return True
