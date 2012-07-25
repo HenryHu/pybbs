@@ -359,6 +359,11 @@ def fixterm_handler(exc):
                 if (ord(c) < 128):
                     s += c
                     break
+                elif (ord(c) == 128):
+                    # hack: gbk does not allow 0x80
+                    # but microsoft made it an euro sign
+                    s += u'\u20ac'
+                    break
                 else:
                     ci = 1
             elif (ci == 1):
