@@ -361,6 +361,11 @@ def fixterm_handler(exc):
 #                    print "ASCII"
                     s += c
                     break
+                elif (ord(c) == 128):
+                    # hack: gbk does not allow 0x80
+                    # but microsoft made it an euro sign
+                    s += u'\u20ac'
+                    break
                 else:
 #                    print "Got first half"
                     ci = 1
