@@ -356,25 +356,31 @@ def fixterm_handler(exc):
         for c in exc.object[exc.start:]:
             pos = pos + 1
             if (ci == 0):
+#                print "State: initial"
                 if (ord(c) < 128):
+#                    print "ASCII"
                     s += c
                     break
                 else:
+#                    print "Got first half"
                     ci = 1
             elif (ci == 1):
+#                print "State: after first half"
                 if (ord(c) < 0x40): 
                     if (ord(c) == 0x1b):# \ESC
+#                        print "Got tag inside. First half:", lc
                         cr = lc
                         s += c
                         s += "[50m"
                         s += c
                         ci = 2
                     else:
+#                        print "Unknown thing inside...", c
                         s += c
                         ci = 0
                         break
-#                    print "ESC", cr
                 else:
+#                    print "Got second half. decode."
                     ci = 0
                     sx = ""
                     sx += chr(lc)
@@ -391,7 +397,7 @@ def fixterm_handler(exc):
                 if ((ord(c) >= 64) and (ord(c) <= 126)):
                     ci = 4
             elif (ci == 4): # another half
-#                print "ANOTHER", ord(c)
+#                print "ANOTHER", ord(c), " first:", cr
                 sx = ""
                 sx += chr(cr)
                 sx += c
