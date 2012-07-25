@@ -347,6 +347,7 @@ class Util:
         return m.digest()
 
 def fixterm_handler(exc):
+    fixterm_debug = True
     if isinstance(exc, (UnicodeDecodeError)):
         s = u""
         lc = 0
@@ -356,9 +357,9 @@ def fixterm_handler(exc):
         for c in exc.object[exc.start:]:
             pos = pos + 1
             if (ci == 0):
-#                print "State: initial"
+                if fixterm_debug: print "State: initial"
                 if (ord(c) < 128):
-#                    print "ASCII"
+                    if fixterm_debug: print "ASCII"
                     s += c
                     break
                 elif (ord(c) == 128):
@@ -367,25 +368,25 @@ def fixterm_handler(exc):
                     s += u'\u20ac'
                     break
                 else:
-#                    print "Got first half"
+                    if fixterm_debug: print "Got first half"
                     ci = 1
             elif (ci == 1):
-#                print "State: after first half"
+                if fixterm_debug: print "State: after first half"
                 if (ord(c) < 0x40): 
                     if (ord(c) == 0x1b):# \ESC
-#                        print "Got tag inside. First half:", lc
+                        if fixterm_debug: print "Got tag inside. First half:", lc
                         cr = lc
                         s += c
                         s += "[50m"
                         s += c
                         ci = 2
                     else:
-#                        print "Unknown thing inside...", c
+                        if fixterm_debug: print "Unknown thing inside...", c
                         s += c
                         ci = 0
                         break
                 else:
-#                    print "Got second half. decode."
+                    if fixterm_debug: print "Got second half. decode."
                     ci = 0
                     sx = ""
                     sx += chr(lc)
@@ -393,20 +394,23 @@ def fixterm_handler(exc):
                     s += sx.decode("gbk", "ignore")
                     break
             elif (ci == 2): # '['
-#                print "[", ord(c)
+                if fixterm_debug: print "[", ord(c)
                 s += c
                 ci = 3
             elif (ci == 3): # 'i;jm'
-#                print "num: ", ord(c)
+                if fixterm_debug: print "num: ", ord(c)
                 s += c
                 if ((ord(c) >= 64) and (ord(c) <= 126)):
                     ci = 4
             elif (ci == 4): # another half
-#                print "ANOTHER", ord(c), " first:", cr
+                if fixterm_debug: print "ANOTHER", ord(c), " first:", cr
                 sx = ""
                 sx += chr(cr)
                 sx += c
-                s += sx.decode("gbk")
+                try:
+                    s += sx.decode("gbk")
+                except:
+                    s += '?'
                 break
 
             lc = ord(c)
