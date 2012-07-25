@@ -23,6 +23,24 @@ import Util
 update_condition = Condition()
 new_msgs = False
 
+class Pinger(Thread):
+    def __init__(self, rosters):
+        Thread.__init__(self)
+        self._rosters = rosters
+        self.start()
+
+    def run(self):
+        while (self._rosters._running):
+            try:
+                time.sleep(Config.XMPP_PING_INTERVAL)
+                for conn in self._rosters._conns.values():
+                    conn.ping_client()
+
+            except Exception as e:
+                Log.error("Exception caught in rosters.pinger: %r" % e)
+                Log.error(traceback.format_exc())
+
+
 class Updater(Thread):
     def __init__(self, rosters):
         Thread.__init__(self)
@@ -72,6 +90,7 @@ class Rosters(Thread):
 
         self._running = True
         self._updater = Updater(self)
+        self._pinger = Pinger(self)
         self.start()
 
     @staticmethod

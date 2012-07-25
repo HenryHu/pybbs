@@ -129,6 +129,14 @@ class XMPPServer(xmpp.Plugin):
     def make_jid(self, userid):
         return "%s@%s" % (userid, self._hostname)
 
+    def ping_client(self):
+        try:
+            pingelem = self.E.ping(xmlns='urn:xmpp:ping')
+            return self.iq('get', pingelem)
+        except Exception as e:
+            Log.debug("ping client %r failed: %r" % (self.authJID, e))
+            return False
+
     def check_msg(self):
         Log.debug("checking msg for %s" % self._userid)
         msgbox = MsgBox.MsgBox(self._userid)
