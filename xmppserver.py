@@ -10,6 +10,7 @@ import MsgBox
 import xmpp
 import modes
 import Util
+import traceback
 
 __disco_info_ns__ = 'http://jabber.org/protocol/disco#info'
 __vcard_ns__ = 'vcard-temp'
@@ -72,8 +73,7 @@ class XMPPServer(xmpp.Plugin):
     def ping(self, iq):
         """Handle ping requests"""
 
-        self._userinfo.freshtime = int(time.time())
-        self._userinfo.save()
+        self.refresh()
         return self.iq('result', iq)
 
     @xmpp.stanza('message')
@@ -129,12 +129,20 @@ class XMPPServer(xmpp.Plugin):
     def make_jid(self, userid):
         return "%s@%s" % (userid, self._hostname)
 
+    def refresh(self):
+        self._userinfo.freshtime = int(time.time())
+        self._userinfo.save()
+
+    def ping_result(self, iq):
+        self.refresh()
+
     def ping_client(self):
         try:
             pingelem = self.E.ping(xmlns='urn:xmpp:ping')
-            return self.iq('get', pingelem)
+            return self.iq('get', self.ping_result, pingelem)
         except Exception as e:
             Log.debug("ping client %r failed: %r" % (self.authJID, e))
+            Log.debug(traceback.format_exc())
             return False
 
     def check_msg(self):

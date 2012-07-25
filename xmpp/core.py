@@ -321,7 +321,11 @@ class Core(i.CoreInterface):
 
     def iq(self, kind, elem_or_callback, *data):
         if xml.is_element(elem_or_callback):
-            return self.iq_send(kind, elem_or_callback.get('id'), *data)
+            if (not elem_or_callback.get('id')):
+                id = make_nonce()
+            else:
+                id = elem_or_callback.get('id')
+            return self.iq_send(kind, id, *data)
         return self.iq_send(kind, self.iq_bind(elem_or_callback), *data)
 
     def iq_bind(self, callback):
