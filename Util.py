@@ -347,7 +347,7 @@ class Util:
         return m.digest()
 
 def fixterm_handler(exc):
-    fixterm_debug = True
+    fixterm_debug = False
     if isinstance(exc, (UnicodeDecodeError)):
         s = u""
         lc = 0
@@ -364,7 +364,7 @@ def fixterm_handler(exc):
                     break
                 elif (ord(c) == 128):
                     # hack: gbk does not allow 0x80
-                    # but microsoft made it an euro sign
+                    # but microsoft made it a euro sign
                     s += u'\u20ac'
                     break
                 else:
