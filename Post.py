@@ -257,15 +257,19 @@ class Post:
         sig_fname = user.MyFile("signatures")
         valid_ln = 0
         tmpsig = []
+        # hack: c code limit the size of buf
+        # we must follow this, or the line number would be different
+        # fgets(256) = readline(255)
+        buf_size = 255
         try:
             with open(sig_fname, "r") as sigfile:
                 fp.write('\n--\n')
                 for i in xrange(0, (sig - 1) * Config.MAXSIGLINES):
-                    line = sigfile.readline()
+                    line = sigfile.readline(buf_size)
                     if (line == ""):
                         return
                 for i in range(0, Config.MAXSIGLINES):
-                    line = sigfile.readline()
+                    line = sigfile.readline(buf_size)
                     if (line != ""):
                         if (line[0] != '\n'):
                             valid_ln = i + 1
