@@ -28,7 +28,7 @@ class Util:
     def gbkEnc(string):
         gbk_str = ''
         for c in string:
-            if (c == '\xa0'):
+            if (c == u'\xa0'):
                 # gbk does not have 'nbsp'
                 # replace it with 'sp'
                 c = ' '
