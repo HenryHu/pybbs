@@ -608,7 +608,7 @@ class Board:
         if (mailback):
             post_file.SetMailBack(True)
 
-        content_encoded = content.encode('gbk')
+        content_encoded = Util.gbkEnc(content)
         try:
             with open(self.GetBoardPath() + post_file.filename, "ab") as f:
                 Post.WriteHeader(f, user, False, self, title, anony, 0, session)
@@ -638,7 +638,7 @@ class Board:
             has_sig = True
         Post.AddLogInfo(self.GetBoardPath(post_file.filename), user, session, anony, has_sig)
 
-        post_file.title = title.encode('gbk')
+        post_file.title = Util.gbkEnc(title)
         # TODO: outpost ('SS')
         post_file.innflag = 'LL'
 
