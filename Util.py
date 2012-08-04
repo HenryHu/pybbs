@@ -26,7 +26,55 @@ class Util:
 
     @staticmethod
     def gbkEnc(string):
-        return Util.gbkEncoder(string, errors='ignore')[0]
+        gbk_str = ''
+        for c in string:
+            if (c == u'\xa0'):
+                # gbk does not have 'nbsp'
+                # replace it with 'sp'
+                c = ' '
+            try:
+                v = c.encode('gbk')
+            except:
+                try:
+                    v = c.encode('gb18030')
+                except:
+                    # so not in gbk or gb18030
+                    # ....
+                    v = '\u%d' % ord(c)
+            gbk_str += v
+
+        out_str = ''
+        ci = 0
+        buf = ''
+        curpos = 0
+        while (curpos < len(gbk_str)):
+            c = gbk_str[curpos]
+            curpos += 1
+            if (ci == 0):
+                if (c == '\x1b'):
+                    if (gbk_str[curpos : curpos + 5] == '[50m\x1b'):
+                        # got a prefix tag
+                        curpos += 5
+                        ci = 1
+                        buf = '\x1b'
+                    else:
+                        out_str += c
+                else:
+                    out_str += c
+            elif (ci == 1):
+                buf += c
+                ci = 2
+            elif (ci == 2):
+                buf += c
+                if (ord(c) >= 64 and ord(c) <= 126):
+                    # internal tag end
+                    ci = 3
+            elif (ci == 3):
+                out_str += c
+                out_str += buf
+                buf = ''
+                ci = 0
+        return out_str
 
     @staticmethod
     def utfDec(string):
@@ -347,58 +395,117 @@ class Util:
         return m.digest()
 
 def fixterm_handler(exc):
-    if isinstance(exc, (UnicodeDecodeError)):
+    fixterm_debug = False
+    if isinstance(exc, UnicodeDecodeError):
         s = u""
-        lc = 0
+        buf = ''
         ci = 0
-        cr = 0
+        ss = 0 # saved state
         pos = exc.start
         for c in exc.object[exc.start:]:
             pos = pos + 1
             if (ci == 0):
+                if fixterm_debug: print "State: initial"
                 if (ord(c) < 128):
+                    if fixterm_debug: print "ASCII"
                     s += c
                     break
+                elif (ord(c) == 128):
+                    # hack: gbk does not allow 0x80
+                    # but microsoft made it a euro sign
+                    s += u'\u20ac'
+                    break
                 else:
+                    if fixterm_debug: print "Got first half"
+                    buf = c
                     ci = 1
             elif (ci == 1):
-                if (ord(c) < 0x40): 
-                    if (ord(c) == 0x1b):# \ESC
-                        cr = lc
+                if fixterm_debug: print "State: after first half"
+                if (ord(c) == 0x1b):# \ESC
+                    if fixterm_debug: print "Got tag inside. First half:", buf
+                    s += '\x1b[50m\x1b'
+                    ss = ci
+                    ci = 2
+                elif (ord(c) >= 0x30 and ord(c) <= 0x39):
+                    # gb18030
+                    buf += c
+                    ci = 5
+                elif (ord(c) < 0x40):
+                    if fixterm_debug: print "Unknown thing inside...", c
+                    s += '?'
+                    try:
                         s += c
-                        s += "[50m"
-                        s += c
-                        ci = 2
-                    else:
-                        s += c
-                        ci = 0
-                        break
-#                    print "ESC", cr
-                else:
+                    except:
+                        s += '?'
                     ci = 0
-                    sx = ""
-                    sx += chr(lc)
-                    sx += c
-                    s += sx.decode("gbk", "ignore")
+                    break
+                else:
+                    # valid range: 0x40~0x7e, 0x80~0xfe
+                    # anyway, try to decode
+                    if fixterm_debug: print "Got second half. decode."
+                    ci = 0
+                    buf += c
+#                    if (ord(c) >= 0x40 and ord(c) <= 0xfe and ord(c) != 0x7f):
+                    try:
+                        s += buf.decode("gbk")
+                    except:
+                        # maybe 2-byte gb18030?
+                        try:
+                            s += buf.decode("gb18030")
+                        except:
+                            # no idea...
+                            s += '??'
+
+                    buf = ''
                     break
             elif (ci == 2): # '['
-#                print "[", ord(c)
-                s += c
+                if fixterm_debug: print "[", ord(c)
+                try:
+                    s += c
+                except:
+                    s += '?'
                 ci = 3
             elif (ci == 3): # 'i;jm'
-#                print "num: ", ord(c)
-                s += c
+                if fixterm_debug: print "num: ", ord(c)
+                try:
+                    s += c
+                except:
+                    s += '?'
                 if ((ord(c) >= 64) and (ord(c) <= 126)):
-                    ci = 4
-            elif (ci == 4): # another half
-#                print "ANOTHER", ord(c)
-                sx = ""
-                sx += chr(cr)
-                sx += c
-                s += sx.decode("gbk")
-                break
+                    ci = ss
+            elif (ci == 5):
+                # gb18030 3rd
+                if (ord(c) >= 0x81 and ord(c) <= 0xfe):
+                    buf += c
+                    ci = 6
+                elif (ord(c) == 0x1b):
+                    s += "\x1b[50m\x1b"
+                    ss = ci
+                    ci = 2
+                else:
+                    buf = ''
+                    s += '???'
+                    ci = 0
+                    break
+            elif (ci == 6):
+                # gb18030 4th
+                if (ord(c) == 0x1b):
+                    s += "\x1b[50m\x1b"
+                    ss = ci
+                    ci = 2
+                else:
+                    buf += c
+#                   if (ord(c) >= 0x30 and ord(c) <= 0x39):
+                    try:
+                        s += buf.decode('gb18030')
+                    except:
+                        s += '????'
+                    ci = 0
+                    buf = ''
+                    break
 
-            lc = ord(c)
         return (s, pos)
+    else:
+        raise TypeError()
 
 codecs.register_error("fixterm", fixterm_handler)

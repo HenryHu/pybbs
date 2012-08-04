@@ -32,7 +32,7 @@ class Pinger(Thread):
     def run(self):
         while (self._rosters._running):
             try:
-                time.sleep(Config.XMPP_PING_INTERVAL)
+                time.sleep(Config.XMPP_PING_TIME_INTERVAL)
                 for conn in self._rosters._conns.values():
                     conn.ping_client()
 
