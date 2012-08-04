@@ -538,7 +538,7 @@ class Board:
     def IsJunkBoard(self):
         return self.CheckFlag(BOARD_JUNK)
 
-    def DoStat(self):
+    def DontStat(self):
         return self.CheckFlag(BOARD_POSTSTAT)
 
     def PreparePostArticle(self, user, refile, anony):
@@ -752,7 +752,7 @@ class Board:
         return ret
 
     def WritePosts(self, user, groupid):
-        if (self.name != Config.BLESS_BOARD and (not self.DoStat() or (not self.IsNormalBoard()))):
+        if (self.name != Config.BLESS_BOARD and (self.DontStat() or (not self.IsNormalBoard()))):
             return 0
         now = time.time()
 
