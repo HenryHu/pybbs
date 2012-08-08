@@ -20,6 +20,7 @@ import random
 import binascii
 from errors import *
 import digest
+import store
 
 DEFAULT_GET_POST_COUNT = 20
 
@@ -535,13 +536,16 @@ class Board:
     def CanAnonyReply(self):
         return self.CheckFlag(BOARD_ANONYREPLY)
 
+    def CanPostAttach(self):
+        return self.CheckFlag(BOARD_ATTACH)
+
     def IsJunkBoard(self):
         return self.CheckFlag(BOARD_JUNK)
 
     def DontStat(self):
         return self.CheckFlag(BOARD_POSTSTAT)
 
-    def PreparePostArticle(self, user, refile, anony):
+    def PreparePostArticle(self, user, refile, anony, attach):
         detail = {}
         if (refile != None):
             if (self.CheckNoReply()):
@@ -563,6 +567,10 @@ class Board:
             if not self.MayAnonyPost(user, refile):
                 detail['anonymous'] = 1
 
+        if attach:
+            if not self.CanPostAttach():
+                detail['attachment'] = 1
+
         return detail
 
     def MayAnonyPost(self, user, refile):
@@ -581,9 +589,9 @@ class Board:
 
         return may_anony
 
-    def PostArticle(self, user, title, content, refile, signature_id, anony, mailback, session):
+    def PostArticle(self, user, title, content, refile, signature_id, anony, mailback, session, attach):
         # check permission
-        self.PreparePostArticle(user, refile, anony)
+        self.PreparePostArticle(user, refile, anony, attach)
 
         # filter title: 'Re: ' and '\ESC'
         title = title.replace('\033', ' ')
@@ -642,7 +650,29 @@ class Board:
         # TODO: outpost ('SS')
         post_file.innflag = 'LL'
 
+        if attach:
+            try:
+                post_file.attachment = len(attach)
+            except:
+                post_file.attachment = 0
+        else:
+            post_file.attachment = 0
+
         self.AfterPost(user, post_file, refile, anony)
+
+        if attach:
+            try:
+                for att in attach:
+                    filename = att['name']
+                    tmpfile = att['store_id']
+                    if (not store.Store.verify_id(tmpfile)):
+                        continue
+
+                    tmpfile = store.Store.path_from_id(tmpfile)
+
+                    Post.AddAttach(self.GetBoardPath(post_file.filename), filename, tmpfile)
+            except:
+                pass
 
         if (not self.IsJunkBoard()):
             user.AddNumPosts()

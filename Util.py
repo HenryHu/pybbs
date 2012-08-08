@@ -19,6 +19,7 @@ class Util:
     utfDecoder = codecs.getdecoder('utf-8')
     utfEncoder = codecs.getencoder('utf-8')
     random = random.Random()
+    strChecker = re.compile('^[a-z0-9A-Z]+$')
 
     @staticmethod
     def gbkDec(string):
@@ -393,6 +394,10 @@ class Util:
         m.update(Defs.PASSMAGIC)
         m.update(key)
         return m.digest()
+
+    @staticmethod
+    def CheckStr(str):
+        return Util.strChecker.match(str)
 
 def fixterm_handler(exc):
     fixterm_debug = False

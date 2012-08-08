@@ -71,8 +71,12 @@ class Post:
                 anony = bool(svc.get_int(params, "anonymous", 0))
                 refile = Post.GetReplyFile(svc, params, bo)
                 user = session.GetUser()
+                try:
+                    attach = json.loads(svc.get_str(params, 'attachments'))
+                except:
+                    attach = None
                 
-                detail = bo.PreparePostArticle(user, refile, anony)
+                detail = bo.PreparePostArticle(user, refile, anony, attach)
                 result = {"error": detail, "signature_id" : user.GetSigID()}
                 svc.writedata(json.dumps(result))
             else:
@@ -106,8 +110,13 @@ class Post:
             anony = bool(svc.get_int(params, "anonymous", 0))
             mailback = bool(svc.get_int(params, "mailback", 0))
             re_file = Post.GetReplyFile(svc, params, bo)
-            
-            bo.PostArticle(session.GetUser(), title, content, re_file, signature_id, anony, mailback, session)
+            try:
+                attach = json.loads(svc.get_str(params, 'attachments'))
+            except:
+                attach = None
+
+            bo.PostArticle(session.GetUser(), title,
+                    content, re_file, signature_id, anony, mailback, session, attach)
             svc.writedata('{"result": "ok"}')
         else:
             raise WrongArgs("unknown action")
@@ -409,5 +418,44 @@ class Post:
     @staticmethod
     def GetAttachLink(session, board, postentry):
         return "http://%s/bbscon.php?b=%s&f=%s" % (session.GetMirror(Config.Config.GetInt('ATTACHMENT_PORT', 80)), board.name, postentry.filename)
+
+    @staticmethod
+    def AddAttach(postfile_name, attach_name, attach_file):
+        try:
+            try:
+                attach_name_gbk = Util.gbkEnc(attach_name)
+                san_attach_name = ''
+                for ch in attach_name_gbk:
+                    if (ch != '/' and ch != '\\' and
+                        ch != '*' and ch != '?' and
+                        ch != '$' and ch != '~' and
+                        (ch.isalnum() or ch.ispunct() or ord(ch) >= 0x80)):
+                        san_attach_name += ch
+                    else:
+                        san_attach_name += '_'
+
+                attach_stat = os.stat(attach_file)
+                if (attach_stat.st_size > Config.MAX_ATTACHSIZE):
+                    return 0
+                with open(attach_file, "rb") as attachf:
+                    with open(postfile_name, "ab") as postf:
+                        postf.write('\0' * 8)
+                        postf.write(san_attach_name)
+                        postf.write('\0')
+                        postf.write(struct.pack('!I', attach_stat.st_size))
+                        while (True):
+                            buf = attachf.read(4096)
+                            if (buf):
+                                postf.write(buf)
+                            else:
+                                break
+                return attach_stat.st_size
+            except:
+                return 0
+        finally:
+            try:
+                os.unlink(attach_file)
+            except:
+                pass
 
 from BoardManager import BoardManager
