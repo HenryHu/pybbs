@@ -603,6 +603,10 @@ class Board:
             if not self.MayAnonyPost(user, refile):
                 anony = False
 
+        if attach:
+            if not self.CanPostAttach():
+                attach = None
+
         post_file = PostEntry()
 #        Log.debug("PostArticle title: %s anony: %r" % (title, anony))
 
