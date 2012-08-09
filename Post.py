@@ -13,6 +13,7 @@ import json
 import random
 from errors import *
 from Log import Log
+import curses.ascii
 
 ATTACHMENT_PAD = '\0\0\0\0\0\0\0\0'
 ATTACHMENT_SIZE = 0
@@ -429,7 +430,7 @@ class Post:
                     if (ch != '/' and ch != '\\' and
                         ch != '*' and ch != '?' and
                         ch != '$' and ch != '~' and
-                        (ch.isalnum() or ch.ispunct() or ord(ch) >= 0x80)):
+                        (ch.isalnum() or curses.ascii.ispunct(ch) or ord(ch) >= 0x80)):
                         san_attach_name += ch
                     else:
                         san_attach_name += '_'
@@ -439,7 +440,7 @@ class Post:
                     return 0
                 with open(attach_file, "rb") as attachf:
                     with open(postfile_name, "ab") as postf:
-                        postf.write('\0' * 8)
+                        postf.write(ATTACHMENT_PAD)
                         postf.write(san_attach_name)
                         postf.write('\0')
                         postf.write(struct.pack('!I', attach_stat.st_size))
@@ -450,7 +451,8 @@ class Post:
                             else:
                                 break
                 return attach_stat.st_size
-            except:
+            except Exception as e:
+                Log.warn("fail to add attach: %r" % e)
                 return 0
         finally:
             try:
