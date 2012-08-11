@@ -58,6 +58,7 @@ class TCPServer(object):
         flags |= fcntl.FD_CLOEXEC
         fcntl.fcntl(sock.fileno(), fcntl.F_SETFD, flags)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
         sock.setblocking(0)
         sock.bind((addr, int(port)))
         sock.listen(128)
