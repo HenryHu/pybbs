@@ -177,9 +177,10 @@ class Board:
                 raise NoPerm("permission denied")
         if (action == 'clear_unread'):
             if (bo == None):
-                raise WrongArgs("lack of board name")
-            to = svc.get_int(params, 'to', 0)
-            bo.ClearUnread(session.GetUser(), to)
+                Board.ClearUnreadAll(session.GetUser())
+            else:
+                to = svc.get_int(params, 'to', 0)
+                bo.ClearUnread(session.GetUser(), to)
             result = {"result": "ok"}
             svc.writedata(json.dumps(result))
         else:
@@ -523,6 +524,13 @@ class Board:
             return bread.Clear(self.name)
         else:
             return bread.ClearTo(to, self.name)
+
+    @staticmethod
+    def ClearUnreadAll(user):
+        for i in xrange(BCache.BCache.GetBoardCount()):
+            board = BoardManager.BoardManager.GetBoardByIndex(i)
+            if (board is not None):
+                board.ClearUnread(user)
 
     def CheckReadonly(self):
         return self.CheckFlag(BOARD_READONLY)
