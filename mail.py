@@ -57,6 +57,14 @@ class Mail:
         mbox = mailbox.MailBox(user.GetName())
         folder = mbox.get_folder(folder)
 
+        entry = folder.get_entry(index - 1)
+        if (entry is None):
+            raise OutOfRange('out of range')
         post = folder.get_content(index - 1)
-        return json.dumps(post.GetInfo())
+        if (post is None):
+            raise OutOfRange('out of range')
+        info = dict(entry.GetInfo().items() + post.GetInfo().items())
+        info['id'] = index
+
+        return json.dumps(info)
 
