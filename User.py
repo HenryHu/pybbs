@@ -408,3 +408,6 @@ class User:
     def GetSigID(self):
         return self.userec.signature
 
+    def GetName(self):
+        return self.name
+

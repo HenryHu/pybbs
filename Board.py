@@ -42,7 +42,9 @@ BOARD_ANONYREPLY = 0x4000 #/* cannot reply anonymously */
 
 # PostEntry.accessed[0]
 FILE_SIGN		= 0x1           #/* In article mode, Sign , Bigman 2000.8.12 ,in accessed[0] */
+# not used
 FILE_OWND		= 0x2          #/* accessed array */
+# combined into big post
 FILE_TOTAL		= 0x2  #// aqua 2008.11.4
 FILE_VISIT		= 0x4
 FILE_MARKED		= 0x8
@@ -114,6 +116,50 @@ class PostEntry(CStruct):
 
     def SetCannotReply(self, val):
         return self.SetFlag(1, FILE_READ, val)
+
+    def IsReplied(self):
+        return self.CheckFlag(0, FILE_REPLIED)
+
+    def IsForwarded(self):
+        return self.CheckFlag(0, FILE_FORWARDED)
+
+    def InDigest(self):
+        return self.CheckFlag(0, FILE_DIGEST)
+
+    def IsRead(self):
+        return self.CheckFlag(0, FILE_READ)
+
+    def GetInfo(self, mode = 'post'):
+        post = {'title': Util.gbkDec(self.title)}
+        post['attachflag'] = self.attachflag
+        post['attachment'] = self.attachment
+        post['owner'] = Util.gbkDec(self.owner)
+        post['posttime'] = int(self.filename.split('.')[1])
+        post['xid'] = self.id
+        post['thread'] = self.groupid
+        post['reply_to'] = self.reid
+        post['size'] = self.eff_size
+        flags = []
+        if (self.IsMarked()):
+            flags += ['marked']
+        if (mode == 'post'):
+            if (self.CannotReply()):
+                flags += ['noreply']
+            if (self.InDigest()):
+                flags += ['g']
+        if (mode == 'mail'):
+            if (self.IsReplied()):
+                flags += ['replied']
+            if (self.IsForwarded()):
+                flags += ['forwarded']
+            if (self.IsRead()):
+                post['read'] = True
+            else:
+                post['read'] = False
+
+        post['flags'] = flags
+
+        return post
 
 class PostLog(CStruct):
     # what the hell! this is board name, not id! why IDLEN+6!
@@ -235,7 +281,7 @@ class Board:
                 dirf = open(self.GetDirPath(mode), 'rb')
                 post = {}
                 first = True
-                result = '[\n';
+                result = '[\n'
                 for i in range(start - 1, end):
                     pe = self.GetPostEntry(i, mode, dirf)
                     if (pe is None):
@@ -243,13 +289,8 @@ class Board:
                     if (not first):
                         result += ',\n'
                     first = False
+                    post = pe.GetInfo('post')
                     post['id'] = i + 1
-                    post['title'] = Util.gbkDec(pe.title)
-                    post['attachflag'] = pe.attachflag
-                    post['attachment'] = pe.attachment
-                    post['owner'] = Util.gbkDec(pe.owner) # maybe...
-                    post['posttime'] = int(pe.filename.split('.')[1])
-                    post['xid'] = pe.id
                     read = True
                     if (bread != None):
                         read = not bread.QueryUnread(pe.id, self.name)
@@ -288,17 +329,11 @@ class Board:
         if ((id >= 1) and (id <= self.status.total)):
             pe = self.GetPostEntry(id - 1, mode)
             postpath = self.GetBoardPath() + pe.filename
-            post = {}
+            post = pe.GetInfo()
             post['id'] = id
-            post['xid'] = pe.id
-            post['title'] = Util.gbkDec(pe.title)
-            post['owner'] = Util.gbkDec(pe.owner) # maybe...
             postinfo = Post(postpath)
-            post['content'] = postinfo.GetContent()
-            attachlist = postinfo.GetAttachList()
-            post['picattach'] = attachlist[0]
-            post['otherattach'] = attachlist[1]
-            if (attachlist[0] or attachlist[1]):
+            post = dict(post.items() + postinfo.GetInfo().items())
+            if (post['picattach'] or post['otherattach']):
                 post['attachlink'] = Post.GetAttachLink(session, self, pe)
             svc.writedata(json.dumps(post))
             bread = BRead.BReadMgr.LoadBRead(session.GetUser().name)

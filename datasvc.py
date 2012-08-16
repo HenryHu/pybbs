@@ -35,6 +35,7 @@ from FavBoard import FavBoard
 from digest import Digest
 from Log import Log
 import store
+import mail
 import commondata
 from errors import *
 
@@ -47,6 +48,7 @@ class DataService(BaseHTTPRequestHandler):
                "favboard"   : FavBoard,
                "digest"     : Digest,
                "store"      : store.Store,
+               "mail"       : mail.Mail
               }
     classes_keys = classes.keys()
     protocol_version = 'HTTP/1.1'
