@@ -56,6 +56,6 @@ class Mail:
         mbox = mailbox.MailBox(user.GetName())
         folder = mbox.get_folder(folder)
 
-        post = folder.get_content(index)
+        post = folder.get_content(index - 1)
         return json.dumps(post.GetInfo())
 

@@ -135,14 +135,14 @@ class PostEntry(CStruct):
         post['attachment'] = self.attachment
         post['owner'] = Util.gbkDec(self.owner)
         post['posttime'] = int(self.filename.split('.')[1])
-        post['xid'] = self.id
-        post['thread'] = self.groupid
-        post['reply_to'] = self.reid
         post['size'] = self.eff_size
         flags = []
         if (self.IsMarked()):
             flags += ['marked']
         if (mode == 'post'):
+            post['xid'] = self.id
+            post['thread'] = self.groupid
+            post['reply_to'] = self.reid
             if (self.CannotReply()):
                 flags += ['noreply']
             if (self.InDigest()):
@@ -329,7 +329,7 @@ class Board:
         if ((id >= 1) and (id <= self.status.total)):
             pe = self.GetPostEntry(id - 1, mode)
             postpath = self.GetBoardPath() + pe.filename
-            post = pe.GetInfo()
+            post = pe.GetInfo('post')
             post['id'] = id
             postinfo = Post(postpath)
             post = dict(post.items() + postinfo.GetInfo().items())

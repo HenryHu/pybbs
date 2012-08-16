@@ -46,7 +46,7 @@ class Folder:
         try:
             with open(self.path, "rb") as dirf:
                 dirf.seek(index * Board.PostEntry.size)
-                data = Board.PostEntry(dirf.read(Board.PostEntry.size))
+                data = dirf.read(Board.PostEntry.size)
                 if (len(data) < Board.PostEntry.size):
                     return None
                 return Board.PostEntry(data)
