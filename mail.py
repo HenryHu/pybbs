@@ -44,8 +44,9 @@ class Mail:
                 if not first:
                     result += ',\n'
                 post = entry.GetInfo('mail')
-                post = {'id': i+1}
+                post['id'] = i+1
                 result += json.dumps(post)
+                first = False
             result += '\n]}'
             return result
         else:
