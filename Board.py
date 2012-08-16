@@ -135,7 +135,6 @@ class PostEntry(CStruct):
         post['attachment'] = self.attachment
         post['owner'] = Util.gbkDec(self.owner)
         post['posttime'] = int(self.filename.split('.')[1])
-        post['size'] = self.eff_size
         flags = []
         if (self.IsMarked()):
             flags += ['marked']
@@ -143,6 +142,7 @@ class PostEntry(CStruct):
             post['xid'] = self.id
             post['thread'] = self.groupid
             post['reply_to'] = self.reid
+            post['size'] = self.eff_size
             if (self.CannotReply()):
                 flags += ['noreply']
             if (self.InDigest()):
