@@ -1,9 +1,10 @@
 from Log import Log
-from User import User
 from Util import Util
 import BCache
 import BoardManager
 import Config
+import User
+
 import os
 import mmap
 import struct
@@ -76,7 +77,7 @@ class BRead:
 #        Log.debug("Update()")
         if (self._cache_map == None):
             return
-        brcpath = User.OwnFile(self._userid, ".boardrc.gz")
+        brcpath = User.User.OwnFile(self._userid, ".boardrc.gz")
         changed = -1
         for i in range(0, BRC_CACHE_NUM):
             if (self._cache[i]._changed == 1):
@@ -215,12 +216,12 @@ class BRead:
 
     def Init(self):
         if self._cache_map == None:
-            cachepath = User.CacheFile(self._userid, '')
+            cachepath = User.User.CacheFile(self._userid, '')
             try:
                 os.mkdir(cachepath, 0700)
             except:
                 pass
-            entrypath = User.CacheFile(self._userid, 'entry')
+            entrypath = User.User.CacheFile(self._userid, 'entry')
             try:
                 os.stat(entrypath)
             except:
@@ -259,7 +260,7 @@ class BRead:
         if (entry != -1):
 #            Log.debug("Load: already in cache")
             return True
-        brcpath = User.OwnFile(self._userid, ".boardrc.gz")
+        brcpath = User.User.OwnFile(self._userid, ".boardrc.gz")
         try:
             fbrc = gzip.open(brcpath, "rb", 6)
         except:

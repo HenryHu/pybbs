@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from Util import Util
-from User import User
+import User
 from MsgHead import MsgHead
 from Log import Log
 import Config
@@ -59,7 +59,7 @@ class MsgBox:
         return self.UnlockGeneral(self.fContent)
 
     def OpenGeneral(self, file, write):
-        path = User.OwnFile(self.name, file)
+        path = User.User.OwnFile(self.name, file)
         if (write):
             try:
                 return open(path, 'r+b')
@@ -254,9 +254,9 @@ class MsgBox:
     def GetMsgCount(self, all):
         path = ""
         if (all):
-            path = User.OwnFile(self.name, "msgindex")
+            path = User.User.OwnFile(self.name, "msgindex")
         else:
-            path = User.OwnFile(self.name, "msgindex2")
+            path = User.User.OwnFile(self.name, "msgindex2")
 
         size = Util.GetSize(path)
 
@@ -267,7 +267,7 @@ class MsgBox:
         files = ['msgindex', 'msgindex2', 'msgcontent'];
         for file in files:
             try:
-                path = User.OwnFile(self.name, file)
+                path = User.User.OwnFile(self.name, file)
                 os.remove(path)
             except:
                 Log.warn("remove %s for user %s failed" % (file, self.name))

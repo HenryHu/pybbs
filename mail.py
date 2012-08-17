@@ -20,6 +20,11 @@ class Mail:
             folder = svc.get_str(params, 'folder', 'inbox')
             index = svc.get_int(params, 'index')
             svc.writedata(Mail.View(session.GetUser(), folder, index))
+        elif (action == 'check_unread'):
+            folder = svc.get_str(params, 'folder', 'inbox')
+            index = svc.get_int(params, 'index', 0)
+            result = {'unread': Mail.CheckUnread(session.GetUser(), folder, index)}
+            svc.writedata(json.dumps(result))
         else:
             raise WrongArgs('unknown action')
 
@@ -67,4 +72,17 @@ class Mail:
         info['id'] = index
 
         return json.dumps(info)
+
+    @staticmethod
+    def CheckUnread(user, folder = 'inbox', index = 0):
+        mbox = mailbox.MailBox(user.GetName())
+        folder = mbox.get_folder(folder)
+
+        if (index == 0):
+            index = folder.count()
+
+        entry = folder.get_entry(index - 1)
+        if (entry is None):
+            raise OutOfRange('index out of range')
+        return not entry.IsRead()
 

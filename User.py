@@ -11,6 +11,7 @@ from Friend import Friend
 from Util import Util
 from errors import *
 import UserManager
+import mail
 
 PERM_BASIC =     000001
 PERM_CHAT =      000002
@@ -355,6 +356,8 @@ class User:
         plan = self.GetPlan()
         if (plan is not None):
             info['plan'] = plan
+        info['unread_mail'] = mail.Mail.CheckUnread(self)
+
         return info
 
     def GetPlan(self):

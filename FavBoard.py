@@ -1,6 +1,7 @@
 import json
+
 import Config
-from User import User
+import User
 from Util import Util
 from BoardManager import BoardManager
 from UserManager import UserManager
@@ -147,7 +148,7 @@ class FavBoards:
         return 0
 
     def LoadFavBoards(self):
-        path = User.OwnFile(self._userid, "favboard")
+        path = User.User.OwnFile(self._userid, "favboard")
         self._current = -1
         fd = open(path, "rb")
         if (fd != None):
