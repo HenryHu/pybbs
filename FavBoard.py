@@ -125,7 +125,7 @@ class FavBoards:
             j = 0
             while (j < self._count):
                 if (self._favboards[j]._father == index):
-                    DelFavBoard(j)
+                    self.DelFavBoard(j)
                     if (j < index):
                         index = index - 1
                     j = j - 1
