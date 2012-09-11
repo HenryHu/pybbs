@@ -637,7 +637,8 @@ class Board:
         self.PreparePostArticle(user, refile, anony, attach)
 
         # filter title: 'Re: ' and '\ESC'
-        title = title.replace('\033', ' ')
+#        title = title.replace('\033', ' ')
+        title = re.sub('[\x00-\x19]', ' ', title)
         if (refile == None):
             while (title[:4] == "Re: "):
                 title = title[4:]
