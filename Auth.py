@@ -99,6 +99,8 @@ class Auth:
                 return
             else:
                 raise NoPerm('forbidden')
+        elif (action == 'token'):
+            return Auth.GET(svc, session, params, action)
         else:
             raise WrongArgs("unknown action")
 
