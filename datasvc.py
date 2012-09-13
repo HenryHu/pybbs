@@ -163,6 +163,19 @@ class DataService(BaseHTTPRequestHandler):
             self.log_error('Bad GET: %s', self.path)
             self.return_error(400, 'bad request')
 
+    def do_OPTIONS(self):
+        try:
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Access-Control-Allow-Methods', 'GET, POST')
+            self.send_header('Access-Control-Max-Age', '86400')
+            self.send_header('Content-Type', 'text/html; charset=UTF-8')
+
+            self.end_headers()
+            self.wfile.write(data)
+        except:
+            pass
+
     def get_int(self, params, name, defval = None):
         val = self.get_str(params, name, defval)
         try:
