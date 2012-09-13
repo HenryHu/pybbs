@@ -170,6 +170,7 @@ class DataService(BaseHTTPRequestHandler):
             self.send_header('Access-Control-Allow-Methods', 'GET, POST')
             self.send_header('Access-Control-Max-Age', '86400')
             self.send_header('Content-Type', 'text/html; charset=UTF-8')
+            self.send_header('Content-Length', '0')
 
             self.end_headers()
             self.wfile.write(data)
