@@ -134,7 +134,10 @@ class PostEntry(CStruct):
         post['attachflag'] = self.attachflag
         post['attachment'] = self.attachment
         post['owner'] = Util.gbkDec(self.owner)
-        post['posttime'] = int(self.filename.split('.')[1])
+        try:
+            post['posttime'] = int(self.filename.split('.')[1])
+        except:
+            post['posttime'] = 0
         flags = []
         if (self.IsMarked()):
             flags += ['marked']
