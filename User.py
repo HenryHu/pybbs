@@ -5,7 +5,6 @@ import time
 
 import Config
 import modes
-from Log import Log
 from UCache import UCache
 from Friend import Friend
 from Util import Util
@@ -61,7 +60,7 @@ CLOAK_FLAG   = 0x2  # /* true if cloak was ON last session */
 BRDSORT_FLAG = 0x20 # /* true if the boards sorted alphabetical */
 CURSOR_FLAG  = 0x80 # /* true if the cursor mode open */
 GIVEUP_FLAG  = 0x4  # /* true if the user is giving up  by bad 2002.7.6 */
-PCORP_FLAG	 = 0x40	# /* true if have personalcorp */
+PCORP_FLAG   = 0x40	# /* true if have personalcorp */
 #define DEFINE(user,x)     ((x)?((user)->userdefine[def_list(x)])&(x):1)
 DEF_ACBOARD    = 000001
 DEF_COLOR      = 000002
@@ -114,7 +113,6 @@ class User:
     @staticmethod
     def POST(svc, session, params, action):
         if (action == 'login'):
-            ok = False
             if (not (params.has_key('name') and (params.has_key('pass')))):
                 raise WrongArgs('lack of username or password')
 
@@ -142,6 +140,9 @@ class User:
         elif (action == "signature_id"):
             sigid = session.GetUser().GetSigID()
             svc.writedata(json.dumps({"signature_id" : sigid}))
+        elif action == "signature_count":
+            sig_count = session.GetUser().GetSignatureCount()
+            svc.writedata(json.dumps({"signature_count" : sig_count}))
         else:
             raise WrongArgs("unknown action")
 
