@@ -1013,7 +1013,7 @@ class Board:
         return False
 
     def IsDir(self):
-        return self.header.flag & BOARD_GROUP
+        return (self.header.flag & BOARD_GROUP) != 0
 
     def GetChildCount(self):
         if not self.IsDir():
