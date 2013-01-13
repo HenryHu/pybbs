@@ -432,7 +432,7 @@ class Board:
         rboard['anony_post'] = int(self.CanAnonyPost())
         rboard['anony_reply'] = int(self.CanAnonyReply())
         rboard['group'] = self.GetGroup()
-        if self.isDir():
+        if self.IsDir():
             rboard['isdir'] = self.IsDir()
             rboard['child_count'] = self.GetChildCount()
         return rboard
