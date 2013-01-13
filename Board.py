@@ -431,6 +431,10 @@ class Board:
         rboard['currentusers'] = self.GetCurrentUsers()
         rboard['anony_post'] = int(self.CanAnonyPost())
         rboard['anony_reply'] = int(self.CanAnonyReply())
+        rboard['group'] = self.GetGroup()
+        if self.isDir():
+            rboard['isdir'] = self.IsDir()
+            rboard['child_count'] = self.GetChildCount()
         return rboard
 
     def GetInfoWithUser(self, user):
@@ -1007,6 +1011,17 @@ class Board:
             if (userid == item):
                 return True
         return False
+
+    def IsDir(self):
+        return self.header.flag & BOARD_GROUP
+
+    def GetChildCount(self):
+        if not self.IsDir():
+            return 0
+        return self.header.adv_club # it's a union, in fact
+
+    def GetGroup(self):
+        return self.header.group
 
 from Post import Post
 

@@ -55,6 +55,7 @@ class BoardManager:
         start = Util.GetInt(params, 'start')
         end = Util.GetInt(params, 'end')
         count = Util.GetInt(params, 'count')
+        group = Util.GetInt(params, 'group')
 
         start, end = Util.CheckRange(start, end, count, DEFAULT_LIST_BOARD_COUNT, BCache.GetBoardCount())
         if ((start <= end) and (start >= 1) and (end <= BCache.GetBoardCount())): 
@@ -62,6 +63,9 @@ class BoardManager:
             first = True
             result = '[\n'
             for board in boards:
+                if group != 0:
+                    if board.GetGroup() != group:
+                        continue
                 if (not first):
                     result += ',\n'
                 first = False
