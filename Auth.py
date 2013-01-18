@@ -12,15 +12,19 @@ AUTH_CODE_LEN = 8 # bytes
 AUTH_CODE_VALID = 600 # seconds, recommended by rfc6749
 
 class AuthRecord:
-    def __init__(self, code, sid, time):
+    def __init__(self, code, sid, time, cid):
         self.code = code
         self.sid = sid
         self.time = time
+        self.cid = cid
 
     def CheckTime(self, time):
         if ((time < self.time) or (time > self.time + AUTH_CODE_VALID)):
             return False
         return True
+
+    def CheckClientID(self, cid):
+        return self.cid == cid
 
 class AuthError(Exception):
     def __init__(self, rduri, error):
@@ -180,7 +184,7 @@ class Auth:
                 session.RecordLogin(True)
                 if resptype == "code":
                     # give session, so other info may be recorded
-                    code = Auth.RecordSession(session)
+                    code = Auth.RecordSession(session, cid)
                     target_uri = "%s?code=%s" % (rduri, code)
                     if state:
                         target_uri += "&state=%s" % state
@@ -226,7 +230,7 @@ class Auth:
             if (not params.has_key('code')):
                 raise AuthError(rduri, 'invalid_grant')
             code = params['code']
-            sessid = Auth.SessionIDFromCode(code)
+            sessid = Auth.SessionIDFromCode(code, cid)
             if (sessid == None):
                 raise AuthError(rduri, 'invalid_grant')
             Auth.RemoveCode(code)
@@ -250,21 +254,24 @@ class Auth:
         return
 
     @staticmethod
-    def RecordSession(session):
+    def RecordSession(session, cid):
         code = Util.RandomInt(AUTH_CODE_LEN)
         while (Auth.sessiondb.has_key(code)):
             code = Util.RandomInt(AUTH_CODE_LEN)
 
-        authrec = AuthRecord(code, session.GetID(), time.time())
+        authrec = AuthRecord(code, session.GetID(), time.time(), cid)
         Auth.sessiondb[code] = authrec
         return code
 
     @staticmethod
-    def SessionIDFromCode(code):
+    def SessionIDFromCode(code, cid):
         if (Auth.sessiondb.has_key(code)):
             authrec = Auth.sessiondb[code]
             if (authrec.CheckTime(time.time())):
-                return authrec.sid
+                if authrec.CheckClientID(cid):
+                    return authrec.sid
+                else:
+                    return None
             else:
                 return None
         else:
