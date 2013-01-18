@@ -2,6 +2,7 @@ import sqlite3
 import Config
 import os
 import datetime
+import json
 
 CLIENTS_DB = 'clients.db'
 
