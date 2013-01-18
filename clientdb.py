@@ -27,7 +27,7 @@ class ClientDB:
         grant_types = ','.join(client.grant_type)
         redirect_uris = ','.join(client.redirect_uri)
         c = self.conn.cursor()
-        c.execute("insert into clients values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (client.id, client.secret, client.name, client.user, client.description, redirect_uris, client.created, client.type, client.website, client.logo, response_types, grant_types, client.extra_info))
+        c.execute("insert into clients values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (client.id, client.secret, client.name, client.user, client.description, redirect_uris, client.created, client.type, client.website, client.logo, response_types, grant_types, client.extra_info))
         self.conn.commit()
 
     def update_client(self, client):
