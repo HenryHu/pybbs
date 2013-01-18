@@ -49,7 +49,7 @@ class DataService(BaseHTTPRequestHandler):
                "favboard"   : FavBoard,
                "digest"     : Digest,
                "store"      : store.Store,
-               "mail"       : mail.Mail
+               "mail"       : mail.Mail,
                "clients"    : clientdb.Clients
               }
     classes_keys = classes.keys()
