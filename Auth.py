@@ -7,16 +7,18 @@ import time
 import base64
 from errors import *
 import clientdb
+import sqlite3
 
 AUTH_CODE_LEN = 8 # bytes
 AUTH_CODE_VALID = 600 # seconds, recommended by rfc6749
 
 class AuthRecord:
-    def __init__(self, code, sid, time, cid):
+    def __init__(self, code, sid, time, cid, uid):
         self.code = code
         self.sid = sid
         self.time = time
         self.cid = cid
+        self.uid = uid
 
     def CheckTime(self, time):
         if ((time < self.time) or (time > self.time + AUTH_CODE_VALID)):
@@ -113,7 +115,7 @@ class Auth:
                     session.RecordLogin(True)
                     # give session, so other info may be recorded
                     code = Auth.RecordSession(session)
-                    sessid = Auth.SessionIDFromCode(code)
+                    (sessid, uid) = Auth.SessionInfoFromCode(code)
                     resp = {}
                     resp['access_token'] = sessid
                     resp['token_type'] = 'session'
@@ -191,9 +193,8 @@ class Auth:
 
                 elif resptype == "token":
                     token = session.GetID()
-                    # TODO: return expires_in
 
-                    target_uri = "%s?access_token=%s&token_type=session" % (rduri, token)
+                    target_uri = "%s?access_token=%s&token_type=session&expires_in=%d" % (rduri, token, Config.SESSION_TIMEOUT)
                     if state:
                         target_uri += "&state=%s" % state
                 else:
@@ -222,26 +223,57 @@ class Auth:
             # check client_secret match client_id // invalid_client
             if not client.check_secret(csec):
                 raise AuthError(rduri, 'invalid_client')
-            # check redirect_uri match client_id // invalid_client
-            if not client.check_redirect_uri(rduri):
-                raise AuthError(rduri, 'invalid_client')
-            if (type != 'authorization_code'):
+            if type == 'authorization_code':
+                # check redirect_uri match client_id // invalid_client
+                if not client.check_redirect_uri(rduri):
+                    raise AuthError(rduri, 'invalid_client')
+                if (not params.has_key('code')):
+                    raise AuthError(rduri, 'invalid_grant')
+                code = params['code']
+                (sessid, uid) = Auth.SessionInfoFromCode(code, cid)
+                if (sessid == None):
+                    raise AuthError(rduri, 'invalid_grant')
+                Auth.RemoveCode(code)
+            elif type == "refresh_token":
+                if not params.has_key('refresh_token'):
+                    raise AuthError(rduri, 'invalid_grant')
+                old_refresh_token = svc.get_str(params, "refresh_token")
+                refreshments = RefreshTokens()
+                try:
+                    old_token = refreshments.find(old_refresh_token)
+                    if old_token is None:
+                        raise AuthError(rduri, 'invalid_grant')
+                    if old_token['client_id'] != cid:
+                        raise AuthError(rduri, 'invalid_grant')
+                    uid = old_token['uid']
+                    user = UserManager.LoadUserByUid(uid)
+
+                    session = Session(user, svc.client_address[0])
+                    session.RecordLogin(True)
+                    sessid = session.GetID()
+
+                    refreshments.remove(old_refresh_token)
+                finally:
+                    refreshments.close()
+            else:
                 raise AuthError(rduri, 'unsupported_grant_type')
-            if (not params.has_key('code')):
-                raise AuthError(rduri, 'invalid_grant')
-            code = params['code']
-            sessid = Auth.SessionIDFromCode(code, cid)
-            if (sessid == None):
-                raise AuthError(rduri, 'invalid_grant')
-            Auth.RemoveCode(code)
+
             resp = {}
-            # TODO: expires_in
             # TODO: scope
             resp['access_token'] = sessid
             resp['token_type'] = 'session'
+            resp['expires_in'] = Config.SESSION_TIMEOUT
+
+            if client.check_grant_type('refresh_token'):
+                refreshments = RefreshTokens()
+                try:
+                    refresh_token = refreshments.new(uid, cid, svc.client_address[0])
+                finally:
+                    refreshments.close()
+
+                resp['refresh_token'] = refresh_token
 
             svc.writedata(json.dumps(resp))
-            return
         finally:
             clients.close()
 
@@ -259,17 +291,17 @@ class Auth:
         while (Auth.sessiondb.has_key(code)):
             code = Util.RandomInt(AUTH_CODE_LEN)
 
-        authrec = AuthRecord(code, session.GetID(), time.time(), cid)
+        authrec = AuthRecord(code, session.GetID(), time.time(), cid, session.uid)
         Auth.sessiondb[code] = authrec
         return code
 
     @staticmethod
-    def SessionIDFromCode(code, cid):
+    def SessionInfoFromCode(code, cid):
         if (Auth.sessiondb.has_key(code)):
             authrec = Auth.sessiondb[code]
             if (authrec.CheckTime(time.time())):
                 if authrec.CheckClientID(cid):
-                    return authrec.sid
+                    return (authrec.sid, authrec.uid)
                 else:
                     return None
             else:
@@ -281,4 +313,44 @@ class Auth:
     def RemoveCode(code):
         if (Auth.sessiondb.has_key(code)):
             del Auth.sessiondb[code]
+
+class RefreshTokens:
+    def __init__(self):
+        self.conn = sqlite3.connect(os.path.join(Config.BBS_ROOT, "auth.db"),
+                detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES)
+        self.conn.row_factory = sqlite3.Row
+        try:
+            self.conn.execute("select * from refreshments")
+        except sqlite3.OperationalError:
+            self.init_db()
+
+    def init_db(self):
+        self.conn.execute("create table refreshments(id text, uid int, created timestamp, client_id text, create_ip text, last_use timestamp, last_ip text)")
+        self.conn.commit()
+
+    def generate(self):
+        return Util.RandomStr(Config.REFRESH_TOKEN_LEN)
+
+    def new(self, uid, client_id, ip):
+        id = self.generate()
+        self.conn.execute("insert into refreshments values (?, ?, ?, ?, ?, ?, ?)", (id, uid, datetime.datetime.now(), client_id, ip, datetime.datetime.now(), ip))
+        self.conn.commit()
+        return id
+
+    def update(self, id, ip):
+        self.conn.execute("update refreshments set last_use = ?, last_ip = ? where id = ?", (datetime.datetime.now(), ip, id))
+        self.conn.commit()
+
+    def remove(self, id):
+        self.conn.execute("delete from refreshments where id = ?", (id, ))
+        self.conn.commit()
+
+    def find(self, id):
+        for row in self.conn.execute("select * from refreshments where id = ?", (id, )):
+            return row
+        return None
+
+    def close(self):
+        self.conn.close()
+
 
