@@ -8,6 +8,7 @@ import base64
 from errors import *
 import clientdb
 import sqlite3
+import os
 
 AUTH_CODE_LEN = 8 # bytes
 AUTH_CODE_VALID = 600 # seconds, recommended by rfc6749
