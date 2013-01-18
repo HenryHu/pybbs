@@ -415,3 +415,6 @@ class User:
     def GetName(self):
         return self.name
 
+    def GetUID(self):
+        return self.userec.GetUID()
+

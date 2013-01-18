@@ -37,6 +37,7 @@ from Log import Log
 import store
 import mail
 import commondata
+import clientdb
 from errors import *
 
 class DataService(BaseHTTPRequestHandler):
@@ -49,6 +50,7 @@ class DataService(BaseHTTPRequestHandler):
                "digest"     : Digest,
                "store"      : store.Store,
                "mail"       : mail.Mail
+               "clients"    : clientdb.Clients
               }
     classes_keys = classes.keys()
     protocol_version = 'HTTP/1.1'

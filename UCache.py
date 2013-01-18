@@ -64,6 +64,9 @@ class UserRecord(object):
     def write(self, pos, data):
         UCache.uidshm.write(data, PASSWD_POS + self.size * self.uid + pos)
 
+    def GetUID(self):
+        return self.uid + 1
+
 class UCache:
     uidshm = None
     UIDSHM_SIZE = PASSWD_POS + Config.MAXUSERS * UserRecord.size
