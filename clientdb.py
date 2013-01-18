@@ -9,7 +9,7 @@ CLIENTS_DB = 'clients.db'
 
 class ClientDB:
     def __init__(self):
-        self.conn = sqlite3.connect(os.path.join(Config.Config.GetString("BBS_DATASVC_ROOT", ""), CLIENTS_DB), detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
+        self.conn = sqlite3.connect(os.path.join(Config.BBS_ROOT, CLIENTS_DB), detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
         self.conn.row_factory = sqlite3.Row
         try:
             self.conn.execute("select * from clients")
