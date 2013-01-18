@@ -22,6 +22,13 @@ class ClientDB:
             return ClientInfo(**row)
         return None
 
+    def list_clients_by_user(self, uid):
+        c = self.conn.cursor()
+        clients = []
+        for row in c.execute('SELECT * FROM clients WHERE user=?', (uid,)):
+            clients.append(ClientInfo(**row))
+        return clients
+
     def new_client(self, client):
         if not self.find_client(client.id) is None:
             return self.update_client(client)
@@ -125,6 +132,8 @@ class Clients:
         if action == 'query':
             client_id = svc.get_str(params, 'client_id')
             Clients.query(svc, session, client_id)
+        elif action == 'list':
+            Clients.list_clients(svc, session)
         else:
             raise WrongArgs("unknown action")
 
@@ -147,6 +156,18 @@ class Clients:
             if not client.check_user(session.uid):
                 raise NoPerm("permission denied")
             svc.writedata(json.dumps(client.info()))
+        finally:
+            clients.close()
+
+    @staticmethod
+    def list_clients(svc, session):
+        clients = ClientDB()
+        try:
+            client_list = clients.list_clients_by_user(session.uid)
+            result = []
+            for client in client_list:
+                result.append(client.info())
+            svc.writedata(json.dumps({'clients': result}))
         finally:
             clients.close()
 
