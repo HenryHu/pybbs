@@ -194,7 +194,7 @@ class Auth:
                 elif resptype == "token":
                     token = session.GetID()
 
-                    target_uri = "%s?access_token=%s&token_type=session&expires_in=%d" % (rduri, token, Config.SESSION_TIMEOUT)
+                    target_uri = "%s?access_token=%s&token_type=session&expires_in=%d" % (rduri, token, Config.SESSION_TIMEOUT.total_seconds())
                     if state:
                         target_uri += "&state=%s" % state
                 else:
@@ -262,7 +262,7 @@ class Auth:
             # TODO: scope
             resp['access_token'] = sessid
             resp['token_type'] = 'session'
-            resp['expires_in'] = Config.SESSION_TIMEOUT
+            resp['expires_in'] = Config.SESSION_TIMEOUT.total_seconds()
 
             if client.check_grant_type('refresh_token'):
                 refreshments = RefreshTokens()
