@@ -3,6 +3,7 @@ import Config
 import os
 import datetime
 import json
+from errors import *
 
 CLIENTS_DB = 'clients.db'
 
