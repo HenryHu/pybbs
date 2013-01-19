@@ -35,16 +35,20 @@ class ClientDB:
         response_types = ','.join(client.response_type)
         grant_types = ','.join(client.grant_type)
         redirect_uris = ','.join(client.redirect_uri)
-        c = self.conn.cursor()
-        c.execute("insert into clients values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (client.id, client.secret, client.name, client.user, client.description, redirect_uris, client.created, client.type, client.website, client.logo, response_types, grant_types, client.extra_info))
+        self.conn.execute("insert into clients values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (client.id, client.secret, client.name, client.user, client.description, redirect_uris, client.created, client.type, client.website, client.logo, response_types, grant_types, client.extra_info))
         self.conn.commit()
 
     def update_client(self, client):
         response_types = ','.join(client.response_type)
         grant_types = ','.join(client.grant_type)
         redirect_uris = ','.join(client.redirect_uri)
-        c = self.conn.cursor()
-        c.execute("update clients set secret=?, name=?, user=?, description=?, redirect_uri=?, created=?, type=?, website=?, logo=?, response_type=?, grant_type=?, extra_info=? where id=?", (client.secret, client.name, client.user, client.description, redirect_uris, client.created, client.type, client.website, client.logo, response_types, grant_types, client.extra_info, client.id))
+        self.conn.execute("update clients set secret=?, name=?, user=?, description=?, redirect_uri=?, created=?, type=?, website=?, logo=?, response_type=?, grant_type=?, extra_info=? where id=?", (client.secret, client.name, client.user, client.description, redirect_uris, client.created, client.type, client.website, client.logo, response_types, grant_types, client.extra_info, client.id))
+        self.conn.commit()
+
+    def remove_client(self, client_id):
+        if not client_id:
+            return
+        self.conn.execute("delete from clients where id = ?", (client_id,))
         self.conn.commit()
 
     def init_db(self):
@@ -157,6 +161,9 @@ class Clients:
         if action == "update":
             client_id = svc.get_str(params, 'client_id')
             Clients.update(svc, session, params, client_id)
+        elif action == "remove":
+            client_id = svc.get_str(params, 'client_id')
+            Clients.remove(svc, session, params, client_id)
         else:
             raise WrongArgs("unknown action")
 
@@ -217,6 +224,22 @@ class Clients:
             client.extra_info = extra_info
 
             clients.new_client(client)
+            result = {"result": "ok"}
+            svc.writedata(json.dumps(result))
+        finally:
+            clients.close()
+
+    @staticmethod
+    def remove(svc, session, params, client_id):
+        clients = ClientDB()
+        try:
+            client = clients.find_client(client_id)
+            if client is None:
+                raise NoPerm("permission denied")
+            else:
+                if not client.check_user(session.uid):
+                    raise NoPerm("permission denied")
+            clients.remove_client(client_id)
             result = {"result": "ok"}
             svc.writedata(json.dumps(result))
         finally:
