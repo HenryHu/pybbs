@@ -217,6 +217,8 @@ class Clients:
             client.extra_info = extra_info
 
             clients.new_client(client)
+            result = {"result": "ok"}
+            svc.writedata(json.dumps(result))
         finally:
             clients.close()
 
