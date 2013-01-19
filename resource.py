@@ -4,8 +4,8 @@ import os
 from errors import *
 
 class Resource:
-    basic_re = re.compile('^[a-z]+\.[a-z]+$')
-    indir_re = re.compile('^([a-z]+)/([a-z-]+\.[a-z]+)$')
+    basic_re = re.compile('^[a-z-_]+\.[a-z]+$')
+    indir_re = re.compile('^([a-z]+)/([a-z-_]+\.[a-z]+)$')
     @staticmethod
     def GET(svc, session, params, action):
         if Resource.basic_re.match(action):
