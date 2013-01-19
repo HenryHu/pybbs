@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>BBS OAuth Application Management</title>
+        <style type="text/css">
+            table, th, td {
+                border: 1px solid black;
+                border-collapse: collapse;
+                padding: 10px;
+            }
+            button {
+                font-size: 15pt;
+            }
+            .global_button {
+                margin: 20px;
+            }
+        </style>
+        <script type="text/javascript">
+            document.write("\<script src='//ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js' type='text/javascript'>\<\/script>");
+        </script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.9.2/jquery-ui.min.js"></script>
+        <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.9.0/themes/base/jquery-ui.css">
+
+
+        <script lang="text/javascript">
+            var $_GET = {};
+
+            document.location.search.replace(/\??(?:([^=]+)=([^&]*)&?)/g, function () {
+                function decode(s) {
+                    return decodeURIComponent(s.split("+").join(" "));
+                }
+
+                $_GET[decode(arguments[1])] = decode(arguments[2]);
+            });
+
+            //  document.write($_GET["access_token"]);
+            token = $_GET["access_token"];
+
+            if (!token) {
+                window.location = "/auth/auth?redirect_uri=/res/clients.html&response_type=token&client_id=oauth_manage";
+            }
+
+            function refresh_clients() {
+                $.getJSON('/clients/list?session=' + token, function(data) {
+                    $('#clients-body').replaceWith('<tbody id="clients-body"/>');
+                    $.each(data.clients, function(i, client) {
+                        $('<tr/>', {
+                            'class': 'clients-row',
+                            html: '<td>' + client.client_id + '</td><td>' + client.client_secret 
+                                + '</td><td>' + client.redirect_uri.join('<br/>')
+                                + '</td><td>' + client.name 
+                                + '</td><td>' + client.description 
+                                + '</td><td><img src="' + client.logo 
+                                + '" width="32" height="32" /></td><td><a href="' + client.website + '">' + client.website 
+                                    + '</a></td><td>' + client.type 
+                                + '</td><td>' + client.response_type.join('<br/>')
+                                + '</td><td>' + client.grant_type.join('<br/>')
+                                + '</td>' 
+                            + '<td><button type="button" onclick="modify_client(\'' + client.client_id
+                                    + '\')">Modify</button><br/>'
+                                + '<button type="button" onclick="remove_client(\'' + client.client_id
+                                    + '\')">Remove</button></td>'
+                        }).appendTo('#clients-body');
+                    });
+                });
+            }
+
+            function new_client() {
+                reset_details();
+                $("#details-dialog").dialog("open");
+            };
+
+            function remove_client(client_id) {
+                if (!confirm("Remove client '" + client_id + "'?")) {
+                    return;
+                }
+                $.post('/clients/remove', {
+                    session: token,
+                    client_id: client_id
+                    }, function(data) {
+                    refresh_clients();
+                });
+            };
+
+            function reset_details() {
+                $('#details-id').val('');
+                $('#details-secret').val('');
+                $('#details-rduri').val('');
+                $('#details-website').val('');
+                $('#details-logo').val('');
+                $('#details-name').val('');
+                $('#details-description').val('');
+                $('#details-type').buttonset();
+                $('#details-resptype').buttonset();
+                $('#details-grant').buttonset();
+                $('#details-type-public').prop("checked", true).button("refresh");
+                $('#details-type-confidential').button("refresh");
+                $('#details-resptype-code').prop("checked", false).button("refresh");
+                $('#details-resptype-token').prop("checked", false).button("refresh");
+                $('#details-grant-authcode').prop("checked", false).button("refresh");
+                $('#details-grant-password').prop("checked", false).button("refresh");
+                $('#details-grant-clientcred').prop("checked", false).button("refresh");
+                $('#details-grant-refresh').prop("checked", false).button("refresh");
+            }
+
+            function save_details() {
+                var resptype = [];
+                var grant = [];
+                var type = '';
+                if ($('#details-type-public').prop("checked")) {
+                    type = "public";
+                    } else {
+                    type = "confidential";
+                }
+                if ($('#details-resptype-code').prop("checked")) {
+                    resptype.push("code");
+                }
+                if ($('#details-resptype-token').prop("checked")) {
+                    resptype.push("token");
+                }
+                if ($('#details-grant-authcode').prop("checked")) {
+                    grant.push("authorization_code");
+                }
+                if ($('#details-grant-password').prop("checked")) {
+                    grant.push("password");
+                }
+                if ($('#details-grant-clientcred').prop("checked")) {
+                    grant.push("client_credentials");
+                }
+                if ($('#details-grant-refresh').prop("checked")) {
+                    grant.push("refresh_token");
+                }
+
+                $.post('/clients/update', {
+                    session: token,
+                    client_id: $('#details-id').val(),
+                    client_secret: $('#details-secret').val(),
+                    redirect_uri: $('#details-rduri').val(),
+                    website: $('#details-website').val(),
+                    logo: $('#details-logo').val(),
+                    name: $('#details-name').val(),
+                    description: $('#details-description').val(),
+                    response_type: resptype.join(','),
+                    grant_type: grant.join(','),
+                    type: type
+                    }, function(data) {
+                    refresh_clients();
+                });
+            }
+
+            function modify_client(client_id) {
+                reset_details();
+                $.getJSON('/clients/query?session=' + token + '&client_id=' + client_id, function(data) {
+                    $('#details-id').val(data.client_id);
+                    $('#details-secret').val(data.client_secret);
+                    $('#details-rduri').val(data.redirect_uri.join(','));
+                    $('#details-website').val(data.website);
+                    $('#details-logo').val(data.logo);
+                    $('#details-name').val(data.name);
+                    $('#details-description').val(data.description);
+                    $('#details-type').buttonset();
+                    $('#details-resptype').buttonset();
+                    $('#details-grant').buttonset();
+                    if (data.type == "confidential") {
+                        $('#details-type-confidential').prop("checked", true);
+                        } else {
+                        $('#details-type-public').prop("checked", true);
+                    }
+                    $('#details-type-confidential').button("refresh");
+                    $('#details-type-public').button("refresh");
+                    if ($.inArray('code', data.response_type) != -1) {
+                        $('#details-resptype-code').prop("checked", true).button("refresh");
+                    }
+                    if ($.inArray('token', data.response_type) != -1) {
+                        $('#details-resptype-token').prop("checked", true).button("refresh");
+                    }
+                    if ($.inArray('authorization_code', data.grant_type) != -1) {
+                        $('#details-grant-authcode').prop("checked", true).button("refresh");
+                    }
+                    if ($.inArray('password', data.grant_type) != -1) {
+                        $('#details-grant-password').prop("checked", true).button("refresh");
+                    }
+                    if ($.inArray('client_credentials', data.grant_type) != -1) {
+                        $('#details-grant-clientcred').prop("checked", true).button("refresh");
+                    }
+                    if ($.inArray('refresh_token', data.grant_type) != -1) {
+                        $('#details-grant-refresh').prop("checked", true).button("refresh");
+                    }
+                });
+                $("#details-dialog").dialog("open");
+            };
+
+            if (token) {
+                refresh_clients();
+            }
+        </script>
+    </head>
+    <body>
+        <div id="clients">
+            <h2>BBS OAuth Application Management Console</h2>
+            <h3>Your clients:</h3>
+            <table id="clients-table">
+                <thead>
+                    <tr>
+                        <th>client id</th>
+                        <th>client secret</th>
+                        <th>redirect uri</th>
+                        <th>name</th>
+                        <th>description</th>
+                        <th>logo</th>
+                        <th>website</th>
+                        <th>type</th>
+                        <th>response types</th>
+                        <th>grant types</th>
+                        <th>action</th>
+                    </tr>
+                </thead>
+                <tbody id="clients-body">
+                </tbody>
+            </table>
+            <button type="button" class="global_button" onclick="new_client()">Register new client</button>
+            <button type="button" class="global_button" onclick="refresh_clients()">Refresh clients</button>
+        </div>
+        <div id="details-dialog" title="Client details">
+            <div>
+                <label for="details-id">client id: </label>
+                <input id="details-id"/>
+            </div>
+            <div>
+                <label for="details-secret">client secret: </label>
+                <input id="details-secret"/>
+            </div>
+            <div>
+                <label for="details-rduri">redirect uri: </label>
+                <input id="details-rduri"/>
+            </div>
+            <div>
+                <label for="details-name">name: </label>
+                <input id="details-name"/>
+            </div>
+            <div>
+                <label for="details-description">description: </label>
+                <textarea id="details-description"></textarea>
+            </div>
+            <div>
+                <label for="details-type">type: </label>
+                <div id="details-type">
+                    <input type="radio" name="details-type" id="details-type-public"/><label for="details-type-public">public</label>
+                    <input type="radio" name="details-type" id="details-type-confidential"/><label for="details-type-confidential">confidential</label>
+                </div>
+            </div>
+            <div>
+                <label for="details-resptype">response type: </label>
+                <div id="details-resptype">
+                    <input type="checkbox" id="details-resptype-code"/><label for="details-resptype-code">code</label>
+                    <input type="checkbox" id="details-resptype-token"/><label for="details-resptype-token">token</label>
+                </div>
+            </div>
+            <div>
+                <label for="details-grant">grant type: </label>
+                <div id="details-grant">
+                    <input type="checkbox" id="details-grant-authcode"/><label for="details-grant-authcode">authorization code</label>
+                    <input type="checkbox" id="details-grant-password"/><label for="details-grant-password">password</label>
+                    <input type="checkbox" id="details-grant-clientcred"/><label for="details-grant-clientcred">client credentials</label>
+                    <input type="checkbox" id="details-grant-refresh"/><label for="details-grant-refresh">refresh token</label>
+                </div>
+            </div>
+            <div>
+                <label for="details-website">website: </label>
+                <input id="details-website"/>
+            </div>
+            <div>
+                <label for="details-logo">logo: </label>
+                <input id="details-logo"/>
+            </div>
+            <script lang="text/javascript">
+                $("#details-dialog").dialog({autoOpen: false, buttons: [
+                    { text: "Save", click: function() {
+                            if ($('#details-id').val() == '') {
+                                alert("please enter client id");
+                                return;
+                            }
+                            save_details();
+                            $( this ).dialog( "close" );
+                        }
+                    },
+                    { text: "Cancel", click: function() { $( this ).dialog( "close" ); } }
+                    ] });
+            </script>
+        </div>
+    </body>
+</html>
+
