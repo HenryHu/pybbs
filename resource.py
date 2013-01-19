@@ -9,10 +9,10 @@ class Resource:
     @staticmethod
     def GET(svc, session, params, action):
         if Resource.basic_re.match(action):
-            svc.writedata(open(os.path.join(Config.Config.GetString("BBS_DATASVC_ROOT", ""), "res", action)))
+            svc.writedata(open(os.path.join(Config.Config.GetString("BBS_DATASVC_ROOT", ""), "res", action)).read())
         elif Resource.indir_re.match(action):
             match = Resource.indir_re.match(action)
-            svc.writedata(open(os.path.join(Config.Config.GetString("BBS_DATASVC_ROOT", ""), "res", match.group(1), match.group(2))))
+            svc.writedata(open(os.path.join(Config.Config.GetString("BBS_DATASVC_ROOT", ""), "res", match.group(1), match.group(2))).read())
         else:
             raise NoPerm("no permission")
 
