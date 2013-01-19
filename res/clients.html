@@ -14,11 +14,8 @@
             .global_button {
                 margin: 20px;
             }
-			#details-dialog input {
+			#details-dialog input, #details-dialog textarea {
 				width: 100%
-			}
-			#details-dialog label {
-				float: left
 			}
 			#details-dialog {
 				overflow: hidden;
@@ -283,7 +280,7 @@
                 <input id="details-logo"/>
             </div>
             <script lang="text/javascript">
-                $("#details-dialog").dialog({autoOpen: false, buttons: [
+                $("#details-dialog").dialog({autoOpen: false, minWidth: 400, buttons: [
                     { text: "Save", click: function() {
                             if ($('#details-id').val() == '') {
                                 alert("please enter client id");
