@@ -57,6 +57,8 @@ class ClientDB:
 
 class ClientInfo:
     def __init__(self, id, response_type, grant_type, user, secret = '', type = 'public', name = '', description = '', redirect_uri = '', created = None, website = '', logo = '', extra_info = ''):
+        if not id:
+            raise WrongArgs('client id cannot be empty')
         self.id = id
         self.secret = secret
         if not name:
@@ -193,7 +195,6 @@ class Clients:
             description = svc.get_str(params, 'description', client_id)
             redirect_uri = svc.get_str(params, 'description', '')
             type = svc.get_str(params, 'type', 'public')
-            user = svc.get_str(params, 'user', 'guest')
             website = svc.get_str(params, 'website', '')
             logo = svc.get_str(params, 'logo', '')
             extra_info = svc.get_str(params, 'website', '')
@@ -211,7 +212,6 @@ class Clients:
             client.description = description
             client.redirect_uri = redirect_uri.split(',')
             client.type = type
-            client.user = user
             client.website = website
             client.logo = logo
             client.extra_info = extra_info
