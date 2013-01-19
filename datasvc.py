@@ -38,6 +38,7 @@ import store
 import mail
 import commondata
 import clientdb
+import resource
 from errors import *
 
 class DataService(BaseHTTPRequestHandler):
@@ -50,13 +51,14 @@ class DataService(BaseHTTPRequestHandler):
                "digest"     : Digest,
                "store"      : store.Store,
                "mail"       : mail.Mail,
-               "clients"    : clientdb.Clients
+               "clients"    : clientdb.Clients,
+               "res"        : resource.Resource
               }
     classes_keys = classes.keys()
     protocol_version = 'HTTP/1.1'
 
     def parse_req(self, req):
-        m = re.search("^/(.*)/(.*)$", req)
+        m = re.search("^/([^/]*)/(.*)$", req)
         if (m != None):
             return (m.group(1), m.group(2))
         else:
