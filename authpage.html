@@ -1,30 +1,55 @@
 <html>
-	<head>
-		<title>BBS Auth</title>
-	</head>
-	<body>
-		<center>
-			<h1>BBS Login</h1>
-			<form action="/auth/authpage" method="POST">
-				Please enter login information<br/>
-				<input type="hidden" value="%s" name="redirect_uri"/>
-				<input type="hidden" value="%s" name="client_id"/>
-				<input type="hidden" value="%s" name="state"/>
-				<input type="hidden" value="%s" name="response_type"/>
-				<table>
-					<tr>
-						<td> Name: </td>
-						<td> <input id="name" type="text" value="" name="name"/> </td>
-				</tr>
-					<tr>
-						<td> Password: </td>
-						<td><input id="pass" type="password" value="" name="pass"/></td>
-					</tr>
-				</table>
-				<input type="submit" value="Login"/>
-			</form>
-		</center>
-	</body>
+    <head>
+        <title>BBS Auth</title>
+    </head>
+    <body>
+        <center>
+            <h1>BBS Login</h1>
+            <table>
+                <tbody>
+                    <tr>
+                        <td width="50%" style="max-width: 400px; vertical-align:top">
+                            <h3>Application <a href="$website">$name</a> would like to gain access to your information in the BBS system</h3>
+                            <table>
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <a href="$website"><img src="$logo" width="32" height="32"/></a>
+                                        </td>
+                                        <td style="vertical-align:middle; font-size:20pt">
+                                            <a href="$website">$name</a>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            $description<p/>
+                            This application may perform any operation that you can perform.
+                        </td>
+                        <td width="50%" style="max-width: 400px; vertical-align:top">
+                            <form action="/auth/authpage" method="POST">
+                                <h3>If you allow this operation, please login</h3>
+                                <input type="hidden" value="$redirect_uri" name="redirect_uri"/>
+                                <input type="hidden" value="$client_id" name="client_id"/>
+                                <input type="hidden" value="$state" name="state"/>
+                                <input type="hidden" value="$response_type" name="response_type"/>
+                                <table>
+                                    <tr>
+                                        <td> Name: </td>
+                                        <td> <input id="name" type="text" value="" name="name"/> </td>
+                                    </tr>
+                                    <tr>
+                                        <td> Password: </td>
+                                        <td><input id="pass" type="password" value="" name="pass"/></td>
+                                    </tr>
+                                </table>
+                                <input type="submit" value="Login" style="font-size: 15pt"/>
+                            </form>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </center>
+    </body>
 </html>
 
 

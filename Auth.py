@@ -10,6 +10,7 @@ import clientdb
 import sqlite3
 import os
 import datetime
+import string
 
 AUTH_CODE_LEN = 8 # bytes
 AUTH_CODE_VALID = 600 # seconds, recommended by rfc6749
@@ -156,9 +157,13 @@ class Auth:
                 raise AuthError(rduri, 'invalid_client')
             if resptype == "code" or resptype == "token":
                 fauthpage = open(Config.Config.GetString("BBS_DATASVC_ROOT", "") + "authpage.html", "r")
-                authpage = fauthpage.read()
+                authpage_file = fauthpage.read()
                 fauthpage.close()
-                authpage = authpage % (rduri, cid, state, resptype)
+                authpage_t = string.Template(authpage_file)
+                authpage = authpage_t.substitute(redirect_uri=rduri,
+                        client_id=cid, state=state, response_type=resptype,
+                        name=client.name, website=client.website, logo=client.logo,
+                        description=client.description)
                 svc.writedata(authpage)
             else:
                 raise AuthError(rduri, 'unsupported_response_type')
