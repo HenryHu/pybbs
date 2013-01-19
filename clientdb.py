@@ -193,18 +193,18 @@ class Clients:
             client_secret = svc.get_str(params, 'client_secret')
             name = svc.get_str(params, 'name', client_id)
             description = svc.get_str(params, 'description', client_id)
-            redirect_uri = svc.get_str(params, 'description', '')
+            redirect_uri = svc.get_str(params, 'redirect_uri', '')
             type = svc.get_str(params, 'type', 'public')
             website = svc.get_str(params, 'website', '')
             logo = svc.get_str(params, 'logo', '')
-            extra_info = svc.get_str(params, 'website', '')
+            extra_info = svc.get_str(params, 'extra_info', '')
             response_type = svc.get_str(params, 'response_type', '')
             grant_type = svc.get_str(params, 'grant_type', '')
             if client is not None:
                 if not client.check_user(session.uid):
                     raise NoPerm("permission denied")
                 client.response_type = response_type.split(',')
-                client.grant_type = grnt_type.split(',')
+                client.grant_type = grant_type.split(',')
             else:
                 client = ClientInfo(client_id, response_type, grant_type, session.uid)
             client.secret = client_secret
