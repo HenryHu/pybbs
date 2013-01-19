@@ -104,11 +104,23 @@ class ClientInfo:
                 return True
         return False
 
-    def add_grant_type(grant_type):
+    def add_grant_type(self, grant_type):
         self.grant_type.append(grant_type)
 
-    def add_response_type(response_type):
+    def add_response_type(self, response_type):
         self.response_type.append(response_type)
+
+    def get_logo(self):
+        if self.logo:
+            return self.logo
+        else:
+            return "/res/defappicon.png"
+
+    def get_website(self):
+        if self.website:
+            return self.website
+        else:
+            return "http://www.google.com/search?q=%s" % self.name
 
     def info(self):
         info = {}

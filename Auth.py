@@ -162,7 +162,7 @@ class Auth:
                 authpage_t = string.Template(authpage_file)
                 authpage = authpage_t.substitute(redirect_uri=rduri,
                         client_id=cid, state=state, response_type=resptype,
-                        name=client.name, website=client.website, logo=client.logo,
+                        name=client.name, website=client.get_website(), logo=client.get_logo(),
                         description=client.description)
                 svc.writedata(authpage)
             else:
