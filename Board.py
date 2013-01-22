@@ -270,6 +270,8 @@ class Board:
         end = Util.GetInt(params, 'end')
         count = Util.GetInt(params, 'count')
 
+        allow_empty = not start and not end
+
         if (mode == 'normal'):
             total = self.status.total
         else:
@@ -304,7 +306,10 @@ class Board:
                 svc.writedata(result)
                 dirf.close()
         else:
-            raise OutOfRange('out of range')
+            if allow_empty:
+                svc.writedata('[]')
+            else:
+                raise OutOfRange('out of range')
             
         return
 
