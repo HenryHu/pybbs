@@ -36,6 +36,9 @@ class AuthError(Exception):
         self.rduri = rduri
         self.error = error
 
+class AuthClientError(Exception):
+    pass
+
 class Auth:
     sessiondb = {}
 
@@ -47,13 +50,10 @@ class Auth:
             if (action == 'auth'):
                 # rfc6749 4.1.1: authorization request
                 # rfc6749 4.2.1: authorization request
-                rduri = svc.get_str(params, 'redirect_uri')
+                cid = svc.get_str(params, 'client_id')
+                rduri = svc.get_str(params, 'redirect_uri', '')
                 state = svc.get_str(params, 'state', '')
-                try:
-                    resptype = svc.get_str(params, 'response_type')
-                    cid = svc.get_str(params, 'client_id')
-                except WrongArgs:
-                    raise AuthError(rduri, 'invalid_request')
+                resptype = svc.get_str(params, 'response_type', '')
 
                 Auth.Auth(svc, params, rduri, resptype, cid, state)
                 return
@@ -62,13 +62,10 @@ class Auth:
                 # rfc6749 4.1.4: access token response
                 # rfc6749 4.3: 'password' method is disabled: insecure
                 # rfc6749 4.4: 'client_credentials' method is disabled: impossible
-                rduri = svc.get_str(params, 'redirect_uri')
-                try:
-                    type = svc.get_str(params, 'grant_type')
-                    cid = svc.get_str(params, 'client_id')
-                    csec = svc.get_str(params, 'client_secret')
-                except WrongArgs:
-                    raise AuthError(rduri, 'invalid_request')
+                cid = svc.get_str(params, 'client_id')
+                csec = svc.get_str(params, 'client_secret')
+                rduri = svc.get_str(params, 'redirect_uri', '')
+                type = svc.get_str(params, 'grant_type', '')
                 Auth.GetToken(svc, params, rduri, type, cid, csec)
                 return
             elif (action == 'displaycode'):
@@ -84,6 +81,8 @@ class Auth:
                 raise WrongArgs('unknown action')
         except AuthError as e:
             Auth.Error(svc, e.rduri, e.error)
+        except AuthClientError:
+            Auth.ClientError(svc)
 
     @staticmethod
     def POST(svc, session, params, action):
@@ -91,14 +90,11 @@ class Auth:
             if (action == 'authpage'):
                 # rfc6749 4.1.2: authorization response
                 # rfc6749 4.2.2: authorization response
+                cid = svc.get_str(params, 'client_id')
                 rduri = svc.get_str(params, 'redirect_uri')
-                try:
-                    cid = svc.get_str(params, 'client_id')
-                    name = svc.get_str(params, 'name')
-                    pw = svc.get_str(params, 'pass')
-                    resptype = svc.get_str(params, 'response_type')
-                except WrongArgs:
-                    raise AuthError(rduri, 'invalid_request')
+                name = svc.get_str(params, 'name')
+                pw = svc.get_str(params, 'pass')
+                resptype = svc.get_str(params, 'response_type')
                 state = svc.get_str(params, 'state', '')
                 Auth.AuthPage(svc, rduri, cid, name, pw, state, resptype)
             elif (action == 'pwauth'):
@@ -132,6 +128,8 @@ class Auth:
                 raise WrongArgs("unknown action")
         except AuthError as e:
             Auth.Error(svc, e.rduri, e.error)
+        except AuthClientError:
+            Auth.ClientError(svc)
 
     @staticmethod
     def Error(svc, rduri, error):
@@ -142,18 +140,27 @@ class Auth:
         return
 
     @staticmethod
+    def ClientError(svc):
+        svc.writedata("<h1>Invalid Client, client_id error or redirect_uri mismatch</h1>", 'text/html', 400)
+
+    @staticmethod
     def Auth(svc, params, rduri, resptype, cid, state):
         clients = clientdb.ClientDB()
         try:
             # check client_id valid
             client = clients.find_client(cid)
             if client is None:
-                raise AuthError(rduri, 'invalid_client')
+                raise AuthClientError()
+            if not rduri:
+                rduri = client.get_default_redirect_uri()
+            else:
+                # check redirect_uri match client_id
+                if not client.check_redirect_uri(rduri):
+                    raise AuthClientError()
+            if not resptype:
+                raise AuthError(rduri, 'invalid_request')
             # check client_id may use response_type
             if not client.check_response_type(resptype):
-                raise AuthError(rduri, 'invalid_client')
-            # check redirect_uri match client_id
-            if not client.check_redirect_uri(rduri):
                 raise AuthError(rduri, 'invalid_client')
             if resptype == "code" or resptype == "token":
                 fauthpage = open(Config.Config.GetString("BBS_DATASVC_ROOT", "") + "authpage.html", "r")
@@ -177,12 +184,12 @@ class Auth:
             # check client_id valid
             client = clients.find_client(cid)
             if client is None:
-                raise AuthError(rduri, 'invalid_client')
-            # check client_id may use response_type
-            if not client.check_response_type(resptype):
-                raise AuthError(rduri, 'invalid_client')
+                raise AuthClientError()
             # check redirect_uri match client_id
             if not client.check_redirect_uri(rduri):
+                raise AuthClientError()
+            # check client_id may use response_type
+            if not client.check_response_type(resptype):
                 raise AuthError(rduri, 'invalid_client')
             user = UserManager.LoadUser(name)
             if (user == None):
@@ -223,19 +230,24 @@ class Auth:
             # check client_id valid // invalid_client
             client = clients.find_client(cid)
             if client is None:
-                raise AuthError(rduri, 'invalid_client')
+                raise AuthClientError()
+            # check client_secret match client_id // invalid_client
+            if not client.check_secret(csec):
+                raise AuthClientError()
+            if not rduri:
+                rduri = client.get_default_redirect_uri()
+            else:
+                # check redirect_uri match client_id // invalid_client
+                if not client.check_redirect_uri(rduri):
+                    raise AuthClientError()
+            if not type:
+                raise AuthError(rduri, 'invalid_request')
             # check client_id may use grant_type // unauthorized_client
             if not client.check_grant_type(type):
                 raise AuthError(rduri, 'unauthorized_client')
-            # check client_secret match client_id // invalid_client
-            if not client.check_secret(csec):
-                raise AuthError(rduri, 'invalid_client')
             if type == 'authorization_code':
-                # check redirect_uri match client_id // invalid_client
-                if not client.check_redirect_uri(rduri):
-                    raise AuthError(rduri, 'invalid_client')
                 if (not params.has_key('code')):
-                    raise AuthError(rduri, 'invalid_grant')
+                    raise AuthError(rduri, 'invalid_request')
                 code = params['code']
                 (sessid, uid) = Auth.SessionInfoFromCode(code, cid)
                 if (sessid == None):

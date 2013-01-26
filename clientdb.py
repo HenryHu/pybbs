@@ -128,6 +128,9 @@ class ClientInfo:
         else:
             return "http://www.google.com/search?q=%s" % self.name
 
+    def get_default_redirect_uri(self):
+        return self.redirect_uri[0]
+
     def info(self):
         info = {}
         info['client_id'] = self.id
