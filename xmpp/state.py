@@ -6,6 +6,8 @@
 from __future__ import absolute_import
 from . import interfaces as i
 from .prelude import *
+import threading
+import logging
 
 __all__ = ('State', )
 
@@ -24,6 +26,7 @@ class State(object):
         self.events = ddict(list)
         self.stanzas = {}
         self.state = {}
+        self.rlock = threading.RLock()
 
     def reset(self):
         return self.flush(True).clear().install()
@@ -37,9 +40,10 @@ class State(object):
         return self
 
     def clear(self):
+        logging.debug("CLEAR %r %r" % (self.core, self))
         self.locked = False
         self.schedule.clear()
-        self.events.clear()
+#        self.events.clear()
         self.stanzas.clear()
         self.state.clear()
         return self
@@ -56,6 +60,7 @@ class State(object):
     ## ---------- Events ----------
 
     def bind(self, kind, callback):
+        logging.debug("BIND core: %r state: %r trigger %r: handlers %r" % (self.core, self, kind, callback))
         self.events[kind].append(callback)
         return self
 
@@ -63,6 +68,7 @@ class State(object):
         return self.bind(kind, Once(callback))
 
     def unbind(self, kind, callback):
+        logging.debug("UNBIND core: %r state: %r trigger %r: handlers %r" % (self.core, self, kind, callback))
         if kind in self.events:
             try:
                 self.events[kind].remove(callback)
@@ -72,10 +78,12 @@ class State(object):
 
     def trigger(self, event, *args, **kwargs):
         handlers = self.events.get(event)
+        logging.debug("core: %r state: %r trigger %r: handlers %r" % (self.core, self, event, handlers))
         if handlers:
             idx = 0; lim = len(handlers)
             while idx < lim:
                 handler = handlers[idx]
+                logging.debug("trigger %r: run %r" % (event, handler))
                 self.run(handler, *args, **kwargs)
                 if isinstance(handler, Once):
                     del handlers[idx]
@@ -130,10 +138,12 @@ class State(object):
         plugins.  When the lock is released, pending jobs are run."""
 
         orig = self.locked
+        self.rlock.acquire()
         try:
             self.locked = True
             yield self
         finally:
+            self.rlock.release()
             self.locked = orig
             if not orig:
                 self.schedule and self.flush()
