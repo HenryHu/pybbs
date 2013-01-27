@@ -36,7 +36,7 @@ class Core(i.CoreInterface):
         self.stream.on_close(self.handle_stream_closed)
 
     def __repr__(self):
-        peer = self.stream.socket and self.stream.socket.getpeername()
+        peer = self.stream and self.stream.socket and self.stream.socket.getpeername()
         return '<%s %r>' % (type(self).__name__, peer)
 
     __xmlns__ = property(lambda s: s.state.plugins.__xmlns__)
