@@ -28,8 +28,8 @@ class State(object):
         self.state = {}
         self.rlock = threading.RLock()
 
-    def reset(self):
-        return self.flush(True).clear().install()
+    def reset(self, clear_events = False):
+        return self.flush(True).clear(clear_events).install()
 
     def install(self):
         self.plugins.install(self)
@@ -39,11 +39,12 @@ class State(object):
         self.plugins.activate(self)
         return self
 
-    def clear(self):
+    def clear(self, clear_events = False):
         logging.debug("CLEAR %r %r" % (self.core, self))
         self.locked = False
         self.schedule.clear()
-#        self.events.clear()
+        if clear_events:
+            self.events.clear()
         self.stanzas.clear()
         self.state.clear()
         return self

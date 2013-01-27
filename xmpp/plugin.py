@@ -550,7 +550,7 @@ class Plugin(object):
         return self
 
     def reset_stream(self):
-        self.__core.reset()
+        self.__core.reset(clear_events=True)
         ## Resetting a stream destroys this plugin.
         return None
 

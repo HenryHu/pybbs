@@ -150,9 +150,9 @@ class Core(i.CoreInterface):
             self.state.trigger(SentOpenStream)
 
     @writer
-    def reset(self):
+    def reset(self, clear_events = False):
         if self.stream:
-            self._reset()
+            self._reset(clear_events)
 
     @writer
     def close_stream(self, *args):
@@ -364,8 +364,8 @@ class Core(i.CoreInterface):
         except Exception as exc:
             self.stream_error('internal-server-error', str(exc), exc)
 
-    def _reset(self):
-        self.state.reset()
+    def _reset(self, clear_events = False):
+        self.state.reset(clear_events)
         self.root = None
         self.listen()
         self.parser.reset()
