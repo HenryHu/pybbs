@@ -11,6 +11,7 @@ import xmpp
 import modes
 import Util
 import traceback
+from xmpp.features import NoRoute
 
 __disco_info_ns__ = 'http://jabber.org/protocol/disco#info'
 __vcard_ns__ = 'vcard-temp'
@@ -35,6 +36,23 @@ class XMPPServer(xmpp.Plugin):
             self.stream_error('policy-violation', 'Login denied. Too many logins?')
             return
         Log.debug("%s: session start" % unicode(self.authJID))
+
+        if self.authJID.resource[:-8] != "Resource" and len(self.authJID.resource) > 8:
+            try:
+                routes = self.routes(self.authJID.bare)
+                for route in routes:
+                    jid = route[0]
+                    if jid.resource[:-8] == self.authJID.resource[:-8]:
+                        if jid.resource != self.authJID.resource:
+                            # old resource!
+                            Log.info("old jid: %s %r" % (jid.full, route[1]))
+                            route[1].stream_error('conflict', 'A new client with the same resource connected')
+                    else:
+                        Log.info("another me: %s %r" % (jid.full, route[1]))
+            except NoRoute:
+                pass
+            Log.debug("%s: checked for old sessions" % self.authJID.full)
+
         # Login the user
         self._user = UserManager.UserManager.LoadUser(self._userid)
         if (self._user == None):
@@ -46,8 +64,9 @@ class XMPPServer(xmpp.Plugin):
         self._userinfo = self._session.Register()
         self._loginid = self._session.utmpent
         self._hostname = host
-        self.bind(xmpp.ReceivedCloseStream, self.close)
-        self.bind(xmpp.StreamClosed, self.close)
+        self.bind(xmpp.ReceivedCloseStream, self.recv_close)
+        self.bind(xmpp.StreamClosed, self.stream_closed)
+        self.bind(xmpp.SentCloseStream, self.sent_close)
 
         self.rosters.register_conn(self)
 
@@ -59,8 +78,21 @@ class XMPPServer(xmpp.Plugin):
     def get_loginid(self):
         return self._loginid
 
+    def recv_close(self):
+        Log.debug("%s: close because he wants to" % self.authJID.full)
+        return self.close()
+
+    def stream_closed(self):
+        Log.debug("%s: close because stream closed" % self.authJID.full)
+        return self.close()
+
+    def sent_close(self):
+        Log.debug("%s: close because we want to" % self.authJID.full)
+        return self.close()
+
     def close(self):
         if (self._closed):
+            Log.debug("already closed. ignore")
             return
         self._closed = True
         Log.debug("%s: session end" % unicode(self.authJID))
