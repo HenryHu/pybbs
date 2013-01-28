@@ -336,7 +336,7 @@ Life: %d\r
 
 
     @xmpp.iq('{%s}query' % __disco_items_ns__)
-    def disco_info(self, iq):
+    def disco_items(self, iq):
         """ Service Discovery: disco#items """
 
         target = iq.get('to')
