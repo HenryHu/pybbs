@@ -219,7 +219,8 @@ class XMPPServer(xmpp.Plugin):
         direct = elem.get('to')
         if not direct:
             self.rosters.broadcast(self, elem)
-            self.recv_presence(elem)
+            if elem.get('type') != 'probe':
+                self.recv_presence(elem)
             if not self.probed:
                 self.probed = True
                 self.rosters.probe(self)
