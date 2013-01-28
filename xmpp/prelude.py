@@ -13,7 +13,7 @@ __all__ = (
     'ifilter', 'filter', 'append', 'extend',
     'Mapping', 'ddict', 'namedtuple', 'items', 'keys', 'values', 'chain_items',
     'get', 'setitems', 'update', 'setdefault', 'ipop', 'pop',
-    'partial', 'wraps', 'thunk', 'contextmanager'
+    'partial', 'wraps', 'thunk', 'contextmanager', 'debug_on'
 )
 
 
@@ -30,9 +30,12 @@ def setattrs(obj, items=None, **kwargs):
 
 ### Logging
 
+debug_on = False
 log = logging.getLogger(basename(dirname(__file__)))
 #log.setLevel(logging.DEBUG)
 log.addHandler(logging.StreamHandler())
+if debug_on:
+    logging.basicConfig(level=logging.DEBUG)
 
 
 ### Sequences

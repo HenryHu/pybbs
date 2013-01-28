@@ -169,6 +169,7 @@ class Rosters(Thread):
         update.  This is used when a client first connects.
         Also fake responses from TERM users"""
 
+        Log.debug("probing friends from %s" % conn.authJID.full)
         roster = self._get(conn)
         elem = conn.E.presence({'from': unicode(conn.authJID), 'type': 'probe'})
         sender = UserManager.UserManager.LoadUser(conn._userid)
@@ -196,6 +197,7 @@ class Rosters(Thread):
                 except Exception as e:
                     Log.error("Exception caught when faking response from %s/%s to %r" % (jid, session_info.get_res(), conn.authJID.bare))
                     Log.error(traceback.format_exc())
+        Log.debug("probed friends from %s" % conn.authJID.full)
 
     def send(self, conn, to, elem):
         """Send a subscription request or response."""

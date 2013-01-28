@@ -158,7 +158,13 @@ class State(object):
             return self
 
         with self.lock():
+            if debug_on:
+                logging.debug("running  method %r" % method)
+                if isinstance(method, partial):
+                    logging.debug("running  method %r" % method.func)
             method(*args, **kwargs)
+            if debug_on:
+                logging.debug("finished method %r" % method)
         return self
 
     def flush(self, force=False):
@@ -170,7 +176,14 @@ class State(object):
         try:
             self.locked = True
             while self.schedule:
+                if debug_on:
+                    name = "%r" % self.schedule[0]
+                    logging.debug("delayed running  method %s" % name)
+                    if isinstance(self.schedule[0], partial):
+                        logging.debug("delayed running  method %r" % self.schedule[0].func)
                 self.schedule.popleft()()
+                if debug_on:
+                    logging.debug("delayed finished method %s" % name)
             return self
         finally:
             self.locked = False

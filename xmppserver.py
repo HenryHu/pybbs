@@ -36,7 +36,7 @@ class XMPPServer(xmpp.Plugin):
 #            self.unbind_res()
             self.stream_error('policy-violation', 'Login denied. Too many logins?')
             return
-        Log.debug("%s: session start" % unicode(self.authJID))
+        Log.info("%s: session start" % unicode(self.authJID))
 
         if self.authJID.resource[:-8] != "Resource" and len(self.authJID.resource) > 8:
             try:
@@ -96,7 +96,7 @@ class XMPPServer(xmpp.Plugin):
             Log.debug("already closed. ignore")
             return
         self._closed = True
-        Log.debug("%s: session end" % unicode(self.authJID))
+        Log.info("%s: session end" % unicode(self.authJID))
         if (self._session):
             self._session.Unregister()
         self.unbind_res()
