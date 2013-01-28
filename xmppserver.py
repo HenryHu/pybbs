@@ -14,6 +14,7 @@ import traceback
 from xmpp.features import NoRoute
 
 __disco_info_ns__ = 'http://jabber.org/protocol/disco#info'
+__disco_items_ns__ = 'http://jabber.org/protocol/disco#items'
 __vcard_ns__ = 'vcard-temp'
 
 class XMPPServer(xmpp.Plugin):
@@ -315,7 +316,7 @@ Life: %d\r
                                  'type': 'im',
                                  'name': Config.Config.GetString('XMPP_SERVER_IDENTITY_NAME', 'BBS'),
                                 }))
-            features = [__disco_info_ns__, __vcard_ns__]
+            features = [__disco_info_ns__, __disco_items_ns__, __vcard_ns__]
             for feature in features:
                 query.append(self.E.feature({'var' : feature}))
 
@@ -327,9 +328,26 @@ Life: %d\r
                                  'name': Config.Config.GetString('XMPP_SERVER_IDENTITY_NAME', 'BBS'),
                                 }))
 
-            features = [__disco_info_ns__, __vcard_ns__]
+            features = [__disco_info_ns__, __disco_items_ns__, __vcard_ns__]
             for feature in features:
                 query.append(self.E.feature({'var' : feature}))
+
+        return self.iq('result', iq, query, {'from': target})
+
+
+    @xmpp.iq('{%s}query' % __disco_items_ns__)
+    def disco_info(self, iq):
+        """ Service Discovery: disco#items """
+
+        target = iq.get('to')
+
+        if (target.find('@') < 0):
+            # query server info
+            query = self.E.query({ 'xmlns': __disco_items_ns__})
+
+        else:
+            # query client info
+            query = self.E.query({ 'xmlns': __disco_items_ns__})
 
         return self.iq('result', iq, query, {'from': target})
 
