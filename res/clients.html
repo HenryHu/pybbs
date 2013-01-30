@@ -44,9 +44,12 @@
 
             //  document.write($_GET["access_token"]);
             token = $_GET["access_token"];
+            error = $_GET["error"];
 
-            if (!token) {
-                window.location = "/auth/auth?redirect_uri=/res/clients.html&response_type=token&client_id=oauth_manage";
+			if (error) {
+				document.write("Error: " + error + ", please <a href=\"/res/clients.html\">try again</a>.");
+			} else if (!token) {
+                window.location = "/auth/auth?redirect_uri=/res/clients.html&response_type=token&client_id=oauth_manage&scope=auth";
             }
 
             function refresh_clients() {
