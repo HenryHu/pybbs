@@ -166,7 +166,7 @@ class ClientInfo:
         return result
 
     def get_scope_desc(self, scope):
-        if not scope in self_valid_scopes:
+        if not scope in self._valid_scopes:
             raise WrongArgs("invalid scope: %s" % scope)
         return self._valid_scopes[scope]
 
