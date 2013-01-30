@@ -44,7 +44,7 @@ class ClientDB:
         grant_types = ','.join(client.grant_type)
         redirect_uris = ','.join(client.redirect_uri)
         scopes = ','.join(client.scopes)
-        self.conn.execute("update clients set secret=?, name=?, user=?, description=?, redirect_uri=?, created=?, type=?, website=?, logo=?, response_type=?, grant_type=?, extra_info=?, scope=? where id=?", (client.secret, client.name, client.user, client.description, redirect_uris, client.created, client.type, client.website, client.logo, response_types, grant_types, client.extra_info, scopes, client.id))
+        self.conn.execute("update clients set secret=?, name=?, user=?, description=?, redirect_uri=?, created=?, type=?, website=?, logo=?, response_type=?, grant_type=?, extra_info=?, scopes=? where id=?", (client.secret, client.name, client.user, client.description, redirect_uris, client.created, client.type, client.website, client.logo, response_types, grant_types, client.extra_info, scopes, client.id))
         self.conn.commit()
 
     def remove_client(self, client_id):
