@@ -213,7 +213,9 @@
                     }
                     if ($.inArray('auth', data.scopes) != -1) {
                         $('#details-scope-auth').prop("checked", true).button("refresh");
-                    }
+					} else {
+                        $('#details-scope-auth').prop("checked", false).button("refresh");
+					}
                 });
                 $("#details-dialog").dialog("open");
             };
