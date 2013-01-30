@@ -55,7 +55,7 @@ class Auth:
                 rduri = svc.get_str(params, 'redirect_uri', '')
                 state = svc.get_str(params, 'state', '')
                 resptype = svc.get_str(params, 'response_type', '')
-                scope = svc.get_str(params, 'scope', 'bbs')
+                scope = svc.get_str(params, 'scope', '')
 
                 Auth.Auth(svc, params, rduri, resptype, cid, state, scope)
                 return
@@ -162,10 +162,14 @@ class Auth:
                     raise AuthClientError()
             if not resptype:
                 raise AuthError(rduri, 'invalid_request')
-            scopes = scope.split(' ')
-            for one_scope in scopes:
-                if not client.check_scope(one_scope):
-                    raise AuthError(rduri, 'invalid_scope')
+            if not scope:
+                scopes = client.get_scopes()
+                scope = ' '.join(scopes)
+            else:
+                scopes = scope.split(' ')
+                for one_scope in scopes:
+                    if not client.check_scope(one_scope):
+                        raise AuthError(rduri, 'invalid_scope')
             # check client_id may use response_type
             if not client.check_response_type(resptype):
                 raise AuthError(rduri, 'invalid_client')
@@ -202,10 +206,13 @@ class Auth:
             if (user == None):
                 raise AuthError(rduri, 'access_denied')
 
-            scopes = scope.split(' ')
-            for one_scope in scopes:
-                if not client.check_scope(one_scope):
-                    raise AuthError(rduri, 'invalid_scope')
+            if not scope:
+                scopes = client.get_scopes()
+            else:
+                scopes = scope.split(' ')
+                for one_scope in scopes:
+                    if not client.check_scope(one_scope):
+                        raise AuthError(rduri, 'invalid_scope')
 
             if (user.Authorize(pw)):
                 session = Session(user, svc.client_address[0], scopes = scopes)
@@ -220,7 +227,7 @@ class Auth:
                 elif resptype == "token":
                     token = session.GetID()
 
-                    target_uri = "%s?access_token=%s&token_type=session&expires_in=%d" % (rduri, token, Config.SESSION_TIMEOUT_SECONDS)
+                    target_uri = "%s?access_token=%s&token_type=session&expires_in=%d&scope=%s" % (rduri, token, Config.SESSION_TIMEOUT_SECONDS, ' '.join(scopes))
                     if state:
                         target_uri += "&state=%s" % state
                 else:
@@ -291,10 +298,10 @@ class Auth:
                 raise AuthError(rduri, 'unsupported_grant_type')
 
             resp = {}
-            # TODO: scope
             resp['access_token'] = sessid
             resp['token_type'] = 'session'
             resp['expires_in'] = Config.SESSION_TIMEOUT_SECONDS
+            resp['scope'] = ' '.join(scopes)
 
             if client.check_grant_type('refresh_token'):
                 refreshments = RefreshTokens()

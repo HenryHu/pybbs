@@ -171,6 +171,9 @@ class ClientInfo:
             raise WrongArgs("invalid scope: %s" % scope)
         return self._valid_scopes[scope]
 
+    def get_scopes(self):
+        return self.scopes
+
 class Clients:
     @staticmethod
     def GET(svc, session, params, action):
