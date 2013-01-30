@@ -10,6 +10,7 @@ class Mail:
     @staticmethod
     def GET(svc, session, params, action):
         if (session is None): raise Unauthorized('login first')
+        if not session.CheckScope('bbs'): raise NoPerm("out of scope")
         if (action == 'list'):
             folder = svc.get_str(params, 'folder', 'inbox')
             start = svc.get_int(params, 'start', 0)

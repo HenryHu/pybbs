@@ -63,7 +63,8 @@ class ClientDB:
 
 class ClientInfo:
     _valid_scopes = {'bbs' : "Do whatever you can do in the BBS",
-            'auth' : "Authenticate that you are a valid user of the BBS"}
+            'auth' : "Authenticate that you are a valid user of the BBS",
+            'clientdb' : "Manage OAuth clients"}
     def __init__(self, id, response_type, grant_type, user, secret = '', type = 'public', name = '', description = '', redirect_uri = '', created = None, website = '', logo = '', extra_info = '', scopes = ''):
         if not id:
             raise WrongArgs('client id cannot be empty')
@@ -174,6 +175,7 @@ class Clients:
     @staticmethod
     def GET(svc, session, params, action):
         if session is None: raise NoPerm("login first")
+        if not session.CheckScope('clientdb'): raise NoPerm("out of scope")
         if action == 'query':
             client_id = svc.get_str(params, 'client_id')
             Clients.query(svc, session, client_id)
@@ -185,6 +187,7 @@ class Clients:
     @staticmethod
     def POST(svc, session, params, action):
         if session is None: raise NoPerm("login first")
+        if not session.CheckScope('clientdb'): raise NoPerm("out of scope")
         if action == "update":
             client_id = svc.get_str(params, 'client_id')
             Clients.update(svc, session, params, client_id)

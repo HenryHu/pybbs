@@ -296,6 +296,7 @@ class Digest:
     @staticmethod
     def GET(svc, session, params, action):
         if (session is None): raise Unauthorized('login first')
+        if not session.CheckScope('bbs'): raise NoPerm("out of scope")
         user = session.GetUser()
         boardname = svc.get_str(params, 'board', '')
         if (boardname):

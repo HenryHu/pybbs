@@ -190,6 +190,7 @@ class Board:
     @staticmethod
     def GET(svc, session, params, action):
         if (session == None): raise Unauthorized('login first')
+        if not session.CheckScope('bbs'): raise NoPerm("out of scope")
         bo = None
         if (params.has_key('name')):
             name = params['name']
@@ -216,6 +217,7 @@ class Board:
     @staticmethod
     def POST(svc, session, params, action):
         if (session == None): raise Unauthorized('login first')
+        if not session.CheckScope('bbs'): raise NoPerm("out of scope")
         bo = None
         if (params.has_key('name')):
             name = params['name']

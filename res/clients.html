@@ -118,6 +118,7 @@
                 $('#details-grant-refresh').prop("checked", false).button("refresh");
                 $('#details-scope-bbs').prop("checked", false).button("refresh");
                 $('#details-scope-auth').prop("checked", true).button("refresh");
+                $('#details-scope-clientdb').prop("checked", false).button("refresh");
             }
 
             function save_details() {
@@ -153,6 +154,9 @@
                 }
                 if ($('#details-scope-auth').prop("checked")) {
                     scope.push("auth");
+                }
+                if ($('#details-scope-clientdb').prop("checked")) {
+                    scope.push("clientdb");
                 }
 
                 $.post('/clients/update', {
@@ -213,6 +217,9 @@
                     }
                     if ($.inArray('bbs', data.scopes) != -1) {
                         $('#details-scope-bbs').prop("checked", true).button("refresh");
+                    }
+                    if ($.inArray('clientdb', data.scopes) != -1) {
+                        $('#details-scope-clientdb').prop("checked", true).button("refresh");
                     }
                     if ($.inArray('auth', data.scopes) != -1) {
                         $('#details-scope-auth').prop("checked", true).button("refresh");
@@ -312,6 +319,7 @@
                 <div id="details-scope">
                     <input type="checkbox" id="details-scope-bbs"/><label for="details-scope-bbs">All operations</label>
                     <input type="checkbox" id="details-scope-auth"/><label for="details-scope-auth">Authentication only</label>
+                    <input type="checkbox" id="details-scope-clientdb"/><label for="details-scope-clientdb">Manage OAuth clients</label>
                 </div>
             </div>
             <script lang="text/javascript">

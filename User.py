@@ -126,10 +126,14 @@ class User:
         if (session == None): raise Unauthorized('login first')
         if (action == 'query'):
             userid = svc.get_str(params, 'id', '')
+            if not session.CheckScope('bbs'):
+                if userid or not session.CheckScope('auth'):
+                    raise NoPerm("out of scope")
             if (not userid):
                 userid = session.GetUser().name
             User.QueryUser(svc, userid)
         elif (action == 'detail'):
+            if not session.CheckScope('bbs'): raise NoPerm("out of scope")
             userid = svc.get_str(params, 'id', '')
             if (not userid):
                 userid = session.GetUser().name
@@ -138,9 +142,11 @@ class User:
                     raise NoPerm("permission denied")
             User.DetailUser(svc, userid)
         elif (action == "signature_id"):
+            if not session.CheckScope('bbs'): raise NoPerm("out of scope")
             sigid = session.GetUser().GetSigID()
             svc.writedata(json.dumps({"signature_id" : sigid}))
         elif action == "signature_count":
+            if not session.CheckScope('bbs'): raise NoPerm("out of scope")
             sig_count = session.GetUser().GetSignatureCount()
             svc.writedata(json.dumps({"signature_count" : sig_count}))
         else:

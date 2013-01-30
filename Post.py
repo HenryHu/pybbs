@@ -58,6 +58,7 @@ class Post:
     @staticmethod
     def GET(svc, session, params, action):
         if (session == None): raise Unauthorized('login first')
+        if not session.CheckScope('bbs'): raise NoPerm("out of scope")
         bo = BoardManager.GetBoardByParam(svc, params)
         if (bo == None): raise NotFound('board not found')
 
@@ -101,6 +102,7 @@ class Post:
     @staticmethod
     def POST(svc, session, params, action):
         if (session == None): raise Unauthorized("login first")
+        if not session.CheckScope('bbs'): raise NoPerm("out of scope")
         bo = BoardManager.GetBoardByParam(svc, params)
         if (bo == None): raise NotFound("no such board")
 

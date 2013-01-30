@@ -13,6 +13,7 @@ class Store:
     @staticmethod
     def POST(svc, session, params, action):
         if (session == None): raise Unauthorized('login first')
+        if not session.CheckScope('bbs'): raise NoPerm("out of scope")
 
         if (action == "new"):
             item = svc.get_str(params, 'item')

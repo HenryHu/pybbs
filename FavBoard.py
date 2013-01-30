@@ -34,6 +34,7 @@ class FavBoard:
     def GET(svc, session, params, action):
         if (session == None):
             raise Unauthorized("login first")
+        if not session.CheckScope('bbs'): raise NoPerm("out of scope")
         if (action == "list"):
             FavBoardMgr.ListFavBoards(svc, session, params)
         else:
@@ -43,6 +44,7 @@ class FavBoard:
     def POST(svc, session, params, action):
         if (session == None):
             raise NoPerm("login first")
+        if not session.CheckScope('bbs'): raise NoPerm("out of scope")
         raise WrongArgs("unknown action")
 
     def GetInfo(self, index, user):
