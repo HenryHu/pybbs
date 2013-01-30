@@ -16,12 +16,13 @@ AUTH_CODE_LEN = 8 # bytes
 AUTH_CODE_VALID = 600 # seconds, recommended by rfc6749
 
 class AuthRecord:
-    def __init__(self, code, sid, time, cid, uid):
+    def __init__(self, code, sid, time, cid, uid, scopes):
         self.code = code
         self.sid = sid
         self.time = time
         self.cid = cid
         self.uid = uid
+        self.scopes = scopes
 
     def CheckTime(self, time):
         if ((time < self.time) or (time > self.time + AUTH_CODE_VALID)):
@@ -54,8 +55,9 @@ class Auth:
                 rduri = svc.get_str(params, 'redirect_uri', '')
                 state = svc.get_str(params, 'state', '')
                 resptype = svc.get_str(params, 'response_type', '')
+                scope = svc.get_str(params, 'scope', 'bbs')
 
-                Auth.Auth(svc, params, rduri, resptype, cid, state)
+                Auth.Auth(svc, params, rduri, resptype, cid, state, scope)
                 return
             elif (action == 'token'):
                 # rfc6749 4.1.3: access token request
@@ -96,7 +98,8 @@ class Auth:
                 pw = svc.get_str(params, 'pass')
                 resptype = svc.get_str(params, 'response_type')
                 state = svc.get_str(params, 'state', '')
-                Auth.AuthPage(svc, rduri, cid, name, pw, state, resptype)
+                scope = svc.get_str(params, 'scope', '')
+                Auth.AuthPage(svc, rduri, cid, name, pw, state, resptype, scope)
             elif (action == 'pwauth'):
                 raise NoPerm('pwauth is disabled')
                 if (not params.has_key('user') or not params.has_key('pass')):
@@ -141,10 +144,10 @@ class Auth:
 
     @staticmethod
     def ClientError(svc):
-        svc.writedata("<h1>Invalid Client, client_id error or redirect_uri mismatch</h1>", 'text/html', 400)
+        svc.writedata("<h1>invalid client</h1>client_id error or redirect_uri mismatch", 'text/html', 400)
 
     @staticmethod
-    def Auth(svc, params, rduri, resptype, cid, state):
+    def Auth(svc, params, rduri, resptype, cid, state, scope):
         clients = clientdb.ClientDB()
         try:
             # check client_id valid
@@ -159,6 +162,10 @@ class Auth:
                     raise AuthClientError()
             if not resptype:
                 raise AuthError(rduri, 'invalid_request')
+            scopes = scope.split(' ')
+            for one_scope in scopes:
+                if not client.check_scope(one_scope):
+                    raise AuthError(rduri, 'invalid_scope')
             # check client_id may use response_type
             if not client.check_response_type(resptype):
                 raise AuthError(rduri, 'invalid_client')
@@ -170,7 +177,7 @@ class Auth:
                 authpage = authpage_t.substitute(redirect_uri=rduri,
                         client_id=cid, state=state, response_type=resptype,
                         name=client.name, website=client.get_website(), logo=client.get_logo(),
-                        description=client.description)
+                        description=client.description, scope=scope, scope_desc=client.get_scopes_desc(scopes))
                 svc.writedata(authpage)
             else:
                 raise AuthError(rduri, 'unsupported_response_type')
@@ -178,7 +185,7 @@ class Auth:
             clients.close()
 
     @staticmethod
-    def AuthPage(svc, rduri, cid, name, pw, state, resptype):
+    def AuthPage(svc, rduri, cid, name, pw, state, resptype, scope):
         clients = clientdb.ClientDB()
         try:
             # check client_id valid
@@ -195,8 +202,13 @@ class Auth:
             if (user == None):
                 raise AuthError(rduri, 'access_denied')
 
+            scopes = scope.split(' ')
+            for one_scope in scopes:
+                if not client.check_scope(one_scope):
+                    raise AuthError(rduri, 'invalid_scope')
+
             if (user.Authorize(pw)):
-                session = Session(user, svc.client_address[0])
+                session = Session(user, svc.client_address[0], scopes = scopes)
                 session.RecordLogin(True)
                 if resptype == "code":
                     # give session, so other info may be recorded
@@ -249,7 +261,7 @@ class Auth:
                 if (not params.has_key('code')):
                     raise AuthError(rduri, 'invalid_request')
                 code = params['code']
-                (sessid, uid) = Auth.SessionInfoFromCode(code, cid)
+                (sessid, uid, scopes) = Auth.SessionInfoFromCode(code, cid)
                 if (sessid == None):
                     raise AuthError(rduri, 'invalid_grant')
                 Auth.RemoveCode(code)
@@ -265,9 +277,10 @@ class Auth:
                     if old_token['client_id'] != cid:
                         raise AuthError(rduri, 'invalid_grant')
                     uid = old_token['uid']
+                    scopes = old_token['scopes']
                     user = UserManager.LoadUserByUid(uid)
 
-                    session = Session(user, svc.client_address[0])
+                    session = Session(user, svc.client_address[0], scopes = scopes.split(','))
                     session.RecordLogin(True)
                     sessid = session.GetID()
 
@@ -286,7 +299,7 @@ class Auth:
             if client.check_grant_type('refresh_token'):
                 refreshments = RefreshTokens()
                 try:
-                    refresh_token = refreshments.new(uid, cid, svc.client_address[0])
+                    refresh_token = refreshments.new(uid, cid, svc.client_address[0], scopes)
                 finally:
                     refreshments.close()
 
@@ -310,7 +323,7 @@ class Auth:
         while (Auth.sessiondb.has_key(code)):
             code = Util.RandomInt(AUTH_CODE_LEN)
 
-        authrec = AuthRecord(code, session.GetID(), time.time(), cid, session.uid)
+        authrec = AuthRecord(code, session.GetID(), time.time(), cid, session.uid, session.GetScopesStr())
         Auth.sessiondb[code] = authrec
         return code
 
@@ -320,7 +333,7 @@ class Auth:
             authrec = Auth.sessiondb[code]
             if (authrec.CheckTime(time.time())):
                 if authrec.CheckClientID(cid):
-                    return (authrec.sid, authrec.uid)
+                    return (authrec.sid, authrec.uid, authrec.scopes)
                 else:
                     return None
             else:
@@ -344,15 +357,15 @@ class RefreshTokens:
             self.init_db()
 
     def init_db(self):
-        self.conn.execute("create table refreshments(id text, uid int, created timestamp, client_id text, create_ip text, last_use timestamp, last_ip text)")
+        self.conn.execute("create table refreshments(id text, uid int, created timestamp, client_id text, create_ip text, last_use timestamp, last_ip text, scopes text)")
         self.conn.commit()
 
     def generate(self):
         return Util.RandomStr(Config.REFRESH_TOKEN_LEN)
 
-    def new(self, uid, client_id, ip):
+    def new(self, uid, client_id, ip, scopes):
         id = self.generate()
-        self.conn.execute("insert into refreshments values (?, ?, ?, ?, ?, ?, ?)", (id, uid, datetime.datetime.now(), client_id, ip, datetime.datetime.now(), ip))
+        self.conn.execute("insert into refreshments values (?, ?, ?, ?, ?, ?, ?, ?)", (id, uid, datetime.datetime.now(), client_id, ip, datetime.datetime.now(), ip, scopes))
         self.conn.commit()
         return id
 

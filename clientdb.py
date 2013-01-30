@@ -35,14 +35,16 @@ class ClientDB:
         response_types = ','.join(client.response_type)
         grant_types = ','.join(client.grant_type)
         redirect_uris = ','.join(client.redirect_uri)
-        self.conn.execute("insert into clients values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (client.id, client.secret, client.name, client.user, client.description, redirect_uris, client.created, client.type, client.website, client.logo, response_types, grant_types, client.extra_info))
+        scopes = ','.join(client.scopes)
+        self.conn.execute("insert into clients values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (client.id, client.secret, client.name, client.user, client.description, redirect_uris, client.created, client.type, client.website, client.logo, response_types, grant_types, client.extra_info, scopes))
         self.conn.commit()
 
     def update_client(self, client):
         response_types = ','.join(client.response_type)
         grant_types = ','.join(client.grant_type)
         redirect_uris = ','.join(client.redirect_uri)
-        self.conn.execute("update clients set secret=?, name=?, user=?, description=?, redirect_uri=?, created=?, type=?, website=?, logo=?, response_type=?, grant_type=?, extra_info=? where id=?", (client.secret, client.name, client.user, client.description, redirect_uris, client.created, client.type, client.website, client.logo, response_types, grant_types, client.extra_info, client.id))
+        scopes = ','.join(client.scopes)
+        self.conn.execute("update clients set secret=?, name=?, user=?, description=?, redirect_uri=?, created=?, type=?, website=?, logo=?, response_type=?, grant_type=?, extra_info=?, scope=? where id=?", (client.secret, client.name, client.user, client.description, redirect_uris, client.created, client.type, client.website, client.logo, response_types, grant_types, client.extra_info, scopes, client.id))
         self.conn.commit()
 
     def remove_client(self, client_id):
@@ -52,7 +54,7 @@ class ClientDB:
         self.conn.commit()
 
     def init_db(self):
-        self.conn.execute("create table clients(id text, secret text, name text, user int, description text, redirect_uri text, created timestamp, type text, website text, logo text, response_type text, grant_type text, extra_info text)")
+        self.conn.execute("create table clients(id text, secret text, name text, user int, description text, redirect_uri text, created timestamp, type text, website text, logo text, response_type text, grant_type text, extra_info text, scopes text)")
         self.conn.commit()
 
     def close(self):
@@ -60,7 +62,9 @@ class ClientDB:
 
 
 class ClientInfo:
-    def __init__(self, id, response_type, grant_type, user, secret = '', type = 'public', name = '', description = '', redirect_uri = '', created = None, website = '', logo = '', extra_info = ''):
+    _valid_scopes = {'bbs' : "Do whatever you can do in the BBS",
+            'auth' : "Authenticate that you are a valid user of the BBS"}
+    def __init__(self, id, response_type, grant_type, user, secret = '', type = 'public', name = '', description = '', redirect_uri = '', created = None, website = '', logo = '', extra_info = '', scopes = ''):
         if not id:
             raise WrongArgs('client id cannot be empty')
         self.id = id
@@ -85,6 +89,7 @@ class ClientInfo:
         self.response_type = response_type.split(',')
         self.grant_type = grant_type.split(',')
         self.extra_info = extra_info
+        self.scopes = scopes.split(',')
 
     def check_secret(self, secret):
         return secret == self.secret
@@ -144,7 +149,26 @@ class ClientInfo:
         info['extra_info'] = self.extra_info
         info['response_type'] = self.response_type
         info['grant_type'] = self.grant_type
+        info['scopes'] = self.scopes
         return info
+
+    def check_scope(self, scope):
+        return scope in self.scopes
+
+    @staticmethod
+    def is_valid_scope(scope):
+        return scope in ClientInfo._valid_scopes
+
+    def get_scopes_desc(self, scopes):
+        result = ''
+        for scope in scopes:
+            result += "<li class=\"scope_desc\">%s</li>" % self.get_scope_desc(scope)
+        return result
+
+    def get_scope_desc(self, scope):
+        if not scope in self_valid_scopes:
+            raise WrongArgs("invalid scope: %s" % scope)
+        return self._valid_scopes[scope]
 
 class Clients:
     @staticmethod
@@ -210,6 +234,10 @@ class Clients:
             extra_info = svc.get_str(params, 'extra_info', '')
             response_type = svc.get_str(params, 'response_type', '')
             grant_type = svc.get_str(params, 'grant_type', '')
+            scopes = svc.get_str(params, 'scopes', '').split(',')
+            for scope in scopes:
+                if not ClientInfo.is_valid_scope(scope):
+                    raise WrongArgs("illegal scope: %s" % scope)
             if client is not None:
                 if not client.check_user(session.uid):
                     raise NoPerm("permission denied")
@@ -225,6 +253,7 @@ class Clients:
             client.website = website
             client.logo = logo
             client.extra_info = extra_info
+            client.scopes = scopes
 
             clients.new_client(client)
             result = {"result": "ok"}

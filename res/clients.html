@@ -64,6 +64,7 @@
                                     + '</a></td><td>' + client.type 
                                 + '</td><td>' + client.response_type.join('<br/>')
                                 + '</td><td>' + client.grant_type.join('<br/>')
+                                + '</td><td>' + client.scopes.join('<br/>')
                                 + '</td>' 
                             + '<td><button type="button" onclick="modify_client(\'' + client.client_id
                                     + '\')">Modify</button><br/>'
@@ -111,11 +112,14 @@
                 $('#details-grant-password').prop("checked", false).button("refresh");
                 $('#details-grant-clientcred').prop("checked", false).button("refresh");
                 $('#details-grant-refresh').prop("checked", false).button("refresh");
+                $('#details-scope-bbs').prop("checked", false).button("refresh");
+                $('#details-scope-auth').prop("checked", true).button("refresh");
             }
 
             function save_details() {
                 var resptype = [];
                 var grant = [];
+				var scope = [];
                 var type = '';
                 if ($('#details-type-public').prop("checked")) {
                     type = "public";
@@ -140,6 +144,12 @@
                 if ($('#details-grant-refresh').prop("checked")) {
                     grant.push("refresh_token");
                 }
+                if ($('#details-scope-bbs').prop("checked")) {
+                    scope.push("bbs");
+                }
+                if ($('#details-scope-auth').prop("checked")) {
+                    scope.push("auth");
+                }
 
                 $.post('/clients/update', {
                     session: token,
@@ -152,6 +162,7 @@
                     description: $('#details-description').val(),
                     response_type: resptype.join(','),
                     grant_type: grant.join(','),
+					scopes: scope.join(','),
                     type: type
                     }, function(data) {
                     refresh_clients();
@@ -196,6 +207,12 @@
                     if ($.inArray('refresh_token', data.grant_type) != -1) {
                         $('#details-grant-refresh').prop("checked", true).button("refresh");
                     }
+                    if ($.inArray('bbs', data.scopes) != -1) {
+                        $('#details-scope-bbs').prop("checked", true).button("refresh");
+                    }
+                    if ($.inArray('auth', data.scopes) != -1) {
+                        $('#details-scope-auth').prop("checked", true).button("refresh");
+                    }
                 });
                 $("#details-dialog").dialog("open");
             };
@@ -222,6 +239,7 @@
                         <th>type</th>
                         <th>response types</th>
                         <th>grant types</th>
+                        <th>scopes</th>
                         <th>action</th>
                     </tr>
                 </thead>
@@ -282,6 +300,13 @@
             <div>
                 <label for="details-logo">logo: </label>
                 <input id="details-logo"/>
+            </div>
+            <div>
+                <label for="details-scope">scopes: </label>
+                <div id="details-scope">
+                    <input type="checkbox" id="details-scope-bbs"/><label for="details-scope-bbs">All operations</label>
+                    <input type="checkbox" id="details-scope-auth"/><label for="details-scope-auth">Authentication only</label>
+                </div>
             </div>
             <script lang="text/javascript">
                 $("#details-dialog").dialog({autoOpen: false, minWidth: 400, buttons: [

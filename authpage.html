@@ -23,7 +23,10 @@
                                 </tbody>
                             </table>
                             $description<p/>
-                            This application may perform any operation that you can perform.
+							<b>This application can perform following operations:</b>
+							<ul>
+								$scope_desc
+							</ul>
                         </td>
                         <td width="50%" style="max-width: 400px; vertical-align:top">
                             <form action="/auth/authpage" method="POST">
@@ -32,6 +35,7 @@
                                 <input type="hidden" value="$client_id" name="client_id"/>
                                 <input type="hidden" value="$state" name="state"/>
                                 <input type="hidden" value="$response_type" name="response_type"/>
+                                <input type="hidden" value="$scope" name="scope"/>
                                 <table>
                                     <tr>
                                         <td> Name: </td>

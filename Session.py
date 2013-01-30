@@ -37,7 +37,7 @@ class Session:
     def POST(svc, session, params, action):
         raise WrongArgs("unknown action")
 
-    def __init__(self, user, fromip, _sessionid = None, _created = None):
+    def __init__(self, user, fromip, _sessionid = None, _created = None, scopes = ['auth']):
         self.username = user.name
         self.uid = UCache.SearchUser(self.username)
         if (_sessionid is None):
@@ -50,6 +50,7 @@ class Session:
         self._userinfo = None
         self.utmpent = -1
         self._fromip = fromip
+        self.scopes = scopes
         SessionManager.Insert(self)
         if (_sessionid is None):
             SessionManager.Record(self)
@@ -117,6 +118,12 @@ class Session:
             raise ServerError("can't get server domain")
         return server
 
+    def CheckScope(self, scope):
+        return scope in self.scopes
+
+    def GetScopesStr(self):
+        return ','.join(self.scopes)
+
 class SessionManager:
     sessions = {}
 
@@ -129,7 +136,7 @@ class SessionManager:
         conn = SessionManager.ConnectDB()
 
         now = datetime.datetime.now()
-        conn.execute("insert into sessions values (?, ?, ?, ?, ?, ?)", (session.sessionid, session.username, now, now, session._fromip, session._fromip))
+        conn.execute("insert into sessions values (?, ?, ?, ?, ?, ?, ?)", (session.sessionid, session.username, now, now, session._fromip, session._fromip, session.GetScopesStr()))
 
         conn.commit()
         conn.close()
@@ -156,7 +163,7 @@ class SessionManager:
 
     @staticmethod
     def InitDB(conn):
-        conn.execute("create table sessions(id text, username text, created timestamp, last_seen timestamp, login_ip text, last_ip text)")
+        conn.execute("create table sessions(id text, username text, created timestamp, last_seen timestamp, login_ip text, last_ip text, scopes text)")
         conn.commit()
 
     @staticmethod
@@ -172,7 +179,8 @@ class SessionManager:
                     if (user is None):
                         continue
                     created = row['created']
-                    session = Session(user, fromip, id, created)
+                    scopes = row['scopes'].split(',')
+                    session = Session(user, fromip, id, created, scopes)
                     if (session.Timeout()):
                         return None
                     session.RecordLogin()
