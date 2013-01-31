@@ -20,9 +20,6 @@ import Login
 import UserInfo
 import Util
 
-update_condition = Condition()
-new_msgs = False
-
 class Pinger(Thread):
     def __init__(self, rosters):
         Thread.__init__(self)
@@ -45,27 +42,36 @@ class Updater(Thread):
     def __init__(self, rosters):
         Thread.__init__(self)
         self._rosters = rosters
+        self.new_msgs = False
+        self.update_condition = Condition()
         self.start()
+
+    def notify_new_msg(self):
+        """Notify updater that there are new msgs. Usually called from other threads."""
+        self.update_condition.acquire()
+        self._updater.new_msgs = True
+        self.update_condition.notify()
+        self.update_condition.release()
 
     def run(self):
         while (self._rosters._running):
-            global new_msgs
-            update_condition.acquire()
-            update_condition.wait(2)
+            self.update_condition.acquire()
+            self.update_condition.wait(UPDATER_CHECK_INTERVAL)
             try:
 #            Log.debug("wake up %r" % new_msgs)
-                cur_msgs = new_msgs
+                # in fact, new_msgs does not help...
+                # since we don't know the receiver...
+                # maybe we'll know in the future...
 
-                if (cur_msgs):
 #                Log.info("enumerating...")
-                    for conn in self._rosters._conns:
+                for conn in self._rosters._conns:
 #                    Log.info("check!")
-                        self._rosters._conns[conn].check_msg()
-                    new_msgs = False
+                    self._rosters._conns[conn].check_msg()
+                self.new_msgs = False
             except Exception as e:
                 Log.error("Exception caught in rosters.msg_checker: %r" % e)
                 Log.error(traceback.format_exc())
-            update_condition.release()
+            self.update_condition.release()
 
 class Rosters(Thread):
     """Rosters: Friend lists of different users.
@@ -84,27 +90,21 @@ class Rosters(Thread):
         self._conns = {}
         self.update_sessions()
 
-        signal.signal(signal.SIGUSR2, Rosters.handle_signal_message)
-        signal.signal(signal.SIGABRT, Rosters.handle_signal_abort)
-        signal.signal(signal.SIGHUP, Rosters.handle_signal_abort)
+        signal.signal(signal.SIGUSR2, self.handle_signal_message)
+        signal.signal(signal.SIGABRT, self.handle_signal_abort)
+        signal.signal(signal.SIGHUP, self.handle_signal_abort)
 
         self._running = True
         self._updater = Updater(self)
         self._pinger = Pinger(self)
         self.start()
 
-    @staticmethod
-    def handle_signal_abort(signum, frame):
+    def handle_signal_abort(self, signum, frame):
         Log.warn("Someone want to kill me! But I'll not die now! Hahahaha!")
 
-    @staticmethod
-    def handle_signal_message(signum, frame):
-        global new_msgs
+    def handle_signal_message(self, signum, frame):
         Log.info("Someone has sent me a message...")
-        update_condition.acquire()
-        new_msgs = True
-        update_condition.notify()
-        update_condition.release()
+        self._updater.notify_new_msg()
 
     def register_conn(self, conn):
         key = conn.get_loginid()
