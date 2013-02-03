@@ -11,11 +11,14 @@ import xmpp
 import modes
 import Util
 import traceback
+import os
 from xmpp.features import NoRoute
 
 __disco_info_ns__ = 'http://jabber.org/protocol/disco#info'
 __disco_items_ns__ = 'http://jabber.org/protocol/disco#items'
 __vcard_ns__ = 'vcard-temp'
+
+STEAL_AFTER_SEEN = 3
 
 class XMPPServer(xmpp.Plugin):
     """XMPP server for the BBS"""
@@ -72,9 +75,9 @@ class XMPPServer(xmpp.Plugin):
         self.rosters.register_conn(self)
 
         msgbox = MsgBox.MsgBox(self._userid)
-        self._read_msgs = msgbox.GetMsgCount(all = False) - msgbox.GetUnreadCount()
-        if (msgbox.GetUnreadCount() > 0):
-            self.check_msg()
+        if self.rosters.get_xmpp_read(self._user.GetUID()) is None:
+            self.rosters.set_xmpp_read(self._user.GetUID(), msgbox.GetMsgCount(all = False) - msgbox.GetUnreadCount())
+        self.check_msg()
 
     def get_loginid(self):
         return self._loginid
@@ -178,32 +181,125 @@ class XMPPServer(xmpp.Plugin):
             Log.debug(traceback.format_exc())
             return False
 
+    def get_uid(self):
+        return self._user.GetUID()
+
+    def recv_msg(self, from_, msgtext):
+        # got a new message! send it!
+        elem = self.E.message({'from': from_, 'to': unicode(self.authJID)},
+                self.E.body(msgtext))
+        self.recv(unicode(self.authJID), elem)
+
     def check_msg(self):
         Log.debug("checking msg for %s" % self._userid)
         msgbox = MsgBox.MsgBox(self._userid)
         msg_count = msgbox.GetMsgCount(all = False)
-        if (msg_count > self._read_msgs):
-#            Log.debug("total: %d read: %d" % (msg_count, self._read_msgs))
-            for i in range(self._read_msgs, msg_count):
-                msghead = msgbox.LoadMsgHead(i, all = False)
-                if (time.time() - msghead.time < 5):
-                    msgtext = msgbox.LoadMsgText(msghead)
-#                Log.debug("from: %s text: %s" % (msghead.id, msgtext))
+        my_pid = os.getpid()
+        xmpp_read = self.rosters.get_xmpp_read(self._user.GetUID())
+        if xmpp_read > msg_count:
+            xmpp_read = 0
+        Log.debug("total: %d xmpp read: %d" % (msg_count, xmpp_read))
 
-                    # got a new message! send it!
-                    elem = self.E.message({'from': self.make_jid(msghead.id), 
-                                           'to': unicode(self.authJID)},
-                                          self.E.body(msgtext))
-                    self.recv(unicode(self.authJID), elem)
-            # clear unread...
-            for i in range(msg_count):
-                if (msgbox.GetUnreadMsg() < 0):
-                    break
-            self._read_msgs = msg_count
-        else:
-            if (msg_count < self._read_msgs):
-                # <? someone cleared it...
-                self._read_msgs = 0
+        for i in range(xmpp_read, msg_count):
+            msghead = msgbox.LoadMsgHead(i, all = False)
+            if msghead.topid == my_pid:
+                msgtext = msgbox.LoadMsgText(msghead)
+                self.recv_msg(self.make_jid(msghead.id), msgtext)
+        self.rosters.set_xmpp_read(self._user.GetUID(), msg_count)
+
+    def steal_msg(self):
+        Log.debug("stealing msg for %s" % self._userid)
+        msgbox = MsgBox.MsgBox(self._userid)
+        msg_count = msgbox.GetMsgCount(all = False)
+        msg_unread = msgbox.GetUnreadCount()
+        read_count = msg_count - msg_unread
+        my_pid = os.getpid()
+        term_read = self.rosters.get_term_read(self.get_uid())
+        term_stealed = self.rosters.get_term_stealed(self.get_uid())
+
+        all_xmpp = True
+        new_unread = {}
+        # these are unread msgs!
+        for i in range(read_count - 1, msg_count):
+            if i < 0: # read_count == 0...
+                continue
+
+            msghead = msgbox.LoadMsgHead(i, all = False)
+            if i >= read_count and all_xmpp:
+                if msghead.topid == my_pid:
+                    # still xmpp
+                    # RACE!
+                    msgbox.GetUnreadMsg()
+                else:
+                    # not xmpp
+                    all_xmpp = False
+
+            if msghead.topid == my_pid:
+                # xmpp msg, don't care
+                continue
+
+            if i < read_count: # read_count - 1
+                session = self.rosters.find_session(self.authJID.bare, msghead.topid)
+                if session is None or session.get_mode() != mode.MSG:
+                    continue
+                Log.debug("considered msg %d as unread" % i)
+
+            # unread msg!
+            if msghead.topid not in new_unread:
+                Log.debug("for pid %d, first unread at %d" % (msghead.topid, i))
+                new_unread[msghead.topid] = i
+
+        final_unread = {}
+        to_steal = {}
+        to_steal_begin = msg_count
+
+        for pid in term_read:
+            if pid in new_unread:
+                if new_unread[pid] == term_read[pid][0]:
+                    # still unread
+                    final_unread[pid] = (term_read[pid][0], term_read[pid][1] + 1)
+                    Log.debug(".. still unread: %d for %d, %d times" % (new_unread[pid], pid, term_read[pid][1]+1))
+                    if final_unread[pid][1] > STEAL_AFTER_SEEN:
+                        Log.debug(".. let's steal! %d+ from %d" % (to_steal[pid][0], pid))
+                        to_steal[pid] = final_unread[pid]
+                        if pid in term_stealed:
+                            steal_begin = max(final_unread[pid][0], term_stealed[pid] + 1)
+                        else:
+                            steal_begin = final_unread[pid][0]
+                        if steal_begin < to_steal_begin:
+                            to_steal_begin = steal_begin
+                else:
+                    # moved forward
+                    final_unread[pid] = (new_unread[pid], 1)
+                    Log.debug(".. moved: %d->%d for %d" % (term_read[pid][0], new_unread[pid], pid))
+            else:
+                # disappeared? consider as read
+                Log.debug(".. disappeared: %d" % pid)
+                pass
+        for pid in new_unread:
+            if pid not in term_read:
+                # new session
+                Log.debug(".. new unread: %d for %d" % (new_unread[pid], pid))
+                final_unread[pid] = (new_unread[pid], 1)
+
+        if to_steal:
+            Log.debug("steal starting from %d" % to_steal_begin)
+            for i in range(to_steal_begin, msg_count):
+                msghead = msgbox.LoadMsgHead(i, all = False)
+                if msghead.topid == my_pid:
+                    Log.debug("skip xmpp %d for %d" % (i, msghead.topid))
+                    msgbox.GetUnreadMsg()
+                elif msghead.topid in to_steal:
+                    if msghead.topid not in term_stealed or i > term_stealed[msghead.topid]:
+                        Log.debug("steal! %d from %d" % (i, msghead.topid))
+                        # not stealed...
+                        msgtext = msgbox.LoadMsgText(msghead)
+                        self.recv_msg(self.make_jid(msghead.id), msgtext)
+                        term_stealed[msghead.topid] = i
+                    else:
+                        Log.debug("already stealed: %d from %d" % (i, msghead.topid))
+
+        self.rosters.set_term_read(final_unread)
 
     @xmpp.stanza('presence')
     def presence(self, elem):

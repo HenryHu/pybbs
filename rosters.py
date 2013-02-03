@@ -37,6 +37,29 @@ class Pinger(Thread):
                 Log.error("Exception caught in rosters.pinger: %r" % e)
                 Log.error(traceback.format_exc())
 
+STEALER_INTERVAL = 30
+
+class Stealer(Thread):
+    def __init__(self, rosters):
+        Thread.__init__(self)
+        self.rosters = rosters
+        self.start()
+
+    def run(self):
+        while (self._rosters._running):
+            time.sleep(STEALER_INTERVAL)
+            try:
+                checked = set()
+                for loginind, conn in self.rosters._conns.items():
+                    if conn.get_uid() not in checked:
+                        conn.steal_msg()
+                        checked.add(conn.get_uid())
+            except Exception as e:
+                Log.error("Exception caught in rosters.msg_stealer: %r" % e)
+                Log.error(traceback.format_exc())
+
+# only for proper termination
+UPDATER_WAIT_TIME = 30
 
 class Updater(Thread):
     def __init__(self, rosters):
@@ -54,9 +77,9 @@ class Updater(Thread):
         self.update_condition.release()
 
     def run(self):
+        self.update_condition.acquire()
         while (self._rosters._running):
-            self.update_condition.acquire()
-            self.update_condition.wait(UPDATER_CHECK_INTERVAL)
+            self.update_condition.wait(UPDATER_WAIT_TIME)
             try:
 #            Log.debug("wake up %r" % new_msgs)
                 # in fact, new_msgs does not help...
@@ -64,14 +87,17 @@ class Updater(Thread):
                 # maybe we'll know in the future...
 
 #                Log.info("enumerating...")
-                for conn in self._rosters._conns:
-#                    Log.info("check!")
-                    self._rosters._conns[conn].check_msg()
+                checked = set()
+                for loginid, conn in self._rosters._conns.items():
+                    if conn.get_uid() not in checked:
+                        # Log.info("check!")
+                        conn.check_msg()
+                        checked.add(conn.get_uid())
                 self.new_msgs = False
             except Exception as e:
                 Log.error("Exception caught in rosters.msg_checker: %r" % e)
                 Log.error(traceback.format_exc())
-            self.update_condition.release()
+        self.update_condition.release()
 
 class Rosters(Thread):
     """Rosters: Friend lists of different users.
@@ -88,6 +114,9 @@ class Rosters(Thread):
         self._resources = None
         self._session_cache = {}
         self._conns = {}
+        self.xmpp_read = {}
+        self.term_read = {}
+        self.term_stealed = {}
         self.update_sessions()
 
         signal.signal(signal.SIGUSR2, self.handle_signal_message)
@@ -97,6 +126,7 @@ class Rosters(Thread):
         self._running = True
         self._updater = Updater(self)
         self._pinger = Pinger(self)
+        self._stealer = Stealer(self)
         self.start()
 
     def handle_signal_abort(self, signum, frame):
@@ -347,6 +377,14 @@ class Rosters(Thread):
 
         self._session_cache = new_sessions
 
+    def find_session(self, jid, pid):
+        if not jid in self._session_cache:
+            return None
+        for session in self._session_cache[jid]:
+            if session.get_pid() == pid:
+                return session
+        return None
+
     def get_bbs_sessions(self):
         new_sessions = {}
         lockfd = Utmp.Utmp.Lock()
@@ -489,6 +527,30 @@ class Rosters(Thread):
             Log.warn("notifymsg() fail: err %d" % errcode)
             return errcode
 
+    def get_xmpp_read(self, uid):
+        if uid in self.xmpp_read:
+            return self.xmpp_read[uid]
+        else:
+            return None
+
+    def set_xmpp_read(self, uid, value):
+        self.xmpp_read[uid] = value
+
+    def get_term_read(self, uid):
+        if uid not in self.term_read:
+            self.term_read[uid] = {}
+        return self.term_read[uid]
+
+    def set_term_read(self, uid, value):
+        self.term_read[uid] = value
+
+    def get_term_stealed(self, uid):
+        if uid not in self.term_stealed:
+            self.term_stealed[uid] = {}
+        return self.term_stealed[uid]
+
+    def set_term_stealed(self, uid, value):
+        self.term_stealed[uid] = value
 
 ### Rosters
 
@@ -520,6 +582,12 @@ class SessionInfo(object):
             return self.get_show_natural()
         else:
             return "dnd"
+
+    def get_pid(self):
+        return self._userinfo.pid
+
+    def get_mode(self):
+        return self._userinfo.mode
 
     def get_status(self):
         return Util.Util.RemoveTags(Util.Util.gbkDec(self._userinfo.username))
