@@ -470,10 +470,7 @@ class Rosters(Thread):
         #             (and we will notify)
 
         errcode = 0
-        # so now we make to_pid to myself
-        # but we still notify the term session
-        # so it displays the last message
-        to_pid = os.getpid()
+        to_pid = 0
         priority = -20
         idle_time = -1
         has_xmpp = False
@@ -483,14 +480,14 @@ class Rosters(Thread):
             if (ret > 0):
                 if (not maysend):
                     maysend = True
-#                    to_pid = session._userinfo.pid
+                    to_pid = session._userinfo.pid
                     priority = int(session.get_priority())
                     idle_time = session.idle_time()
                 else:
                     if (int(session.get_priority()) > priority or
                        (int(session.get_priority()) == priority and
                            session.idle_time() < idle_time)):
-#                        to_pid = session._userinfo.pid
+                        to_pid = session._userinfo.pid
                         priority = int(session.get_priority())
                         idle_time = session.idle_time()
                 if (session._userinfo.mode == modes.XMPP):
@@ -498,6 +495,12 @@ class Rosters(Thread):
                 may_send_sessions.append(session)
             if (ret < 0):
                 errcode = ret
+
+        if has_xmpp:
+            # so now we make to_pid to myself
+            # but we still notify the term session
+            # so it displays the last message
+            to_pid = os.getpid()
 
         if (not maysend):
             Log.warn("may not send from %s to %s err %d" % (from_jid, to_jid, errcode))
@@ -508,7 +511,7 @@ class Rosters(Thread):
             Log.error("savemsg() fail! from %s to %s err %d" % (from_userid, to_userid, ret))
             return ret
 
-        # has xmpp session: that will clear unread msgs. no point to send notifications in msg mode
+        # has xmpp session: to_pid is xmpp. no point to send notifications in msg mode
         # no xmpp session: 
         #    not to_pid session: that session will ignore the messages. no point to send
         #    to_pid session: that session will not ignore the messages, and they are unread
