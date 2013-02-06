@@ -8,6 +8,7 @@ import traceback
 from xmpp import xml
 from xmpp.features import NoRoute
 
+import os
 import modes
 import roster
 import UserManager
@@ -469,7 +470,10 @@ class Rosters(Thread):
         #             (and we will notify)
 
         errcode = 0
-        to_pid = 0
+        # so now we make to_pid to myself
+        # but we still notify the term session
+        # so it displays the last message
+        to_pid = os.getpid()
         priority = -20
         idle_time = -1
         has_xmpp = False
@@ -479,14 +483,14 @@ class Rosters(Thread):
             if (ret > 0):
                 if (not maysend):
                     maysend = True
-                    to_pid = session._userinfo.pid
+#                    to_pid = session._userinfo.pid
                     priority = int(session.get_priority())
                     idle_time = session.idle_time()
                 else:
                     if (int(session.get_priority()) > priority or
                        (int(session.get_priority()) == priority and
                            session.idle_time() < idle_time)):
-                        to_pid = session._userinfo.pid
+#                        to_pid = session._userinfo.pid
                         priority = int(session.get_priority())
                         idle_time = session.idle_time()
                 if (session._userinfo.mode == modes.XMPP):
