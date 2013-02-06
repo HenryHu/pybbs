@@ -46,7 +46,7 @@ class Stealer(Thread):
         self.start()
 
     def run(self):
-        while (self._rosters._running):
+        while (self.rosters._running):
             time.sleep(STEALER_INTERVAL)
             try:
                 checked = set()
@@ -72,7 +72,7 @@ class Updater(Thread):
     def notify_new_msg(self):
         """Notify updater that there are new msgs. Usually called from other threads."""
         self.update_condition.acquire()
-        self._updater.new_msgs = True
+        self.new_msgs = True
         self.update_condition.notify()
         self.update_condition.release()
 

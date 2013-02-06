@@ -240,7 +240,7 @@ class XMPPServer(xmpp.Plugin):
 
             if i < read_count: # read_count - 1
                 session = self.rosters.find_session(self.authJID.bare, msghead.topid)
-                if session is None or session.get_mode() != mode.MSG:
+                if session is None or session.get_mode() != modes.MSG:
                     continue
                 Log.debug("considered msg %d as unread" % i)
 
@@ -260,8 +260,8 @@ class XMPPServer(xmpp.Plugin):
                     final_unread[pid] = (term_read[pid][0], term_read[pid][1] + 1)
                     Log.debug(".. still unread: %d for %d, %d times" % (new_unread[pid], pid, term_read[pid][1]+1))
                     if final_unread[pid][1] > STEAL_AFTER_SEEN:
-                        Log.debug(".. let's steal! %d+ from %d" % (to_steal[pid][0], pid))
                         to_steal[pid] = final_unread[pid]
+                        Log.debug(".. let's steal! %d+ from %d" % (to_steal[pid][0], pid))
                         if pid in term_stealed:
                             steal_begin = max(final_unread[pid][0], term_stealed[pid] + 1)
                         else:
@@ -299,7 +299,7 @@ class XMPPServer(xmpp.Plugin):
                     else:
                         Log.debug("already stealed: %d from %d" % (i, msghead.topid))
 
-        self.rosters.set_term_read(final_unread)
+        self.rosters.set_term_read(self.get_uid(), final_unread)
 
     @xmpp.stanza('presence')
     def presence(self, elem):
