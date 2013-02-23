@@ -29,7 +29,6 @@ class Session:
     @staticmethod
     def GET(svc, session, params, action):
         if (action == 'verify'):
-            if not session.CheckScope('bbs') and not session.CheckScope('auth'): raise NoPerm("out of scope")
             SessionManager.VerifySession(svc, session, params)
         else:
             raise WrongArgs("unknown action")
@@ -203,6 +202,7 @@ class SessionManager:
         if (session == None):
             svc.return_error(404, "session not found or session timed out")
         else:
+            if not session.CheckScope('bbs') and not session.CheckScope('auth'): raise NoPerm("out of scope")
             result = {}
             result['status'] = "ok"
             svc.writedata(json.dumps(result))
