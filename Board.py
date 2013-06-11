@@ -131,6 +131,9 @@ class PostEntry(CStruct):
     def IsRead(self):
         return self.CheckFlag(0, FILE_READ)
 
+    def SetRead(self, val):
+        return self.SetFlag(0, FILE_READ, val)
+
     def UpdateDeleteTime(self):
         self.accessed[-1] = int(time.time()) / (3600 * 24) % 100;
 

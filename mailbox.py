@@ -53,6 +53,18 @@ class Folder:
         except:
             return None
 
+    def set_entry(self, index, entry):
+        if (index < 0 or index >= self.count()):
+            return False
+
+        try:
+            with open(self.path, "r+b") as dirf:
+                dirf.seek(index * Board.PostEntry.size)
+                dirf.write(entry.pack())
+                return True
+        except:
+            return False
+
     def get_content(self, index):
         entry = self.get_entry(index)
         if (entry is None):

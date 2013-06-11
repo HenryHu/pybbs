@@ -69,6 +69,11 @@ class Mail:
         post = folder.get_content(index - 1)
         if (post is None):
             raise OutOfRange('out of range')
+
+        if not entry.IsRead():
+            entry.SetRead(True)
+            folder.set_entry(index - 1, entry)
+
         info = dict(entry.GetInfo().items() + post.GetInfo().items())
         info['id'] = index
 
