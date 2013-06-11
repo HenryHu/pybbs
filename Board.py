@@ -1001,26 +1001,30 @@ class Board:
     def FindPost(self, id, xid, mode):
         if id > 0:
             post = self.GetPostEntry(id - 1, mode)
-        else:
-            post = None
-        if (post == None):
-            post = self.GetPostEntry(0, mode)
+            for i in xrange(5):
+                if post.id == xid:
+                    return (post, id)
+                if post.id < xid:
+                    id += 1
+                else:
+                    id -= 1
+                post = self.GetPostEntry(id - 1, mode)
 
-        if (post == None):
-            return (None, 0)
+        count = self.PostCount()
+        start = 1
+        end = count
 
-        while (post.id != xid):
-            if (post.id < xid):
-                id += 1
+        while end >= start:
+            mid = (start + end) / 2
+            post = self.GetPostEntry(mid - 1, mode)
+            if post.id < xid:
+                start = mid + 1
+            elif post.id > xid:
+                end = mid - 1
             else:
-                id -= 1
-                if (id == 0):
-                    return (None, 0)
-            post = self.GetPostEntry(id - 1, mode)
-            if (post == None):
-                return (None, 0)
+                return (post, mid)
 
-        return (post, id)
+        return (None, 0)
 
     def QuotePost(self, svc, post_id, xid, include_mode, index_mode):
         if (index_mode == 'junk' or index_mode == 'deleted'):
