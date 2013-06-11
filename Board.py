@@ -1010,7 +1010,7 @@ class Board:
                     id -= 1
                 post = self.GetPostEntry(id - 1, mode)
 
-        count = self.PostCount()
+        count = self.PostCount(mode)
         start = 1
         end = count
 
@@ -1097,6 +1097,8 @@ class Board:
         if mode == "junk" or mode == "deleted":
             raise WrongArgs("invalid mode: %s" % mode)
         (post_entry, new_post_id) = self.FindPost(post_id, post_xid, mode)
+        if post_entry is None:
+            raise NotFound("post not found")
         owned = user.IsOwner(post_entry)
         if not owned and not user.IsSysop() and not self.IsMyBM(user):
             raise NoPerm("permission denied")
