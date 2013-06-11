@@ -42,7 +42,7 @@ class UserMemo:
         except IOError:
             raise ServerError("can't open usermemo for %s" % self._name)
 
-        self._memo = Util.Mmap(fmemo, mmap.PROT_READ | mmap.PROT_WRITE, mmap.MAP_SHARED)
+        (self._memo, _) = Util.Mmap(fmemo, mmap.PROT_READ | mmap.PROT_WRITE, mmap.MAP_SHARED)
         fmemo.close()
         if (self._memo == None):
             raise ServerError("can't mmap usermemo for %s" % self._name)

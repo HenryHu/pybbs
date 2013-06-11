@@ -129,6 +129,9 @@ class PostEntry(CStruct):
     def IsRead(self):
         return self.CheckFlag(0, FILE_READ)
 
+    def UpdateDeleteTime(self):
+        self.accessed[:-1] = int(time.time()) / (3600 * 24) % 100;
+
     def GetInfo(self, mode = 'post'):
         post = {'title': Util.gbkDec(self.title)}
         post['attachflag'] = self.attachflag
@@ -177,6 +180,36 @@ class PostLogNew(CStruct):
     parser = struct.Struct('=%ds%dsIii' % (Config.IDLEN + 6, Config.IDLEN + 6))
     _fields = [['userid', 1], ['board', 1], 'groupid', 'date', 'number']
     size = parser.size
+
+class WriteDirArg:
+    def __init__(self):
+        self.filename = None
+        self.fileptr = None
+        self.ent = -1
+        self.fd = None #fd: file object
+        self.size = -1
+        self.needclosefd = False
+        self.needlock = True
+
+    def map_dir(self):
+        if self.fileptr is None:
+            if self.fd is None:
+                self.fd = open(self.filename, "ab")
+                self.needclosefd = True
+            (self.fileptr, self.size) = Util.Mmap(
+                    self.fd, mmap.PROT_READ | mmap.PROT_WRITE, mmap.MAP_SHARED)
+            if self.fileptr is None:
+                if self.needclosefd:
+                    self.fd.close()
+                return False
+        return True
+
+    def free(self):
+        if self.needclosefd and self.fd is not None:
+            self.fd.close()
+        if self.fileptr is not None:
+            self.fileptr.close()
+            self.fileptr = None
 
 class Board:
 
@@ -257,6 +290,12 @@ class Board:
             return self.GetBoardPath() + '.THREAD'
         if (mode == 'origin'):
             return self.GetBoardPath() + '.ORIGIN'
+
+    @staticmethod
+    def IsSortedMode(mode):
+        return (mode == 'normal' or mode == 'thread' or mode == 'mark' or
+                mode == 'origin' or mode == 'author' or mode == 'title'
+                or mode == 'superfilter')
 
     def PostCount(self, mode = 'normal'):
         dir_path = self.GetDirPath(mode)
@@ -598,6 +637,9 @@ class Board:
 
     def IsJunkBoard(self):
         return self.CheckFlag(BOARD_JUNK)
+
+    def IsSysmailBoard(self):
+        return self.name == Config.SYSMAIL_BOARD
 
     def DontStat(self):
         return self.CheckFlag(BOARD_POSTSTAT)
@@ -957,7 +999,7 @@ class Board:
             post = self.GetPostEntry(0, mode)
 
         if (post == None):
-            return None
+            return (None, 0)
 
         while (post.id != xid):
             if (post.id < xid):
@@ -965,17 +1007,17 @@ class Board:
             else:
                 id -= 1
                 if (id == 0):
-                    return None
+                    return (None, 0)
             post = self.GetPostEntry(id - 1, mode)
             if (post == None):
-                return None
+                return (None, 0)
 
-        return post
+        return (post, id)
 
     def QuotePost(self, svc, post_id, xid, include_mode, index_mode):
         if (index_mode == 'junk' or index_mode == 'deleted'):
             raise NoPerm("invalid index_mode!")
-        post = self.FindPost(post_id, xid, index_mode)
+        (post, _) = self.FindPost(post_id, xid, index_mode)
         if (post == None):
             raise NotFound("referred post not found")
         quote = Post.DoQuote(include_mode, self.GetBoardPath(post.filename), True)
@@ -1019,6 +1061,10 @@ class Board:
                 return True
         return False
 
+    def IsMyBM(self, user):
+        bmstr = self.GetBM()
+        return Board.IsBM(user, bmstr)
+
     def IsDir(self):
         return (self.header.flag & BOARD_GROUP) != 0
 
@@ -1029,6 +1075,103 @@ class Board:
 
     def GetGroup(self):
         return self.header.group
+
+    def DelPost(self, user, post_id, mode = 'normal'):
+        # from del_post()
+        if post_id > self.GetPostCount(mode):
+            return False
+        if self.name == "syssecurity" or self.name == "junk" or self.name == "deleted":
+            return False
+        if mode == "junk" or mode == "deleted":
+            return False
+        post_entry = self.GetPostEntry(post_id, mode)
+        owned = user.IsOwner(post_entry)
+        if not owned and not user.IsSysop() and not self.IsMyBM(user):
+            return False
+
+        arg = WriteDirArg()
+        arg.filename = self.GetDirPath(mode)
+        if mode == 'normal' or mode == 'digest':
+            arg.ent = post_id
+
+        # from do_del_post()
+        succ = self.PrepareWriteDir(arg, mode, post_entry)
+        if not succ:
+            return False
+        self.DeleteEntry(arg.fileptr, arg.ent, arg.size, arg.fd)
+        Util.FUnlock(arg.fd)
+
+        self.SetUpdate('title', True)
+        self.CancelPost(user, post_entry, owned, 1)
+        self.UpdateLastPost()
+        if post_entry.IsMarked():
+            self.SetUpdate('mark', True)
+        if mode == 'normal' and not (post_entry.IsMarked() and post_entry.CannotReply() and post_entry.IsForwarded()) and not self.IsJunkBoard():
+            if owned:
+                user.DecNumPosts()
+            elif not "." in post_entry.owner and Config.BMDEL_DECREASE:
+                user = UserManager.LoadUser(post_entry.owner)
+                if user is not None and not self.IsSysmailBoard():
+                    user.DecNumPosts()
+
+        arg.free()
+        return True
+
+    def PrepareWriteDir(self, arg, mode = 'normal', post_entry = None):
+        if not arg.map_dir():
+            return False
+        if arg.needlock:
+            Util.FLock(arg.fd)
+        if post_entry:
+            (newpost, newid) = self.FindPost(arg.ent, post_entry.id, mode)
+            if newpost is None:
+                Util.FUnlock(arg.fd)
+                return False
+        return True
+
+    def DeleteEntry(self, fileptr, entry, size, fd):
+        fileptr[PostEntry.size * (entry - 1):] = fileptr[PostEntry.size * entry:]
+        size -= PostEntry.size
+        os.ftruncate(fd.fileno(), size)
+
+    def CancelPost(self, user, post_entry, owned, append):
+        # TODO: delete mail
+
+        # rename post file
+        new_filename = entry.filename
+        rep_char = 'J' if owned else 'D'
+        if new_filename[1] == '/':
+            new_filename[2] = rep_char
+        else:
+            new_filename[0] = rep_char
+
+        oldpath = self.GetBoardPath(entry.filename)
+        newpath = self.GetBoardPath(new_filename)
+        os.move(oldpath, newpath)
+
+        entry.filename = new_filename
+        new_title = "%-32.32s - %s" % (entry.title, user.name)
+
+        if not append:
+            entry.title = new_title
+            entry.UpdateDeleteTime()
+            # TODO: flush back entry changes
+        else:
+            postfile = PostEntry()
+
+            postfile.filename = new_filename
+            postfile.owner = entry.owner
+            postfile.id = entry.id
+            postfile.groupid = entry.groupid
+            postfile.reid = entry.reid
+            postfile.attachment = entry.attachment
+            postfile.title = new_title
+            postfile.UpdateDeleteTime()
+
+            new_dir = self.GetDirPath('deleted' if owned else 'junk')
+            Util.AppendRecord(new_dir, postfile.pack())
+
+        return True
 
 from Post import Post
 

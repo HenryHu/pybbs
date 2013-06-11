@@ -49,7 +49,7 @@ class Post:
             raise WrongArgs("re_xid must be given with re_id")
 
         if (re_id != 0):
-            re_file = board.FindPost(re_id, re_xid, re_mode)
+            (re_file, _) = board.FindPost(re_id, re_xid, re_mode)
         else:
             re_file = None
 

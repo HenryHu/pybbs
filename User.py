@@ -303,6 +303,10 @@ class User:
     def AddNumPosts(self):
         self.userec.numposts += 1
 
+    def DecNumPosts(self):
+        if self.userec.numposts > 0:
+            self.userec.numposts -= 1
+
     def ComputeLife(self):
         if ((self.HasPerm(PERM_XEMPT) or self.HasPerm(PERM_CHATCLOAK)) and not self.HasPerm(PERM_SUICIDE)):
             return LIFE_DAY_NODIE;

@@ -266,18 +266,19 @@ class Util:
     @staticmethod
     def Mmap(fd, pro, flag):
         if (fd.fileno() < 0):
-            return None
+            return (None, 0)
         fstat = os.fstat(fd.fileno())
         if (fstat == None):
             fd.close()
-            return None
+            return (None, 0)
         if (not stat.S_ISREG(fstat.st_mode)):
             fd.close()
-            return None
+            return (None, 0)
         if (fstat.st_size < 0):
             fd.close()
-            return None
-        return mmap.mmap(fd.fileno(), fstat.st_size, flags = flag, prot = pro)
+            return (None, 0)
+        return (mmap.mmap(fd.fileno(), fstat.st_size, flags = flag, prot = pro),
+                fstat.st_size)
 
     @staticmethod
     def GetRecordCount(path, size):
