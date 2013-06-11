@@ -9,6 +9,7 @@ import BCache
 import User
 import BRead
 import BoardManager
+import UserManager
 from Error import *
 from Log import Log
 from cstruct import CStruct
@@ -21,6 +22,7 @@ import binascii
 from errors import *
 import digest
 import store
+import mmap
 
 DEFAULT_GET_POST_COUNT = 20
 
@@ -130,7 +132,7 @@ class PostEntry(CStruct):
         return self.CheckFlag(0, FILE_READ)
 
     def UpdateDeleteTime(self):
-        self.accessed[:-1] = int(time.time()) / (3600 * 24) % 100;
+        self.accessed[-1] = int(time.time()) / (3600 * 24) % 100;
 
     def GetPostTime(self):
         return int(self.filename.split('.')[1])
@@ -197,7 +199,7 @@ class WriteDirArg:
     def map_dir(self):
         if self.fileptr is None:
             if self.fd is None:
-                self.fd = open(self.filename, "ab")
+                self.fd = open(self.filename, "r+b")
                 self.needclosefd = True
             (self.fileptr, self.size) = Util.Mmap(
                     self.fd, mmap.PROT_READ | mmap.PROT_WRITE, mmap.MAP_SHARED)
@@ -1081,7 +1083,7 @@ class Board:
 
     def DelPost(self, user, post_id, mode = 'normal'):
         # from del_post()
-        if post_id > self.GetPostCount(mode):
+        if post_id > self.PostCount(mode):
             return False
         if self.name == "syssecurity" or self.name == "junk" or self.name == "deleted":
             return False
@@ -1105,7 +1107,7 @@ class Board:
         Util.FUnlock(arg.fd)
 
         self.SetUpdate('title', True)
-        self.CancelPost(user, post_entry, owned, 1)
+        self.CancelPost(user, post_entry, owned, True)
         self.UpdateLastPost()
         if post_entry.IsMarked():
             self.SetUpdate('mark', True)
@@ -1113,7 +1115,7 @@ class Board:
             if owned:
                 user.DecNumPosts()
             elif not "." in post_entry.owner and Config.BMDEL_DECREASE:
-                user = UserManager.LoadUser(post_entry.owner)
+                user = UserManager.UserManager.LoadUser(post_entry.owner)
                 if user is not None and not self.IsSysmailBoard():
                     user.DecNumPosts()
 
@@ -1130,27 +1132,30 @@ class Board:
             if newpost is None:
                 Util.FUnlock(arg.fd)
                 return False
+            arg.ent = newid
         return True
 
     def DeleteEntry(self, fileptr, entry, size, fd):
-        fileptr[PostEntry.size * (entry - 1):] = fileptr[PostEntry.size * entry:]
-        size -= PostEntry.size
-        os.ftruncate(fd.fileno(), size)
+        dst_pos = PostEntry.size * (entry - 1)
+        src_pos = PostEntry.size * entry
+        new_size = size - PostEntry.size
+        fileptr[dst_pos:new_size] = fileptr[src_pos:size]
+        os.ftruncate(fd.fileno(), new_size)
 
-    def CancelPost(self, user, post_entry, owned, append):
+    def CancelPost(self, user, entry, owned, append):
         # TODO: delete mail
 
         # rename post file
         new_filename = entry.filename
         rep_char = 'J' if owned else 'D'
         if new_filename[1] == '/':
-            new_filename[2] = rep_char
+            new_filename = entry.filename[0] + rep_char + entry.filename[2:]
         else:
-            new_filename[0] = rep_char
+            new_filename = rep_char + entry.filename[1:]
 
         oldpath = self.GetBoardPath(entry.filename)
         newpath = self.GetBoardPath(new_filename)
-        os.move(oldpath, newpath)
+        os.rename(oldpath, newpath)
 
         entry.filename = new_filename
         new_title = "%-32.32s - %s" % (entry.title, user.name)
@@ -1171,7 +1176,7 @@ class Board:
             postfile.title = new_title
             postfile.UpdateDeleteTime()
 
-            new_dir = self.GetDirPath('deleted' if owned else 'junk')
+            new_dir = self.GetDirPath('junk' if owned else 'deleted')
             Util.AppendRecord(new_dir, postfile.pack())
 
         return True
