@@ -93,4 +93,7 @@ class UserInfo:
         else:
             return self.pager & ALLMSG_PAGER
 
+    def SetMailCheck(self):
+        self.mailcheck &= ~CHECK_MAIL
+        self.save()
 

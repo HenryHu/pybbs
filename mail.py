@@ -76,6 +76,7 @@ class Mail:
         if not entry.IsRead():
             entry.SetRead(True)
             folder.set_entry(index - 1, entry)
+#            session.GetUserInfo().SetMailCheck()
 
         return json.dumps(info)
 

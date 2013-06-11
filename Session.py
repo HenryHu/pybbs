@@ -124,6 +124,9 @@ class Session:
     def GetScopesStr(self):
         return ','.join(self.scopes)
 
+    def GetUserInfo(self):
+        return self._userinfo
+
 class SessionManager:
     sessions = {}
 
