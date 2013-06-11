@@ -132,13 +132,16 @@ class PostEntry(CStruct):
     def UpdateDeleteTime(self):
         self.accessed[:-1] = int(time.time()) / (3600 * 24) % 100;
 
+    def GetPostTime(self):
+        return int(self.filename.split('.')[1])
+
     def GetInfo(self, mode = 'post'):
         post = {'title': Util.gbkDec(self.title)}
         post['attachflag'] = self.attachflag
         post['attachment'] = self.attachment
         post['owner'] = Util.gbkDec(self.owner)
         try:
-            post['posttime'] = int(self.filename.split('.')[1])
+            post['posttime'] = self.GetPostTime()
         except:
             post['posttime'] = 0
         flags = []

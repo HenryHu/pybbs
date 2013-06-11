@@ -300,6 +300,14 @@ class User:
                 not userinfo.invisible or
                 userinfo.userid == self.name)
 
+    def IsOwner(self, post):
+        if self.name != post.owner and self.name != post.realowner:
+            return False
+        posttime = post.GetPostTime()
+        if posttime < self.userec.firstlogin:
+            return False
+        return True
+
     def AddNumPosts(self):
         self.userec.numposts += 1
 
