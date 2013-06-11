@@ -999,7 +999,10 @@ class Board:
         return BCache.BCache.GetNextID(self.name)
 
     def FindPost(self, id, xid, mode):
-        post = self.GetPostEntry(id - 1, mode)
+        if id > 0:
+            post = self.GetPostEntry(id - 1, mode)
+        else:
+            post = None
         if (post == None):
             post = self.GetPostEntry(0, mode)
 
@@ -1081,28 +1084,28 @@ class Board:
     def GetGroup(self):
         return self.header.group
 
-    def DelPost(self, user, post_id, mode = 'normal'):
+    def DelPost(self, user, post_id, post_xid, mode = 'normal'):
         # from del_post()
         if post_id > self.PostCount(mode):
-            return False
+            raise WrongArgs("out of range")
         if self.name == "syssecurity" or self.name == "junk" or self.name == "deleted":
-            return False
+            raise WrongArgs("invalid board: %s" % self.name)
         if mode == "junk" or mode == "deleted":
-            return False
-        post_entry = self.GetPostEntry(post_id, mode)
+            raise WrongArgs("invalid mode: %s" % mode)
+        (post_entry, new_post_id) = self.FindPost(post_id, post_xid, mode)
         owned = user.IsOwner(post_entry)
         if not owned and not user.IsSysop() and not self.IsMyBM(user):
-            return False
+            raise NoPerm("permission denied")
 
         arg = WriteDirArg()
         arg.filename = self.GetDirPath(mode)
         if mode == 'normal' or mode == 'digest':
-            arg.ent = post_id
+            arg.ent = new_post_id
 
         # from do_del_post()
         succ = self.PrepareWriteDir(arg, mode, post_entry)
         if not succ:
-            return False
+            raise ServerError("fail to prepare directory write")
         self.DeleteEntry(arg.fileptr, arg.ent, arg.size, arg.fd)
         Util.FUnlock(arg.fd)
 
@@ -1120,7 +1123,6 @@ class Board:
                     user.DecNumPosts()
 
         arg.free()
-        return True
 
     def PrepareWriteDir(self, arg, mode = 'normal', post_entry = None):
         if not arg.map_dir():

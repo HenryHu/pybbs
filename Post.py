@@ -121,6 +121,12 @@ class Post:
             bo.PostArticle(session.GetUser(), title,
                     content, re_file, signature_id, anony, mailback, session, attach)
             svc.writedata('{"result": "ok"}')
+        elif action == "delete":
+            post_id = svc.get_int(params, "id", 0)
+            post_xid = svc.get_int(params, "xid")
+            mode = svc.get_str(params, "mode", "normal")
+            bo.DelPost(session.GetUser(), post_id, post_xid, mode)
+            svc.writedata('{"result": "ok"}')
         else:
             raise WrongArgs("unknown action")
 
