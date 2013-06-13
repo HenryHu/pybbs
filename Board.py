@@ -140,6 +140,9 @@ class PostEntry(CStruct):
     def GetPostTime(self):
         return int(self.filename.split('.')[1])
 
+    def CanBeDeleted(self, user, board):
+        return user.IsOwner(self) or user.IsSysop() or board.IsMyBM(user)
+
     def GetInfo(self, mode = 'post'):
         post = {'title': Util.gbkDec(self.title)}
         post['attachflag'] = self.attachflag
@@ -174,6 +177,12 @@ class PostEntry(CStruct):
         post['flags'] = flags
 
         return post
+
+    def GetInfoExtended(self, user, board, mode = 'post'):
+        info = self.GetInfo(mode)
+        if self.CanBeDeleted(user, board):
+            info['flags'] += ['deletable']
+        return info
 
 class PostLog(CStruct):
     # what the hell! this is board name, not id! why IDLEN+6!
@@ -343,7 +352,7 @@ class Board:
                     if (not first):
                         result += ',\n'
                     first = False
-                    post = pe.GetInfo('post')
+                    post = pe.GetInfoExtended(session.GetUser(), self, 'post')
                     post['id'] = i + 1
                     read = True
                     if (bread != None):
@@ -1102,9 +1111,9 @@ class Board:
         (post_entry, new_post_id) = self.FindPost(post_id, post_xid, mode)
         if post_entry is None:
             raise NotFound("post not found")
-        owned = user.IsOwner(post_entry)
-        if not owned and not user.IsSysop() and not self.IsMyBM(user):
+        if not post_entry.CanBeDeleted(user, self):
             raise NoPerm("permission denied")
+        owned = user.IsOwner(self)
 
         arg = WriteDirArg()
         arg.filename = self.GetDirPath(mode)
