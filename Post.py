@@ -23,6 +23,7 @@ class Post:
     def __init__(self, path):
         self.path = path
         self.textlen = 0
+        self.file = None
 
     def GetContent(self):
         content = Post.ReadPostText(self.path)
@@ -503,5 +504,17 @@ class Post:
                 os.unlink(attach_file)
             except:
                 pass
+
+    def open(self, mode = ""):
+        if not mode:
+            if os.path.isfile(self.path):
+                mode = 'r+b'
+            else:
+                mode = 'wb'
+        self.file = open(self.path, mode)
+
+    def close(self):
+        if self.file:
+            self.file.close()
 
 from BoardManager import BoardManager
