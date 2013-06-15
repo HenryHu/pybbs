@@ -514,11 +514,10 @@ class Post:
                 if buf == "" or buf == "\n":
                     break
                 # buf: encoded in gbk
-                if new_title is not None and buf[:8] == "标  题: ".encode('gbk'):
-                    self.file.write(Util.gbkEnc("标  题: %s" % new_title))
+                if new_title is not None and buf[:8] == u"标  题: ".encode('gbk'):
+                    self.file.write(Util.gbkEnc(u"标  题: %s\n" % new_title))
                 else:
                     self.file.write(buf)
-                buf = Post.SkipAttachFgets(otherf)
 
     def EditContent(self, content, session):
         if not Config.ADD_EDITMARK:
@@ -532,18 +531,18 @@ class Post:
             from_str = session._fromip
             if self.is_mail:
                 # aqua 2008.6.16: display year of modification
-                mod_mark = "\033[36m※ 修改:·%s 于 %20.20s 修改本信·[FROM: %s]\033[m\n" % (user.name, time_str, from_str)
+                mod_mark = u"\033[36m※ 修改:·%s 于 %20.20s 修改本信·[FROM: %s]\033[m\n" % (user.name, time_str, from_str)
             else:
-                mod_mark = "\033[36m※ 修改:·%s 于 %20.20s 修改本文·[FROM: %s]\033[m\n" % (user.name, time_str, from_str)
+                mod_mark = u"\033[36m※ 修改:·%s 于 %20.20s 修改本文·[FROM: %s]\033[m\n" % (user.name, time_str, from_str)
         else:
             from_str = Config.Config.GetString("NAME_ANONYMOUS_FROM", "Anonymous")
             if self.is_mail:
-                mod_mark = "\033[36m※ 修改:·%s 于 %20.20s 修改本信·[FROM: %s]\033[m\n" % (self.entry.owner, time_str, from_str)
+                mod_mark = u"\033[36m※ 修改:·%s 于 %20.20s 修改本信·[FROM: %s]\033[m\n" % (self.entry.owner, time_str, from_str)
             else:
-                mod_mark = "\033[36m※ 修改:·%s 于 %20.20s 修改本文·[FROM: %s]\033[m\n" % (self.entry.owner, time_str, from_str)
+                mod_mark = u"\033[36m※ 修改:·%s 于 %20.20s 修改本文·[FROM: %s]\033[m\n" % (self.entry.owner, time_str, from_str)
 
         for line in content.split('\n'):
-            if line[:11] == "\033[36m※ 修改:·":
+            if line[:11] == u"\033[36m※ 修改:·":
                 continue
             if Post.IsOriginLine(line.encode('gbk')) and not mark_added:
                 self.file.write(Util.gbkEnc(mod_mark))
