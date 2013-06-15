@@ -1076,7 +1076,7 @@ class Board:
 
         return True
 
-    def EditPost(self, session, post_entry, post_id, content = None, new_title = None,
+    def EditPost(self, session, post_entry, post_id, new_title = None, content = None,
             mode = 'normal', attach_to_remove = set(), add_attach_list = []):
         if (self.name == "syssecurity" or self.name == "junk"
                 or self.name == "deleted"):
@@ -1085,6 +1085,7 @@ class Board:
             raise WrongArgs("can't edit post in mode %s" % mode)
         if self.CheckReadonly():
             raise WrongArgs("board %s is read-only" % self.name)
+        user = session.GetUser()
         if not post_entry.CanBeEdit(user, self):
             raise NoPerm("you can't edit this post")
         if self.DeniedUser(user):
@@ -1095,13 +1096,6 @@ class Board:
 
         if content is None:
             content = post.GetBody()
-        found_origin = False
-        for line in content.split('\n'):
-            if Post.IsOriginLine(line.encode('gbk')):
-                found_origin = True
-                break
-        if not found_origin:
-            raise WrongArgs("you can't remove the origin line")
 
         first_attach_pos = 0
         need_update = False
@@ -1121,7 +1115,7 @@ class Board:
                 try:
                     newpost.EditHeaderFrom(post, new_title)
                     size_header = newpost.pos()
-                    newpost.EditContent(content, session)
+                    newpost.EditContent(content, session, post)
                     content_len = newpost.pos() - size_header
                     if content_len != post_entry.eff_size:
                         post_entry.eff_size = content_len
@@ -1170,7 +1164,8 @@ class Board:
 
         if need_update:
             # fail to update post info is not that important
-            self.UpdatePostEntry(post_entry, post_id, mode)
+            if not self.UpdatePostEntry(post_entry, post_id, mode):
+                Log.warn("fail to update post entry!")
 
 from Post import Post
 

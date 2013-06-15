@@ -394,6 +394,12 @@ class Post:
                 break
         return ret
 
+    def GetOriginLine(self):
+        for line in self.GetBody().split('\n'):
+            if Post.IsOriginLine(Util.gbkEnc(line)):
+                return line
+        return ""
+
     @staticmethod
     def IsOriginLine(str):
         tmp = (u"※ 来源:·%s " % Config.Config.GetString("BBS_FULL_NAME", "Python BBS")).encode('gbk')
@@ -524,7 +530,8 @@ class Post:
                     self.file.write(buf)
         self.file.write("\n")
 
-    def EditContent(self, content, session):
+    def EditContent(self, content, session, orig_post):
+        src_hit = False
         if not Config.ADD_EDITMARK:
             mark_added = True
         else:
@@ -545,19 +552,26 @@ class Post:
                 mod_mark = u"\033[36m※ 修改:·%s 于 %20.20s 修改本信·[FROM: %s]\033[m\n" % (self.entry.owner, time_str, from_str)
             else:
                 mod_mark = u"\033[36m※ 修改:·%s 于 %20.20s 修改本文·[FROM: %s]\033[m\n" % (self.entry.owner, time_str, from_str)
+        orig_mark = Util.gbkEnc(orig_post.GetOriginLine())
+        mod_mark = Util.gbkEnc(mod_mark)
 
         for line in content.split('\n'):
             if line[:11] == u"\033[36m※ 修改:·":
                 continue
-            if Post.IsOriginLine(line.encode('gbk')) and not mark_added:
-                self.file.write(Util.gbkEnc(mod_mark))
-                mark_added = True
-            self.file.write(Util.gbkEnc(line))
+            if Post.IsOriginLine(line.encode('gbk')):
+                src_hit = True
+                if not mark_added:
+                    self.file.write(mod_mark)
+                    mark_added = True
+                self.file.write(orig_mark)
+            else:
+                self.file.write(Util.gbkEnc(line))
             self.file.write("\n")
 
         if not mark_added:
-            # this should not happen
-            self.file.write(Util.gbkEnc(mod_mark))
+            self.file.write(mod_mark)
+        if not src_hit:
+            self.file.write(orig_mark)
 
     def AppendAttachFrom(self, other, attach_entry):
         with open(other.path, "rb") as fp:
