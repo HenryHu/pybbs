@@ -29,13 +29,16 @@ class Post:
         self.textlen = content[1]
         return content[0]
 
+    def GetAttachListByType(self):
+        return Post.GetAttachmentListByType(self.path, self.textlen)
+
     def GetAttachList(self):
         return Post.GetAttachmentList(self.path, self.textlen)
 
     def GetInfo(self):
         info = {}
         info['content'] = self.GetContent()
-        attachlist = self.GetAttachList()
+        attachlist = self.GetAttachListByType()
         info['picattach'] = attachlist[0]
         info['otherattach'] = attachlist[1]
         return info
@@ -131,12 +134,23 @@ class Post:
             raise WrongArgs("unknown action")
 
     @staticmethod
+    def GetAttachmentListByType(path, base = 0):
+        attachlist = Post.GetAttachmentList(path, base)
+        picturelist = []
+        otherlist = []
+        for entry in attachlist:
+            if Post.IsPictureAttach(entry['name']):
+                picturelist.append(entry)
+            else:
+                otherlist.append(entry)
+        return (picturelist, otherlist)
+
+    @staticmethod
     def GetAttachmentList(path, base = 0):
         try:
             fp = open(path, 'rb')
         except IOError:
             raise ServerError('fail to load post')
-        picturelist = []
         attachlist = []
         try:
             start = base
@@ -145,10 +159,7 @@ class Post:
                 # read the name
                 name = Util.ReadString(fp)
                 attach = {'name': Util.gbkDec(name), 'offset': offset}
-                if (Post.IsPictureAttach(name)):
-                    picturelist.append(attach)
-                else:
-                    attachlist.append(attach)
+                attachlist.append(attach)
 
                 # read the size
                 s = fp.read(4)
@@ -160,7 +171,7 @@ class Post:
 
         finally:
             fp.close()
-        return (picturelist, attachlist)
+        return attachlist
 
     @staticmethod
     def IsPictureAttach(name):
