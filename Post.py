@@ -32,6 +32,10 @@ class Post:
         self.textlen = content[1]
         return content[0]
 
+    def GetBody(self):
+        content = self.GetContent()
+        return content[content.find('\n\n')+2:]
+
     def GetAttachListByType(self):
         return Post.GetAttachmentListByType(self.path, self.textlen)
 
