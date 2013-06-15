@@ -507,6 +507,70 @@ class Post:
             except:
                 pass
 
+    def EditHeaderFrom(self, other, new_title):
+        with open(other.path, "rb") as otherf:
+            while True:
+                buf = Post.SkipAttachFgets(otherf)
+                if buf == "" or buf == "\n":
+                    break
+                # buf: encoded in gbk
+                if new_title is not None and buf[:8] == "标  题: ".encode('gbk'):
+                    self.file.write(Util.gbkEnc("标  题: %s" % new_title))
+                else:
+                    self.file.write(buf)
+                buf = Post.SkipAttachFgets(otherf)
+
+    def EditContent(self, content, session):
+        if not Config.ADD_EDITMARK:
+            mark_added = True
+        else:
+            mark_added = False
+        user = session.GetUser()
+        anony = self.entry.is_anony()
+        time_str = time.ctime()[4:]
+        if not anony:
+            from_str = session._fromip
+            if self.is_mail:
+                # aqua 2008.6.16: display year of modification
+                mod_mark = "\033[36m※ 修改:·%s 于 %20.20s 修改本信·[FROM: %s]\033[m\n" % (user.name, time_str, from_str)
+            else:
+                mod_mark = "\033[36m※ 修改:·%s 于 %20.20s 修改本文·[FROM: %s]\033[m\n" % (user.name, time_str, from_str)
+        else:
+            from_str = Config.Config.GetString("NAME_ANONYMOUS_FROM", "Anonymous")
+            if self.is_mail:
+                mod_mark = "\033[36m※ 修改:·%s 于 %20.20s 修改本信·[FROM: %s]\033[m\n" % (self.entry.owner, time_str, from_str)
+            else:
+                mod_mark = "\033[36m※ 修改:·%s 于 %20.20s 修改本文·[FROM: %s]\033[m\n" % (self.entry.owner, time_str, from_str)
+
+        for line in content.split('\n'):
+            if line[:11] == "\033[36m※ 修改:·":
+                continue
+            if Post.IsOriginLine(line.encode('gbk')) and not mark_added:
+                self.file.write(Util.gbkEnc(mod_mark))
+                added = True
+            self.file.write(Util.gbkEnc(line))
+
+        if not mark_added:
+            # this should not happen
+            self.file.write(Util.gbkEnc(mod_mark))
+
+    def AppendAttachFrom(self, other, attach_entry):
+        with open(other.path, "rb") as fp:
+            fp.seek(attach_entry['offset'] - 8)
+    
+            # check for attachment mark
+            if (fp.read(8) != '\0\0\0\0\0\0\0\0'):
+                raise IOError
+
+            # read the name
+            name = Util.ReadString(fp)
+
+            # read the size
+            s = fp.read(4)
+            size = struct.unpack('!I', s)[0]   # big endian
+
+            Post.AddAttachFrom(self.file, attach_entry['name'], fp, size)
+
     def open(self, mode = ""):
         if not mode:
             if os.path.isfile(self.path):
