@@ -1108,7 +1108,7 @@ class Board:
         new_post_path = post_path + ".new"
 
         if new_title is not None and new_title != Util.gbkDec(post_entry.title):
-            post_entry.title = new_title
+            post_entry.title = Util.gbkEnc(new_title)
             need_update = True
 
         with open(post_path, "r+b") as postf:
