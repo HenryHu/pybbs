@@ -440,35 +440,60 @@ class Post:
         return "http://%s/bbscon.php?b=%s&f=%s" % (session.GetMirror(Config.Config.GetInt('ATTACHMENT_PORT', 80)), board.name, postentry.filename)
 
     @staticmethod
+    def GetSanAttachName(attach_name):
+        attach_name_gbk = Util.gbkEnc(attach_name)
+        san_attach_name = ''
+        for ch in attach_name_gbk:
+            if (ch != '/' and ch != '\\' and
+                ch != '*' and ch != '?' and
+                ch != '$' and ch != '~' and
+                (ch.isalnum() or curses.ascii.ispunct(ch) or ord(ch) >= 0x80)):
+                san_attach_name += ch
+            else:
+                san_attach_name += '_'
+        return san_attach_name
+
+    @staticmethod
+    def AddAttachFrom(postf, attach_name, attachf, length):
+        postf.write(ATTACHMENT_PAD)
+        postf.write(GetSanAttachName(attach_name))
+        postf.write('\0')
+        postf.write(struct.pack('!I', length))
+        left = length
+        while left > 0:
+            buf = attachf.read(4096 if left >= 4096 else left)
+            postf.write(buf)
+            left -= len(buf)
+
+    def AddAttachSelf(self, attach_name, attach_file):
+        try:
+            attach_stat = os.stat(attach_file)
+            if (attach_stat.st_size > Config.MAX_ATTACHSIZE):
+                raise WrongArgs("attachment too large: %d > %d" %
+                        (attach_stat.st_size, Config.MAX_ATTACHSIZE))
+            with open(attach_file, "rb") as attachf:
+                Post.AddAttachFrom(self.file, attach_name, attachf,
+                        attach_stat.st_size)
+
+            return attach_stat.st_size
+        finally:
+            try:
+                os.unlink(attach_file)
+            except:
+                pass
+
+    @staticmethod
     def AddAttach(postfile_name, attach_name, attach_file):
         try:
             try:
-                attach_name_gbk = Util.gbkEnc(attach_name)
-                san_attach_name = ''
-                for ch in attach_name_gbk:
-                    if (ch != '/' and ch != '\\' and
-                        ch != '*' and ch != '?' and
-                        ch != '$' and ch != '~' and
-                        (ch.isalnum() or curses.ascii.ispunct(ch) or ord(ch) >= 0x80)):
-                        san_attach_name += ch
-                    else:
-                        san_attach_name += '_'
-
                 attach_stat = os.stat(attach_file)
                 if (attach_stat.st_size > Config.MAX_ATTACHSIZE):
                     return 0
                 with open(attach_file, "rb") as attachf:
                     with open(postfile_name, "ab") as postf:
-                        postf.write(ATTACHMENT_PAD)
-                        postf.write(san_attach_name)
-                        postf.write('\0')
-                        postf.write(struct.pack('!I', attach_stat.st_size))
-                        while (True):
-                            buf = attachf.read(4096)
-                            if (buf):
-                                postf.write(buf)
-                            else:
-                                break
+                        Post.AddAttachFrom(postf, attach_name, attachf,
+                                attach_stat.st_size)
+
                 return attach_stat.st_size
             except Exception as e:
                 Log.warn("fail to add attach: %r" % e)
