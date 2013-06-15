@@ -457,7 +457,7 @@ class Post:
     @staticmethod
     def AddAttachFrom(postf, attach_name, attachf, length):
         postf.write(ATTACHMENT_PAD)
-        postf.write(GetSanAttachName(attach_name))
+        postf.write(Post.GetSanAttachName(attach_name))
         postf.write('\0')
         postf.write(struct.pack('!I', length))
         left = length
