@@ -876,6 +876,8 @@ class Board:
         if id > 0:
             post = self.GetPostEntry(id - 1, mode)
             for i in xrange(5):
+                if post is None:
+                    break
                 if post.id == xid:
                     return (post, id)
                 if post.id < xid:
@@ -1079,7 +1081,7 @@ class Board:
     def EditPost(self, session, post_xid, post_id = 0, new_title = None,
             content = None, mode = 'normal', attach_to_remove = set(),
             add_attach_list = []):
-        (post_entry, post_id) = self.FindPost(post_xid, post_id, mode)
+        (post_entry, post_id) = self.FindPost(post_id, post_xid, mode)
         if post_entry is None:
             raise NotFound("post not found")
         if (self.name == "syssecurity" or self.name == "junk"
