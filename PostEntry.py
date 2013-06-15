@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# vim: set fileencoding=utf-8 :
 import struct
 import Config
 from Util import Util
