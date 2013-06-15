@@ -459,6 +459,7 @@ class Post:
     @staticmethod
     def AddAttachFrom(postf, attach_name, attachf, length):
         postf.write(ATTACHMENT_PAD)
+        pos = postf.tell()
         postf.write(Post.GetSanAttachName(attach_name))
         postf.write('\0')
         postf.write(struct.pack('!I', length))
@@ -467,6 +468,7 @@ class Post:
             buf = attachf.read(4096 if left >= 4096 else left)
             postf.write(buf)
             left -= len(buf)
+        return pos
 
     def AddAttachSelf(self, attach_name, attach_file):
         try:
@@ -475,10 +477,8 @@ class Post:
                 raise WrongArgs("attachment too large: %d > %d" %
                         (attach_stat.st_size, Config.MAX_ATTACHSIZE))
             with open(attach_file, "rb") as attachf:
-                Post.AddAttachFrom(self.file, attach_name, attachf,
+                return Post.AddAttachFrom(self.file, attach_name, attachf,
                         attach_stat.st_size)
-
-            return attach_stat.st_size
         finally:
             try:
                 os.unlink(attach_file)
@@ -557,7 +557,7 @@ class Post:
     def AppendAttachFrom(self, other, attach_entry):
         with open(other.path, "rb") as fp:
             fp.seek(attach_entry['offset'] - 8)
-    
+
             # check for attachment mark
             if (fp.read(8) != '\0\0\0\0\0\0\0\0'):
                 raise IOError
@@ -569,7 +569,7 @@ class Post:
             s = fp.read(4)
             size = struct.unpack('!I', s)[0]   # big endian
 
-            Post.AddAttachFrom(self.file, attach_entry['name'], fp, size)
+            return Post.AddAttachFrom(self.file, attach_entry['name'], fp, size)
 
     def open(self, mode = ""):
         if not mode:
@@ -582,5 +582,8 @@ class Post:
     def close(self):
         if self.file:
             self.file.close()
+
+    def pos(self):
+        return self.file.tell()
 
 from BoardManager import BoardManager
