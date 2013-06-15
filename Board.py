@@ -1076,7 +1076,7 @@ class Board:
 
         return True
 
-    def EditPost(self, post_entry, content = None, new_title = None,
+    def EditPost(self, post_entry, post_id, content = None, new_title = None,
             mode = 'normal', attach_to_remove = set(), add_attach_list = []):
         if (self.name == "syssecurity" or self.name == "junk"
                 or self.name == "deleted"):
@@ -1090,6 +1090,11 @@ class Board:
         if self.DeniedUser(user):
             raise NoPerm("you can't edit on board %s" % self.name)
 
+        post_path = self.GetBoardPath(post_entry.filename);
+        post = Post(post_path, post_entry)
+
+        if content is None:
+            content = post.GetBody()
         found_origin = False
         for line in content.split('\n'):
             if Post.IsOriginLine(line.encode('gbk')):
@@ -1097,9 +1102,6 @@ class Board:
                 break
         if not found_origin:
             raise WrongArgs("you can't remove the origin line")
-
-        post_path = self.GetBoardPath(post_entry.filename);
-        post = Post(post_path, post_entry)
 
         first_attach_pos = 0
         need_update = False
