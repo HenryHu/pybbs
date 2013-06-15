@@ -157,7 +157,7 @@ class Post:
                 del_attach = json.loads(svc.get_str(params, 'del_attachments'))
             except:
                 del_attach = set()
-            bo.EditPost(session, post_xid, post_id, new_title, content, mode,
+            bo.EditPost(session, post_xid, post_id, title, content, mode,
                     del_attach, add_attach)
             svc.writedata('{"result": "ok"}')
         else:
