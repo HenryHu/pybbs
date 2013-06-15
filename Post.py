@@ -518,6 +518,7 @@ class Post:
                     self.file.write(Util.gbkEnc(u"标  题: %s\n" % new_title))
                 else:
                     self.file.write(buf)
+        self.file.write("\n")
 
     def EditContent(self, content, session):
         if not Config.ADD_EDITMARK:
@@ -546,8 +547,9 @@ class Post:
                 continue
             if Post.IsOriginLine(line.encode('gbk')) and not mark_added:
                 self.file.write(Util.gbkEnc(mod_mark))
-                added = True
+                mark_added = True
             self.file.write(Util.gbkEnc(line))
+            self.file.write("\n")
 
         if not mark_added:
             # this should not happen
