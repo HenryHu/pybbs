@@ -137,6 +137,29 @@ class Post:
             mode = svc.get_str(params, "mode", "normal")
             bo.DelPost(session.GetUser(), post_id, post_xid, mode)
             svc.writedata('{"result": "ok"}')
+        elif action == "edit":
+            post_id = svc.get_int(params, "id", 0)
+            post_xid = svc.get_int(params, "xid")
+            mode = svc.get_str(params, "mode", "normal")
+            try:
+                title = svc.get_str(params, "title").decode('utf-8')
+            except:
+                title = None
+            try:
+                content = svc.get_str(params, "content").decode('utf-8')
+            except:
+                content = None
+            try:
+                add_attach = json.loads(svc.get_str(params, 'new_attachments'))
+            except:
+                add_attach = []
+            try:
+                del_attach = json.loads(svc.get_str(params, 'del_attachments'))
+            except:
+                del_attach = set()
+            bo.EditPost(session, post_xid, post_id, new_title, content, mode,
+                    del_attach, add_attach)
+            svc.writedata('{"result": "ok"}')
         else:
             raise WrongArgs("unknown action")
 
