@@ -1024,6 +1024,19 @@ class Board:
         fileptr[dst_pos:new_size] = fileptr[src_pos:size]
         os.ftruncate(fd.fileno(), new_size)
 
+    def UpdatePostEntry(self, post_entry, post_id = 0, mode = 'normal'):
+        arg = WriteDirArg()
+        arg.filename = self.GetDirPath(mode)
+        succ = self.PrepareWriteDir(arg, mode, post_entry)
+        if not succ:
+            return False
+        try:
+            pos = PostEntry.PostEntry.size * (arg.ent - 1)
+            arg.fileptr[pos:pos+PostEntry.PostEntry.size] = post_entry.pack()
+        finally:
+            arg.free()
+        return True
+
     def CancelPost(self, user, entry, owned, append):
         # TODO: delete mail
 
@@ -1062,6 +1075,100 @@ class Board:
             Util.AppendRecord(new_dir, postfile.pack())
 
         return True
+
+    def EditPost(self, post_entry, content = None, new_title = None,
+            mode = 'normal', attach_to_remove = set(), add_attach_list = []):
+        if (self.name == "syssecurity" or self.name == "junk"
+                or self.name == "deleted"):
+            raise WrongArgs("can't edit post in board %s" % self.name)
+        if mode == "junk" or mode == "deleted":
+            raise WrongArgs("can't edit post in mode %s" % mode)
+        if self.CheckReadonly():
+            raise WrongArgs("board %s is read-only" % self.name)
+        if not post_entry.CanBeEdit(user, self):
+            raise NoPerm("you can't edit this post")
+        if self.DeniedUser(user):
+            raise NoPerm("you can't edit on board %s" % self.name)
+
+        found_origin = False
+        for line in content.split('\n'):
+            if Post.IsOriginLine(line.encode('gbk')):
+                found_origin = True
+                break
+        if not found_origin:
+            raise WrongArgs("you can't remove the origin line")
+
+        post_path = self.GetBoardPath(post_entry.filename);
+        post = Post(post_path, post_entry)
+
+        first_attach_pos = 0
+        need_update = False
+        new_post_path = post_path + ".new"
+
+        if new_title is not None and new_title != Util.gbkDec(post_entry.title):
+            post_entry.title = new_title
+            need_update = True
+
+        with open(post_path, "r+b") as postf:
+            Util.FLock(postf)
+            try:
+                attach_list = post.GetAttachList()
+
+                newpost = Post(new_post_path, post_entry)
+                newpost.open()
+                try:
+                    newpost.EditHeaderFrom(post, new_title)
+                    size_header = newpost.pos()
+                    newpost.EditContent(content)
+                    content_len = newpost.pos() - size_header
+                    if content_len != post_entry.eff_size:
+                        post_entry.eff_size = content_len
+                        need_update = True
+
+                    # copy original attachments
+                    orig_attach_id = 0
+                    for attach_entry in attach_list:
+                        if not orig_attach_id in attach_to_remove:
+                            try:
+                                attach_pos = newpost.AppendAttachFrom(post, attach_entry)
+                                if first_attach_pos == 0:
+                                    first_attach_pos = attach_pos
+                            except:
+                                pass
+                        orig_attach_id += 1
+
+                    # add new attachments
+                    for attach_entry in add_attach_list:
+                        filename = attach_entry['name']
+                        tmpfile = attach_entry['store_id']
+                        if (not store.Store.verify_id(tmpfile)):
+                            continue
+                        tmpfile = store.Store.path_from_id(tmpfile)
+
+                        try:
+                            attach_pos = newpost.AddAttachSelf(filename, tmpfile)
+                            if first_attach_pos == 0:
+                                first_attach_pos = attach_pos
+                        except Exception as e:
+                            Log.warn("fail to add attach: %r" % e)
+                finally:
+                    newpost.close()
+
+                os.rename(new_post_path, post_path)
+            finally:
+                try:
+                    os.remove(new_post_path)
+                except:
+                    pass
+                Util.FUnlock(postf)
+
+        if first_attach_pos != post_entry.attachment:
+            post_entry.attachment = first_attach_pos
+            need_update = True
+
+        if need_update:
+            # fail to update post info is not that important
+            self.UpdatePostEntry(post_entry, post_id, mode)
 
 from Post import Post
 
