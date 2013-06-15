@@ -1076,7 +1076,7 @@ class Board:
 
         return True
 
-    def EditPost(self, post_entry, post_id, content = None, new_title = None,
+    def EditPost(self, session, post_entry, post_id, content = None, new_title = None,
             mode = 'normal', attach_to_remove = set(), add_attach_list = []):
         if (self.name == "syssecurity" or self.name == "junk"
                 or self.name == "deleted"):
@@ -1121,7 +1121,7 @@ class Board:
                 try:
                     newpost.EditHeaderFrom(post, new_title)
                     size_header = newpost.pos()
-                    newpost.EditContent(content)
+                    newpost.EditContent(content, session)
                     content_len = newpost.pos() - size_header
                     if content_len != post_entry.eff_size:
                         post_entry.eff_size = content_len
