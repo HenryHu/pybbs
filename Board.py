@@ -259,7 +259,7 @@ class Board:
             postpath = self.GetBoardPath() + pe.filename
             post = pe.GetInfo('post')
             post['id'] = id
-            postinfo = Post(postpath)
+            postinfo = Post(postpath, pe)
             post = dict(post.items() + postinfo.GetInfo().items())
             if (post['picattach'] or post['otherattach']):
                 post['attachlink'] = Post.GetAttachLink(session, self, pe)

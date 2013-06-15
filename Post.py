@@ -20,10 +20,12 @@ ATTACHMENT_SIZE = 0
 QUOTELEV = 1
 
 class Post:
-    def __init__(self, path):
+    def __init__(self, path, entry, is_mail = False):
         self.path = path
         self.textlen = 0
         self.file = None
+        self.is_mail = is_mail
+        self.entry = entry
 
     def GetContent(self):
         content = Post.ReadPostText(self.path)

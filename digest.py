@@ -365,9 +365,9 @@ class Digest:
             raise WrongArgs('route %s does not point to a file' % route)
         result = {}
         result['item'] = item.GetInfoForUser(session.GetUser())
-        postinfo = Post.Post(item.realpath())
+        postinfo = Post.Post(item.realpath(), None)
         result['content'] = postinfo.GetContent()
-        attachlist = postinfo.GetAttachList()
+        attachlist = postinfo.GetAttachListByType()
         result['picattach'] = attachlist[0]
         result['otherattach'] = attachlist[1]
         if (attachlist[0] or attachlist[1]):
