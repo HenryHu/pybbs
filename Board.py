@@ -10,6 +10,7 @@ import User
 import BRead
 import BoardManager
 import UserManager
+import PostEntry
 from Error import *
 from Log import Log
 from cstruct import CStruct
@@ -42,147 +43,8 @@ BOARD_POSTSTAT = 0x1000# /* 不统计十大 */
 BOARD_NOREPLY = 0x2000 #/* 不可re文 */
 BOARD_ANONYREPLY = 0x4000 #/* cannot reply anonymously */
 
-# PostEntry.accessed[0]
-FILE_SIGN		= 0x1           #/* In article mode, Sign , Bigman 2000.8.12 ,in accessed[0] */
-# not used
-FILE_OWND		= 0x2          #/* accessed array */
-# combined into big post
-FILE_TOTAL		= 0x2  #// aqua 2008.11.4
-FILE_VISIT		= 0x4
-FILE_MARKED		= 0x8
-FILE_DIGEST		= 0x10      #/* Digest Mode*/  /*For SmallPig Digest Mode */
-FILE_REPLIED	= 0x20       #/* in mail ,added by alex, 96.9.7 */
-FILE_FORWARDED	= 0x40     #/* in mail ,added by alex, 96.9.7 */
-FILE_IMPORTED	= 0x80      #/* Leeward 98.04.15 */
-
-# not used:
-# /* roy 2003.07.21 */
-FILE_WWW_POST	= 0x1 #/* post by www */
-FILE_ON_TOP		= 0x2 #/* on top mode */
-FILE_VOTE		= 0x4 #/* article with votes */
-
-# PostEntry.accessed[1]
-#ifdef FILTER # not def
-FILE_CENSOR		= 0x20        #/* for accessed[1], flyriver, 2002.9.29 */
-BADWORD_IMG_FILE	= "etc/badwordv3.img"
-#endif
-FILE_READ		= 0x1          #/* Ownership flags used in fileheader structure in accessed[1] */
-FILE_DEL		= 0x2           #/* In article mode, Sign , Bigman 2000.8.12 ,in accessed[1] */
-FILE_MAILBACK	= 0x4		#/* reply articles mail to owner's mailbox, accessed[1] */
-#ifdef COMMEND_ARTICLE # not def
-FILE_COMMEND	= 0x8		#/* 推荐文章,stiger , in accessed[1], */
-#endif
-FILE_ROOTANON	= 0x10		#/* if the root article was posted anonymously, accessed[1] */
-
 GENERATE_POST_SUFIX = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 GENERATE_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-
-class PostEntry(CStruct):
-    parser = struct.Struct('%dsIII44sH2s%ds%ds%dsIIII%dsI12s' % (Config.FILENAME_LEN, Config.OWNER_LEN, Config.OWNER_LEN, (34 - Config.OWNER_LEN), Config.STRLEN))
-    _fields = [['filename', 1], 'id', 'groupid','reid', 'unsued1',
-            'attachflag', 'innflag', ['owner',1, Config.OWNER_LEN], ['realowner', 1, Config.OWNER_LEN],
-            'unsued2', 'rootcrc', 'eff_size', 'posttime', 'attachment',
-            ['title',1, Config.ARTICLE_TITLE_LEN], 'level', ['accessed', 2, '=12B']]
-
-    size = parser.size
-
-    def CheckFlag(self, pos, flag):
-        return bool(self.accessed[pos] & flag)
-
-    def SetFlag(self, pos, flag, val):
-        if (val):
-            self.accessed[pos] |= flag
-        else:
-            self.accessed[pos] &= ~flag
-
-    def IsRootPostAnonymous(self):
-        return self.CheckFlag(1, FILE_ROOTANON)
-
-    def SetRootPostAnonymous(self, rootanon):
-        return self.SetFlag(1, FILE_ROOTANON, rootanon)
-
-    def NeedMailBack(self):
-        return self.CheckFlag(1, FILE_MAILBACK)
-
-    def SetMailBack(self, need):
-        return self.SetFlag(1, FILE_MAILBACK, need)
-
-    def IsMarked(self):
-        return self.CheckFlag(0, FILE_MARKED)
-
-    def Mark(self, mark):
-        return self.SetFlag(0, FILE_MARKED, mark)
-
-    def CannotReply(self):
-        return self.CheckFlag(1, FILE_READ)
-
-    def SetCannotReply(self, val):
-        return self.SetFlag(1, FILE_READ, val)
-
-    def IsReplied(self):
-        return self.CheckFlag(0, FILE_REPLIED)
-
-    def IsForwarded(self):
-        return self.CheckFlag(0, FILE_FORWARDED)
-
-    def InDigest(self):
-        return self.CheckFlag(0, FILE_DIGEST)
-
-    def IsRead(self):
-        return self.CheckFlag(0, FILE_READ)
-
-    def SetRead(self, val):
-        return self.SetFlag(0, FILE_READ, val)
-
-    def UpdateDeleteTime(self):
-        self.accessed[-1] = int(time.time()) / (3600 * 24) % 100;
-
-    def GetPostTime(self):
-        return int(self.filename.split('.')[1])
-
-    def CanBeDeleted(self, user, board):
-        return user.IsOwner(self) or user.IsSysop() or board.IsMyBM(user)
-
-    def GetInfo(self, mode = 'post'):
-        post = {'title': Util.gbkDec(self.title)}
-        post['attachflag'] = self.attachflag
-        post['attachment'] = self.attachment
-        post['owner'] = Util.gbkDec(self.owner)
-        try:
-            post['posttime'] = self.GetPostTime()
-        except:
-            post['posttime'] = 0
-        flags = []
-        if (self.IsMarked()):
-            flags += ['marked']
-        if (mode == 'post'):
-            post['xid'] = self.id
-            post['thread'] = self.groupid
-            post['reply_to'] = self.reid
-            post['size'] = self.eff_size
-            if (self.CannotReply()):
-                flags += ['noreply']
-            if (self.InDigest()):
-                flags += ['g']
-        if (mode == 'mail'):
-            if (self.IsReplied()):
-                flags += ['replied']
-            if (self.IsForwarded()):
-                flags += ['forwarded']
-            if (self.IsRead()):
-                post['read'] = True
-            else:
-                post['read'] = False
-
-        post['flags'] = flags
-
-        return post
-
-    def GetInfoExtended(self, user, board, mode = 'post'):
-        info = self.GetInfo(mode)
-        if self.CanBeDeleted(user, board):
-            info['flags'] += ['deletable']
-        return info
 
 class PostLog(CStruct):
     # what the hell! this is board name, not id! why IDLEN+6!
@@ -318,7 +180,7 @@ class Board:
         dir_path = self.GetDirPath(mode)
         try:
             st = os.stat(dir_path)
-            return st.st_size / PostEntry.size
+            return st.st_size / PostEntry.PostEntry.size
         except:
             return 0
 
@@ -378,12 +240,12 @@ class Board:
         try:
             if (fd == None):
                 dirf = open(self.GetDirPath(mode), 'rb')
-                dirf.seek(postid * PostEntry.size)
-                pe = PostEntry(dirf.read(PostEntry.size))
+                dirf.seek(postid * PostEntry.PostEntry.size)
+                pe = PostEntry.PostEntry(dirf.read(PostEntry.PostEntry.size))
                 dirf.close()
             else:
-                fd.seek(postid * PostEntry.size)
-                pe = PostEntry(fd.read(PostEntry.size))
+                fd.seek(postid * PostEntry.PostEntry.size)
+                pe = PostEntry.PostEntry(fd.read(PostEntry.PostEntry.size))
             return pe
         except Exception:
             return None
@@ -724,7 +586,7 @@ class Board:
             if not self.CanPostAttach():
                 attach = None
 
-        post_file = PostEntry()
+        post_file = PostEntry.PostEntry()
 #        Log.debug("PostArticle title: %s anony: %r" % (title, anony))
 
         post_file.filename = self.GetPostFilename(False)
@@ -873,13 +735,13 @@ class Board:
             with open(bdir, "rb") as f:
                 f.seek(0, 2)
                 size = f.tell()
-                post_cnt = size / PostEntry.size
+                post_cnt = size / PostEntry.PostEntry.size
                 if (post_cnt <= 0):
                     last_post = 0
                     post_cnt = 0
                 else:
-                    f.seek((post_cnt - 1) * PostEntry.size, 0)
-                    post_file = PostEntry(f.read(PostEntry.size))
+                    f.seek((post_cnt - 1) * PostEntry.PostEntry.size, 0)
+                    post_file = PostEntry.PostEntry(f.read(PostEntry.PostEntry.size))
                     last_post = post_file.id
 
                 return (post_cnt, last_post)
@@ -1156,9 +1018,9 @@ class Board:
         return True
 
     def DeleteEntry(self, fileptr, entry, size, fd):
-        dst_pos = PostEntry.size * (entry - 1)
-        src_pos = PostEntry.size * entry
-        new_size = size - PostEntry.size
+        dst_pos = PostEntry.PostEntry.size * (entry - 1)
+        src_pos = PostEntry.PostEntry.size * entry
+        new_size = size - PostEntry.PostEntry.size
         fileptr[dst_pos:new_size] = fileptr[src_pos:size]
         os.ftruncate(fd.fileno(), new_size)
 
@@ -1185,7 +1047,7 @@ class Board:
             entry.UpdateDeleteTime()
             # TODO: flush back entry changes
         else:
-            postfile = PostEntry()
+            postfile = PostEntry.PostEntry()
 
             postfile.filename = new_filename
             postfile.owner = entry.owner

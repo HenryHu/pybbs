@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import Config
-import Board
+import PostEntry
 import Post
 import os
 
@@ -37,7 +37,7 @@ class Folder:
         except:
             return 0
 
-        return st.st_size / Board.PostEntry.size
+        return st.st_size / PostEntry.PostEntry.size
 
     def get_entry(self, index):
         if (index < 0 or index >= self.count()):
@@ -45,11 +45,11 @@ class Folder:
 
         try:
             with open(self.path, "rb") as dirf:
-                dirf.seek(index * Board.PostEntry.size)
-                data = dirf.read(Board.PostEntry.size)
-                if (len(data) < Board.PostEntry.size):
+                dirf.seek(index * PostEntry.PostEntry.size)
+                data = dirf.read(PostEntry.PostEntry.size)
+                if (len(data) < PostEntry.PostEntry.size):
                     return None
-                return Board.PostEntry(data)
+                return PostEntry.PostEntry(data)
         except:
             return None
 
@@ -59,7 +59,7 @@ class Folder:
 
         try:
             with open(self.path, "r+b") as dirf:
-                dirf.seek(index * Board.PostEntry.size)
+                dirf.seek(index * PostEntry.PostEntry.size)
                 dirf.write(entry.pack())
                 return True
         except:
