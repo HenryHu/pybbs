@@ -103,6 +103,9 @@ class PostEntry(CStruct):
     def CanBeDeleted(self, user, board):
         return user.IsOwner(self) or user.IsSysop() or board.IsMyBM(user)
 
+    def CanBeEdit(self, user, board):
+        return user.IsOwner(self) or user.IsSysop() or board.IsMyBM(user)
+
     def GetInfo(self, mode = 'post'):
         post = {'title': Util.gbkDec(self.title)}
         post['attachflag'] = self.attachflag
@@ -144,3 +147,5 @@ class PostEntry(CStruct):
             info['flags'] += ['deletable']
         return info
 
+    def is_anony(self):
+        return self.owner != self.realowner
