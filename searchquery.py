@@ -29,7 +29,7 @@ class SearchQuery:
         if expr[0] == 'title':
             return re.match(expr[1], Util.gbkDec(post_entry.title))
         if expr[0] == 'content':
-            post = Post.Post(board.GetBoardDir(post_entry.filename))
+            post = Post.Post(board.GetBoardPath(post_entry.filename))
             return re.match(expr[1], post.GetBody())
         if expr[0] == 'm':
             return post_entry.IsMarked()
