@@ -24,6 +24,7 @@ from errors import *
 import digest
 import store
 import mmap
+import searchquery
 
 DEFAULT_GET_POST_COUNT = 20
 
@@ -1172,6 +1173,32 @@ class Board:
             # fail to update post info is not that important
             if not self.UpdatePostEntry(post_entry, post_id, mode):
                 Log.warn("fail to update post entry!")
+
+    def SearchPost(self, start_id, forward, query_expr, count = 1):
+        if count > Config.SEARCH_COUNT_LIMIT:
+            count = Config.SEARCH_COUNT_LIMIT
+        result = []
+        curr_id = start_id
+        result_count = 0
+        query = searchquery.SearchQuery(query_expr)
+        while True:
+            post_entry = self.GetPostEntry(curr_id - 1)
+            if post_entry is None:
+                return result
+
+            if query.match(self, post_entry):
+                info = post_entry.GetInfoExtended(user, self)
+                info['id'] = curr_id
+                result.append(info)
+                result_count += 1
+                if result_count == count:
+                    return result
+
+            if forward:
+                curr_id += 1
+            else:
+                curr_id -= 1
+        return result
 
 from Post import Post
 

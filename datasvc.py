@@ -181,6 +181,13 @@ class DataService(BaseHTTPRequestHandler):
         except:
             pass
 
+    def get_bool(self, params, name, defval = None):
+        val = self.get_str(params, name, defval)
+        try:
+            return bool(val)
+        except ValueError:
+            raise WrongArgs("argument '%s' is not bool" % name)
+
     def get_int(self, params, name, defval = None):
         val = self.get_str(params, name, defval)
         try:

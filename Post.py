@@ -76,7 +76,13 @@ class Post:
             raise WrongArgs('permission denied')
 
         if (action == 'search'):
-            raise WrongArgs('not implemented')
+            start_id = svc.get_int(params, 'from', 1)
+            forward = svc.get_bool(params, 'forward', True)
+            query_expr = json.loads(svc.get_str(params, 'query'))
+            count = svc.get_int(params, 'count', 1)
+            result = bo.SearchPost(start_id, forward, query_expr, count)
+            response = {'result': 'ok', 'content': result}
+            svc.writedata(json.dumps(response))
         elif action == 'prepare':
             for_action = svc.get_str(params, 'for')
             if for_action == 'new':
