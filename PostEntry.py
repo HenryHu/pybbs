@@ -2,6 +2,7 @@
 # vim: set fileencoding=utf-8 :
 import struct
 import Config
+import time
 from Util import Util
 from cstruct import CStruct
 
