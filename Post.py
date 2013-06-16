@@ -78,7 +78,7 @@ class Post:
         if (action == 'search'):
             start_id = svc.get_int(params, 'from', 1)
             forward = svc.get_bool(params, 'forward', True)
-            query_expr = json.loads(svc.get_str(params, 'query'))
+            query_expr = json.loads(svc.get_str(params, 'query').decode('utf-8'))
             count = svc.get_int(params, 'count', 1)
             result = bo.SearchPost(start_id, forward, query_expr, count)
             response = {'result': 'ok', 'content': result}
