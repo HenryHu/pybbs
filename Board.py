@@ -978,7 +978,7 @@ class Board:
             raise NotFound("post not found")
         if not post_entry.CanBeDeleted(user, self):
             raise NoPerm("permission denied")
-        owned = user.IsOwner(self)
+        owned = user.IsOwner(post_entry)
 
         arg = WriteDirArg()
         arg.filename = self.GetDirPath(mode)
