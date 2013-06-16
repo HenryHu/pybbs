@@ -25,13 +25,13 @@ class SearchQuery:
         if expr[0] == 'not':
             return not self.match_expr(expr[1], board, post_entry)
         if expr[0] == 'author':
-            return re.match(expr[1], Util.gbkDec(post_entry.owner))
+            return re.search(expr[1], Util.gbkDec(post_entry.owner))
         if expr[0] == 'title':
-            return re.match(expr[1], Util.gbkDec(post_entry.title))
+            return re.search(expr[1], Util.gbkDec(post_entry.title))
         if expr[0] == 'content':
             post = Post.Post(board.GetBoardPath(post_entry.filename), post_entry)
             try:
-                return re.match(expr[1], post.GetBody())
+                return re.search(expr[1], post.GetBody())
             except:
                 return False
         if expr[0] == 'm':
