@@ -30,7 +30,10 @@ class SearchQuery:
             return re.match(expr[1], Util.gbkDec(post_entry.title))
         if expr[0] == 'content':
             post = Post.Post(board.GetBoardPath(post_entry.filename), post_entry)
-            return re.match(expr[1], post.GetBody())
+            try:
+                return re.match(expr[1], post.GetBody())
+            except:
+                return False
         if expr[0] == 'm':
             return post_entry.IsMarked()
         if expr[0] == 'g':
