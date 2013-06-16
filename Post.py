@@ -80,7 +80,7 @@ class Post:
             forward = svc.get_bool(params, 'forward', True)
             query_expr = json.loads(svc.get_str(params, 'query').decode('utf-8'))
             count = svc.get_int(params, 'count', 1)
-            result = bo.SearchPost(start_id, forward, query_expr, count)
+            result = bo.SearchPost(session.GetUser(), start_id, forward, query_expr, count)
             response = {'result': 'ok', 'content': result}
             svc.writedata(json.dumps(response))
         elif action == 'prepare':

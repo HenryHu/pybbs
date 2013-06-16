@@ -1,4 +1,5 @@
 import re
+from Util import Util
 
 class SearchQuery:
     def __init__(self, query_expr):
@@ -39,7 +40,7 @@ class SearchQuery:
                 left = post_entry.groupid
             elif expr[1] == 'size':
                 left = post_entry.eff_size
-            right = int(expr[2])
+            right = expr[2]
             if expr[0] == 'ge':
                 return left >= right
             if expr[1] == 'le':

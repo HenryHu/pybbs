@@ -1174,7 +1174,7 @@ class Board:
             if not self.UpdatePostEntry(post_entry, post_id, mode):
                 Log.warn("fail to update post entry!")
 
-    def SearchPost(self, start_id, forward, query_expr, count = 1):
+    def SearchPost(self, user, start_id, forward, query_expr, count = 1):
         if count > Config.SEARCH_COUNT_LIMIT:
             count = Config.SEARCH_COUNT_LIMIT
         result = []
