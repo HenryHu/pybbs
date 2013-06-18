@@ -84,11 +84,11 @@ class MailBox:
         entry = folder.get_entry(index - 1)
         path = self.path_of(entry.filename)
 
-        quote_content = Post.Post.DoQuote(mode, path, False)
+        quote_content = Util.gbkDec(Post.Post.DoQuote(mode, path, False))
         if entry.title[:3] == "Re:":
-            quote_title = entry.title
+            quote_title = Util.gbkDec(entry.title)
         else:
-            quote_title = "Re: " + entry.title
+            quote_title = "Re: " + Util.gbkDec(entry.title)
         return (quote_title, quote_content)
 
     def full(self):
