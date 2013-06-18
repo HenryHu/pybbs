@@ -30,7 +30,8 @@ class Mail:
             folder = svc.get_str(params, 'folder', 'inbox')
             mode = svc.get_str(params, 'mode', 'S')
             index = svc.get_int(params, 'index')
-            (title, content) = self.GetUser().mbox.quote_mail(folder, mode, index)
+            (title, content) = session.GetUser().mbox.quote_mail(folder, mode,
+                    index)
             result = {'title': title, 'content': content}
             svc.writedata(json.dumps(result))
         else:
