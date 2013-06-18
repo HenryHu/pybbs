@@ -293,8 +293,8 @@ class Post:
     @staticmethod
     def PrepareHeader(user, in_mail, board, title, anony, mode, session):
         result = ""
-        uid = user.name[:20].decode('gbk')
-        uname = user.userec.username[:40].decode('gbk')
+        uid = Util.gbkDec(user.name[:20])
+        uname = Util.gbkDec(user.userec.username[:40])
         if not in_mail:
             bname = board.name.decode('gbk')
         bbs_name = Config.Config.GetString('BBS_FULL_NAME', 'Python BBS')
