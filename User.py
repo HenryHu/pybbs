@@ -476,7 +476,8 @@ class User:
             raise WrongArgs("fail to send mail")
         return True
 
-    def SendMailTo(self, receiver_id, title, content, signature_id, session):
+    def SendMailTo(self, receiver_id, title, content, signature_id, session,
+            save_in_sent):
         receiver = UserManager.UserManager.LoadUser(receiver_id)
         if receiver is None:
             raise NotFound("no such user '%s'" % receiver_id)
@@ -489,15 +490,16 @@ class User:
 
         content = header + content + signature
 
-        self.MailTo(receiver, title, content)
+        self.MailTo(receiver, title, content, save_in_sent)
 
-    def MailTo(self, receiver, title, content):
+    def MailTo(self, receiver, title, content, save_in_sent):
         mbox = receiver.mbox
         mail_size = mbox.new_mail(self, title, content)
         receiver.AddUsedSpace(mail_size)
 
-        mail_size = self.mbox.new_sent_mail(receiver, title, content)
-        self.AddUsedSpace(mail_size)
+        if save_in_sent:
+            mail_size = self.mbox.new_sent_mail(receiver, title, content)
+            self.AddUsedSpace(mail_size)
 
         # TODO: mark mail available
 
