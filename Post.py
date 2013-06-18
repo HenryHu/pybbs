@@ -19,6 +19,9 @@ ATTACHMENT_PAD = '\0\0\0\0\0\0\0\0'
 ATTACHMENT_SIZE = 0
 QUOTELEV = 1
 
+GENERATE_POST_SUFIX = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+GENERATE_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+
 class Post:
     def __init__(self, path, entry, is_mail = False):
         self.path = path

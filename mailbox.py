@@ -47,7 +47,7 @@ class MailBox:
         except:
             return False
 
-    def new_entry(self, owner, title):
+    def new_entry(self, owner, title, content):
         if not self.create():
             raise ServerError("fail to create mail dir for user '%s'" % self.name)
         entry = PostEntry.PostEntry()
@@ -57,8 +57,9 @@ class MailBox:
         entry.filename = Post.Post.GetPostFilename(self.path_of(""), False)
         encoded_content = Util.gbkEnc(content)
         entry.eff_size = len(encoded_content)
+        path = self.path_of(entry.filename)
 
-        with open(msentpath, "wb") as f:
+        with open(path, "wb") as f:
             f.write(encoded_content)
         return entry
 
@@ -70,12 +71,12 @@ class MailBox:
         return mentry.eff_size
 
     def new_sent_mail(self, receiver, title, content):
-        msent = self.new_entry(receiver.name, title)
+        msent = self.new_entry(receiver.name, title, content)
         msent.SetRead(True)
 
         folder = self.get_folder('sent')
         folder.add_entry(msent)
-        return mentry.eff_size
+        return msent.eff_size
 
     def quote_mail(self, folder_name, mode, index):
         folder = self.get_folder(folder_name)

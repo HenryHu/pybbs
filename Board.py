@@ -44,9 +44,6 @@ BOARD_POSTSTAT = 0x1000# /* 不统计十大 */
 BOARD_NOREPLY = 0x2000 #/* 不可re文 */
 BOARD_ANONYREPLY = 0x4000 #/* cannot reply anonymously */
 
-GENERATE_POST_SUFIX = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-GENERATE_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-
 class PostLog(CStruct):
     # what the hell! this is board name, not id! why IDLEN+6!
     # IDLEN = 12, BOARDNAMELEN = 30!

@@ -485,7 +485,7 @@ class User:
             raise NoPerm("no permission") # not reachable
 
         header = Post.Post.PrepareHeaderForMail(self, True, title, session)
-        signature = self.GetSig(signature_id)
+        signature = Util.gbkDec(self.GetSig(signature_id))
 
         content = header + content + signature
 
@@ -496,7 +496,7 @@ class User:
         mail_size = mbox.new_mail(self, title, content)
         receiver.AddUsedSpace(mail_size)
 
-        mail_size = self.mbxo.new_sent_mail(receiver, title, content)
+        mail_size = self.mbox.new_sent_mail(receiver, title, content)
         self.AddUsedSpace(mail_size)
 
         # TODO: mark mail available
@@ -515,7 +515,7 @@ class User:
             return result
 
         if (sig < 0):
-            signum = user.GetSignatureCount()
+            signum = self.GetSignatureCount()
             if (signum == 0):
                 sig = 0
             else:
@@ -546,7 +546,7 @@ class User:
         except IOError:
             Log.error("Post.AddSig: IOError on %s" % sig_fname)
 
-        result += ''.join(tmpsig[:valid_in])
+        result += ''.join(tmpsig[:valid_ln])
         return result
 
     def MailboxFull(self):
