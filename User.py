@@ -2,6 +2,7 @@
 
 import json
 import time
+import random
 
 import Config
 import modes
@@ -11,6 +12,8 @@ from Util import Util
 from errors import *
 import UserManager
 import mail
+import BoardManager
+import Post
 
 PERM_BASIC =     000001
 PERM_CHAT =      000002
@@ -109,6 +112,7 @@ class User:
         self.name = user
         self.userec = userec
         self.memo = umemo
+        self.mbox = mailbox.MailBox(user)
 
     @staticmethod
     def POST(svc, session, params, action):
@@ -188,6 +192,12 @@ class User:
     def IsSECANC(self):
         # 'special permission 5' 'BM: ZIXIAs'
         return self.HasPerm(PERM_SECANC)
+
+    def IsSuicider(self):
+        return self.HasPerm(PERM_SUICIDE)
+
+    def CanMail(self):
+        return not self.HasPerm(PERM_DENYMAIL)
 
     def ClearPerm(self, perm):
         self.userec.userlevel &= ~perm
@@ -435,4 +445,114 @@ class User:
 
     def GetUID(self):
         return self.userec.GetUID()
+
+    def CanMailTo(self, receiver):
+        if self.IsSysop() or self.name == "Arbitrator":
+            return 'ok'
+        if receiver.IsSuicider():
+            return 'suicide'
+        if self.MailboxFull():
+            return 'full'
+        if receiver.MailboxFull():
+            return 'recvfull'
+        return 'ok'
+
+    def MayMailTo(self, receiver):
+        if not self.CanMail():
+            raise NoPerm("you don't have permission to mail")
+
+        if self.BeIgnored(receiver.name):
+            raise NoPerm("you're denied by user '%s'" % receiver.name)
+
+        result = self.CanMailTo(receiver)
+        if result != 'ok':
+            if result == 'suicide':
+                raise WrongArgs("fail to send to '%s'" % receiver.name)
+            if result == 'full':
+                raise NoPerm("your mailbox is full")
+            if result == 'recvfull':
+                raise WrongArgs("his mailbox is full")
+            raise WrongArgs("fail to send mail")
+        return True
+
+    def SendMailTo(self, receiver_id, title, content, signature_id):
+        receiver = UserManager.UserManager.LoadUser(receiver_id)
+        if receiver is None:
+            raise NotFound("no such user '%s'" % receiver_id)
+
+        if not self.MayMailTo(receiver):
+            raise NoPerm("no permission") # not reachable
+
+        header = Post.Post.PrepareHeaderForMail(self, True, title, session)
+        signature = self.GetSignature(signature_id)
+
+        content = header + content + signature
+
+        self.MailTo(receiver, title, content)
+
+    def MailTo(self, receiver, title, content):
+        mbox = receiver.mbox
+        mail_size = mbox.new_mail(self, title, content)
+        receiver.AddUsedSpace(mail_size)
+
+        mail_size = self.mbxo.new_sent_mail(receiver, title, content)
+        self.AddUsedSpace(mail_size)
+
+        # TODO: mark mail available
+
+        if receiver.name == "SYSOP":
+            board = BoardManager.BoardManager.GetBoard(Config.SYSMAIL_BOARD)
+            board.UpdateLastPost()
+
+    def AddUsedSpace(self, space):
+        self.userec.usedspace += space
+
+    def GetSig(self, sig):
+        result = ""
+        self.SetSigID(sig)
+        if (sig == 0):
+            return result
+
+        if (sig < 0):
+            signum = user.GetSignatureCount()
+            if (signum == 0):
+                sig = 0
+            else:
+                sig = random.randint(1, signum)
+
+        sig_fname = self.MyFile("signatures")
+        valid_ln = 0
+        tmpsig = []
+        # hack: c code limit the size of buf
+        # we must follow this, or the line number would be different
+        # fgets(256) = readline(255)
+        buf_size = 255
+        try:
+            with open(sig_fname, "r") as sigfile:
+                result += '\n--\n'
+                for i in xrange(0, (sig - 1) * Config.MAXSIGLINES):
+                    line = sigfile.readline(buf_size)
+                    if (line == ""):
+                        return result
+                for i in range(0, Config.MAXSIGLINES):
+                    line = sigfile.readline(buf_size)
+                    if (line != ""):
+                        if (line[0] != '\n'):
+                            valid_ln = i + 1
+                        tmpsig += [line]
+                    else:
+                        break
+        except IOError:
+            Log.error("Post.AddSig: IOError on %s" % sig_fname)
+
+        result += ''.join(tmpsig[:valid_in])
+        return result
+
+    def MailboxFull(self):
+        if Config.MAIL_SIZE_LIMIT != mail.MAIL_SIZE_UNLIMITED:
+            if self.userec.usedspace > Config.MAIL_SIZE_LIMIT:
+                return True
+            if self.mbox.full():
+                return True
+        return False
 

@@ -846,22 +846,7 @@ class Board:
         return True
 
     def GetPostFilename(self, use_subdir):
-        filename = None
-        now = int(time.time())
-        xlen = len(GENERATE_POST_SUFIX)
-        pid = random.randint(1000, 200000) # wrong, but why care?
-        for i in range(0, 10):
-            if (use_subdir):
-                rn = int(xlen * random.random())
-                filename = "%c/M.%lu.%c%c" % (GENERATE_ALPHABET[rn], now, GENERATE_POST_SUFIX[(pid + i) % 62], GENERATE_POST_SUFIX[(pid * i) % 62])
-            else:
-                filename = "M.%lu.%c%c" % (now, GENERATE_POST_SUFIX[(pid + i) % 62], GENERATE_POST_SUFIX[(pid * i) % 62])
-            fname = "%s/%s" % (self.GetBoardPath(), filename)
-            fd = os.open(fname, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0644)
-            if (fd >= 0):
-                os.close(fd)
-                return filename
-        return None
+        return Post.GetPostFilename(self.GetBoardPath(), use_subdir)
 
     def DeniedUser(self, user):
         if (Util.SeekInFile(self.GetBoardPath() + "deny_users", user.name)):

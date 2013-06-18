@@ -280,72 +280,48 @@ class Post:
 
     @staticmethod
     def WriteHeader(fp, user, in_mail, board, title, anony, mode, session):
+        header = Post.PrepareHeader(user, in_mail, board, title, anony, mode, session)
+        fp.write(Util.gbkEnc(header))
+
+    @staticmethod
+    def PrepareHeaderForMail(user, in_mail, title, session):
+        return Post.PrepareHeader(user, in_mail, None, title, False, 0, session)
+
+    @staticmethod
+    def PrepareHeader(user, in_mail, board, title, anony, mode, session):
+        result = ""
         uid = user.name[:20].decode('gbk')
         uname = user.userec.username[:40].decode('gbk')
-        bname = board.name.decode('gbk')
+        if in_mail:
+            bname = board.name.decode('gbk')
         bbs_name = Config.Config.GetString('BBS_FULL_NAME', 'Python BBS')
 
         if (in_mail):
-            fp.write((u'寄信人: %s (%s)\n', uid, uname).encode('gbk'))
+            result += u'寄信人: %s (%s)\n' % (uid, uname)
         else:
             if (anony):
                 pid = (binascii.crc32(session.GetID()) % 0xffffffff) % (200000 - 1000) + 1000
-                fp.write((u'发信人: %s (%s%d), 信区: %s\n' % (bname, Config.Config.GetString('NAME_ANONYMOUS', 'Anonymous'), pid, bname)).encode('gbk'))
+                result += u'发信人: %s (%s%d), 信区: %s\n' % (bname, Config.Config.GetString('NAME_ANONYMOUS', 'Anonymous'), pid, bname)
             else:
-                fp.write((u'发信人: %s (%s), 信区: %s\n' % (uid, uname, bname)).encode('gbk'))
+                result += u'发信人: %s (%s), 信区: %s\n' % (uid, uname, bname)
 
-        fp.write((u'标  题: %s\n' % (title)).encode('gbk'))
+        result += u'标  题: %s\n' % (title)
 
         if (in_mail):
-            fp.write((u'发信站: %s (%24.24s)\n' % (bbs_name, time.ctime())).encode('gbk'))
-            fp.write((u'来  源: %s \n' % session._fromip).encode('gbk'))
+            result += u'发信站: %s (%24.24s)\n' % (bbs_name, time.ctime())
+            result += u'来  源: %s \n' % session._fromip
         elif (mode != 2):
-            fp.write((u'发信站: %s (%24.24s), 站内\n' % (bbs_name, time.ctime())).encode('gbk'))
+            result += u'发信站: %s (%24.24s), 站内\n' % (bbs_name, time.ctime())
         else:
-            fp.write((u'发信站: %s (%24.24s), 转信\n' % (bbs_name, time.ctime())).encode('gbk'))
+            result += u'发信站: %s (%24.24s), 转信\n' % (bbs_name, time.ctime())
 
-        fp.write('\n')
+        result += '\n'
+        return result
 
     @staticmethod
     def AddSig(fp, user, sig):
-        user.SetSigID(sig)
-        if (sig == 0):
-            return
-
-        if (sig < 0):
-            signum = user.GetSignatureCount()
-            if (signum == 0):
-                sig = 0
-            else:
-                sig = random.randint(1, signum)
-
-        sig_fname = user.MyFile("signatures")
-        valid_ln = 0
-        tmpsig = []
-        # hack: c code limit the size of buf
-        # we must follow this, or the line number would be different
-        # fgets(256) = readline(255)
-        buf_size = 255
-        try:
-            with open(sig_fname, "r") as sigfile:
-                fp.write('\n--\n')
-                for i in xrange(0, (sig - 1) * Config.MAXSIGLINES):
-                    line = sigfile.readline(buf_size)
-                    if (line == ""):
-                        return
-                for i in range(0, Config.MAXSIGLINES):
-                    line = sigfile.readline(buf_size)
-                    if (line != ""):
-                        if (line[0] != '\n'):
-                            valid_ln = i + 1
-                        tmpsig += [line]
-                    else:
-                        break
-        except IOError:
-            Log.error("Post.AddSig: IOError on %s" % sig_fname)
-
-        for i in range(0, valid_ln):
-            fp.write(tmpsig[i])
+        sig_content = user.GetSig(sig)
+        fp.write(sig_content)
 
     @staticmethod
     def DoQuote(include_mode, quote_file, for_post):
@@ -633,5 +609,24 @@ class Post:
 
     def pos(self):
         return self.file.tell()
+
+    @staticmethod
+    def GetPostFilename(directory, use_subdir):
+        filename = None
+        now = int(time.time())
+        xlen = len(GENERATE_POST_SUFIX)
+        pid = random.randint(1000, 200000) # wrong, but why care?
+        for i in range(0, 10):
+            if (use_subdir):
+                rn = int(xlen * random.random())
+                filename = "%c/M.%lu.%c%c" % (GENERATE_ALPHABET[rn], now, GENERATE_POST_SUFIX[(pid + i) % 62], GENERATE_POST_SUFIX[(pid * i) % 62])
+            else:
+                filename = "M.%lu.%c%c" % (now, GENERATE_POST_SUFIX[(pid + i) % 62], GENERATE_POST_SUFIX[(pid * i) % 62])
+            fname = "%s/%s" % (directory, filename)
+            fd = os.open(fname, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0644)
+            if (fd >= 0):
+                os.close(fd)
+                return filename
+        return None
 
 from BoardManager import BoardManager

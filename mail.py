@@ -26,12 +26,30 @@ class Mail:
             index = svc.get_int(params, 'index', 0)
             result = {'unread': Mail.CheckUnread(session.GetUser(), folder, index)}
             svc.writedata(json.dumps(result))
+        elif action == 'quote':
+            folder = svc.get_str(params, 'folder', 'inbox')
+            mode = svc.get_str(params, 'mode', 'R')
+            index = svc.get_int(params, 'index')
+            (title, content) = self.GetUser().mbox.quote_mail(folder, mode, index)
+            result = {'title': title, 'content': content}
+            svc.writedata(json.dumps(result))
         else:
             raise WrongArgs('unknown action')
 
     @staticmethod
     def POST(svc, session, params, action):
-        raise WrongArgs('unknown action')
+        if session is None: raise Unauthorized('login first')
+        if not session.CheckScope('bbs'): raise NoPerm('out of scope')
+        if action == 'send':
+            title = svc.get_str(params, 'title')
+            content = svc.get_str(params, 'content')
+            receiver_id = svc.get_str(params, 'to')
+            signature_id = svc.get_int(params, 'signature_id', 0)
+            session.GetUser().SendMailTo(receiver_id, title, content, signature_id)
+            result = {'result': 'ok'}
+            svc.writedata(json.dumps(result))
+        else:
+            raise WrongArgs('unknown action')
 
     @staticmethod
     def List(user, folder, start, count, end):
