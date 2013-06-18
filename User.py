@@ -14,6 +14,7 @@ import UserManager
 import mail
 import BoardManager
 import Post
+import mailbox
 
 PERM_BASIC =     000001
 PERM_CHAT =      000002
