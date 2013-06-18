@@ -287,8 +287,8 @@ class Post:
         fp.write(Util.gbkEnc(header))
 
     @staticmethod
-    def PrepareHeaderForMail(user, in_mail, title, session):
-        return Post.PrepareHeader(user, in_mail, None, title, False, 0, session)
+    def PrepareHeaderForMail(user, title, session):
+        return Post.PrepareHeader(user, True, None, title, False, 0, session)
 
     @staticmethod
     def PrepareHeader(user, in_mail, board, title, anony, mode, session):

@@ -485,7 +485,7 @@ class User:
         if not self.MayMailTo(receiver):
             raise NoPerm("no permission") # not reachable
 
-        header = Post.Post.PrepareHeaderForMail(self, True, title, session)
+        header = Post.Post.PrepareHeaderForMail(self, title, session)
         signature = Util.gbkDec(self.GetSig(signature_id))
 
         content = header + content + signature
