@@ -152,7 +152,7 @@ class Folder:
         if (entry is None):
             return None
         path = self.mailbox.path_of(entry.filename)
-        post = Post.Post(path)
+        post = Post.Post(path, entry, True)
         return post
 
     def get_mail_num(self):
