@@ -45,7 +45,8 @@ class Mail:
             content = svc.get_str(params, 'content')
             receiver_id = svc.get_str(params, 'to')
             signature_id = svc.get_int(params, 'signature_id', 0)
-            session.GetUser().SendMailTo(receiver_id, title, content, signature_id)
+            session.GetUser().SendMailTo(receiver_id, title, content,
+                    signature_id, session)
             result = {'result': 'ok'}
             svc.writedata(json.dumps(result))
         else:

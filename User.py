@@ -476,7 +476,7 @@ class User:
             raise WrongArgs("fail to send mail")
         return True
 
-    def SendMailTo(self, receiver_id, title, content, signature_id):
+    def SendMailTo(self, receiver_id, title, content, signature_id, session):
         receiver = UserManager.UserManager.LoadUser(receiver_id)
         if receiver is None:
             raise NotFound("no such user '%s'" % receiver_id)
