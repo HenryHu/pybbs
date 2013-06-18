@@ -485,7 +485,7 @@ class User:
             raise NoPerm("no permission") # not reachable
 
         header = Post.Post.PrepareHeaderForMail(self, True, title, session)
-        signature = self.GetSignature(signature_id)
+        signature = self.GetSig(signature_id)
 
         content = header + content + signature
 
