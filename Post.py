@@ -292,7 +292,7 @@ class Post:
         result = ""
         uid = user.name[:20].decode('gbk')
         uname = user.userec.username[:40].decode('gbk')
-        if in_mail:
+        if not in_mail:
             bname = board.name.decode('gbk')
         bbs_name = Config.Config.GetString('BBS_FULL_NAME', 'Python BBS')
 
