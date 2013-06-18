@@ -28,7 +28,7 @@ class Mail:
             svc.writedata(json.dumps(result))
         elif action == 'quote':
             folder = svc.get_str(params, 'folder', 'inbox')
-            mode = svc.get_str(params, 'mode', 'R')
+            mode = svc.get_str(params, 'mode', 'S')
             index = svc.get_int(params, 'index')
             (title, content) = self.GetUser().mbox.quote_mail(folder, mode, index)
             result = {'title': title, 'content': content}
