@@ -32,13 +32,15 @@ class BBSAuth(mech.Mechanism):
 
     def verify_challenge(self, entity, response):
         try:
-            (zid, cid, passwd) = response.decode('utf-8').split(self.NULL)
+            token = response.decode('utf-8')
         except ValueError as exc:
             return self.state(False, entity, None)
 
         try:
-            entity = entity or zid or cid
-            return self.state(self.verify(zid, cid, passwd), entity, None)
+            result = self.verify(token)
+            if result:
+                entity = entity or self.auth.username()
+            return self.state(result, entity, None)
         except auth.PasswordError as exc:
             return self.state(False, entity, None)
 
@@ -59,3 +61,4 @@ class BBSAuth(mech.Mechanism):
 
         self.authorized = zid or cid
         return self.state(None, zid or cid, response)
+
