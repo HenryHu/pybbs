@@ -1,4 +1,5 @@
 from UserManager import UserManager
+import Session
 from Log import Log
 import sasl
 
@@ -47,7 +48,7 @@ class XMPPAuth(sasl.auth.Authenticator):
             return False
 
         try:
-            return Session.CheckSession(token, user)
+            return Session.SessionManager.CheckSession(token, user)
         except:
             return False
 
