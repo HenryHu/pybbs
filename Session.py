@@ -174,23 +174,23 @@ class SessionManager:
         conn.commit()
 
     @staticmethod
-    def CheckSession(id, user):
+    def CheckSession(id):
         if id not in SessionManager.sessions:
             conn = SessionManager.ConnectDB()
             try:
                 for row in conn.execute("select * from sessions where id = ?", (id, )):
-                    username = row['username']
-                    if username != user.name:
-                        continue
                     created = row['created']
-                    return not Session.IsTimeout(created)
-                return False
+                    if not Session.IsTimeout(created):
+                        return row['username']
+                    else:
+                        return None
+                return None
             finally:
                 conn.close()
         session = SessionManager.sessions[id]
         if session.Timeout():
-            return False
-        return True
+            return None
+        return session.username
 
     @staticmethod
     def GetSession(id, fromip):

@@ -14,6 +14,7 @@ class XMPPAuth(sasl.auth.Authenticator):
         self._service_type = service_type
         self._host = host
         self._service_name = service_name
+        self._username = None
 
     def service_type(self):
         return self._service_type
@@ -25,7 +26,7 @@ class XMPPAuth(sasl.auth.Authenticator):
         return self._service_name
     
     def username(self):
-        raise NotImplementedError
+        return self._username
 
     def password(self):
         raise NotImplementedError
@@ -33,22 +34,14 @@ class XMPPAuth(sasl.auth.Authenticator):
     def get_password(self):
         raise NotImplementedError
 
-    def verify_token(self, authorize, username, token):
+    def verify_token(self, token):
         """Verify token"""
 
-        if (authorize and username != authorize):
-            Log.warn("XMPPAuth: user %s does not match authorize %s" % (username, authorize))
-            return False
-
-        username = username.encode("gbk")
-#        print "trying to auth %s pass %s" % (user, passwd)
-        user = UserManager.LoadUser(username)
-        if (user == None):
-            Log.warn("XMPPAuth: user not exist: %s" % username)
-            return False
-
         try:
-            return Session.SessionManager.CheckSession(token, user)
+            result = Session.CheckSession(token)
+            if result is not None:
+                self._username = result
+            return result is not None
         except:
             return False
 
