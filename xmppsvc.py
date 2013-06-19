@@ -18,6 +18,8 @@ from Log import Log
 from pwd import getpwnam
 import os
 import sys
+import sasl
+import bbsauth
 
 if __name__ == '__main__':
     try:
@@ -37,6 +39,7 @@ if __name__ == '__main__':
     server = xmpp.Server({
         'plugins': [(xmppserver.XMPPServer, { 'rosters': rosters.Rosters() , 'host': hostname})],
         'auth': xmppauth.XMPPAuth('xmpp', hostname, 'bbs'),
+        'mechanisms': (sasl.Plain, bbsauth.BBSAuth),
         'certfile': Config.BBS_XMPP_CERT_FILE,
         'keyfile': Config.BBS_XMPP_KEY_FILE,
     })

@@ -23,8 +23,12 @@ class Session:
     def GetUser(self):
         return self.user
 
+    @staticmethod
+    def IsTimeout(created):
+        return (datetime.datetime.now() - created > SESSION_TIMEOUT)
+
     def Timeout(self):
-        return (datetime.datetime.now() - self.created > SESSION_TIMEOUT)
+        return Session.IsTimeout(self.created)
 
     @staticmethod
     def GET(svc, session, params, action):
@@ -168,6 +172,25 @@ class SessionManager:
     def InitDB(conn):
         conn.execute("create table sessions(id text, username text, created timestamp, last_seen timestamp, login_ip text, last_ip text, scopes text)")
         conn.commit()
+
+    @staticmethod
+    def CheckSession(id, user):
+        if id not in SessionManager.sessions:
+            conn = SessionManager.ConnectDB()
+            try:
+                for row in conn.execute("select * from sessions where id = ?", (id, )):
+                    username = row['username']
+                    if username != user.name:
+                        continue
+                    created = row['created']
+                    return not Session.IsTimeout(created)
+                return False
+            finally:
+                conn.close()
+        session = SessionManager.sessions[id]
+        if session.Timeout():
+            return False
+        return True
 
     @staticmethod
     def GetSession(id, fromip):

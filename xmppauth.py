@@ -32,8 +32,27 @@ class XMPPAuth(sasl.auth.Authenticator):
     def get_password(self):
         raise NotImplementedError
 
+    def verify_token(self, authorize, username, token):
+        """Verify token"""
+
+        if (authorize and username != authorize):
+            Log.warn("XMPPAuth: user %s does not match authorize %s" % (username, authorize))
+            return False
+
+        username = username.encode("gbk")
+#        print "trying to auth %s pass %s" % (user, passwd)
+        user = UserManager.LoadUser(username)
+        if (user == None):
+            Log.warn("XMPPAuth: user not exist: %s" % username)
+            return False
+
+        try:
+            return Session.CheckSession(token, user)
+        except:
+            return False
+
     def verify_password(self, authorize, username, passwd):
-        """Verity password"""
+        """Verify password"""
 
         if (authorize and username != authorize):
             Log.warn("XMPPAuth: user %s does not match authorize %s" % (username, authorize))
