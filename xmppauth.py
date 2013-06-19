@@ -38,11 +38,14 @@ class XMPPAuth(sasl.auth.Authenticator):
         """Verify token"""
 
         try:
-            result = Session.CheckSession(token)
+            result = Session.SessionManager.CheckSession(token)
             if result is not None:
                 self._username = result
+            else:
+                Log.warn("XMPPAuth: fail to verify session")
             return result is not None
-        except:
+        except Exception as e:
+            Log.warn("XMPPAuth: exception in CheckSession: %r" % e)
             return False
 
     def verify_password(self, authorize, username, passwd):
