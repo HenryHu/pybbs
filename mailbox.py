@@ -102,9 +102,6 @@ class MailBox:
                 return True
         return False
 
-
-
-
 class Folder:
     def __init__(self, mailbox, name, path):
         self.name = name
