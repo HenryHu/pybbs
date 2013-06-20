@@ -11,6 +11,9 @@ class BoardManager:
     _iboards = {}
     @staticmethod
     def LoadBoards():
+        BoardManager.boards = {}
+        BoardManager._iboards = {}
+        BoardManager.s_boards = []
         for i in range(0, BCache.GetBoardCount()):
             bh = BoardHeader(i+1)
             if (bh.filename != ''):
@@ -82,7 +85,10 @@ class BoardManager:
         currcount = 0
         ret = []
         user = session.GetUser()
-        for i in range(0, BCache.GetBoardCount()):
+        count = BCache.GetBoardCount()
+        if count != len(BoardManager.s_boards):
+            BoardManager.LoadBoards()
+        for i in xrange(count):
             board = BoardManager.boards[BoardManager.s_boards[i]]
             if (board.CheckSeePerm(user)):
                 currcount = currcount + 1
