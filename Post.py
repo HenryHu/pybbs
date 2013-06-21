@@ -366,7 +366,7 @@ class Post:
                         buf = Post.SkipAttachFgets(inf)
                         if (buf == "" or buf == "--\n"): break
                         if (len(buf) > 250):
-                            buf = buf[250] + "\n"
+                            buf = Util.CutLine(buf, 250) + "\n"
                         if (not Post.IsGarbageLine(buf)):
                             result += ": %s" % buf
                             if (include_mode == 'S'):

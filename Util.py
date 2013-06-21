@@ -400,6 +400,34 @@ class Util:
     def CheckStr(str):
         return Util.strChecker.match(str)
 
+    @staticmethod
+    def CutLine(buf, length):
+        cur_len = 0
+        i = 0
+        in_gb = False
+        while i < len(buf):
+            ch = ord(buf[i])
+            if in_gb:
+                if ch >= 0x40:
+                    my_len = 2
+                elif ch >= 0x30:
+                    my_len = 4
+                else:
+                    my_len = 2
+                in_gb = False
+            else:
+                if ch >= 0x81:
+                    in_gb = True
+                else:
+                    my_len = 1
+
+            if not in_gb:
+                if cur_len + my_len > length:
+                    return buf[:cur_len]
+                cur_len += my_len
+            i += 1
+        return buf
+
 def fixterm_handler(exc):
     fixterm_debug = False
     if isinstance(exc, UnicodeDecodeError):
