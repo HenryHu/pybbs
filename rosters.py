@@ -161,6 +161,7 @@ class Rosters(Thread):
             time.sleep(Config.XMPP_UPDATE_TIME_INTERVAL)
             try:
                 self.update_sessions()
+                self.update_friends()
             except Exception as e:
                 Log.error("Exception caught in rosters.updater: %r" % e)
                 Log.error(traceback.format_exc())
@@ -201,7 +202,7 @@ class Rosters(Thread):
         Also fake responses from TERM users"""
 
         Log.debug("probing friends from %s" % conn.authJID.full)
-        roster = self._get(conn)
+        roster = self.get(conn)
         elem = conn.E.presence({'from': unicode(conn.authJID), 'type': 'probe'})
         sender = UserManager.UserManager.LoadUser(conn._userid)
         for jid in roster.watching():
@@ -377,6 +378,13 @@ class Rosters(Thread):
                     self.notify_session(jid, session)
 
         self._session_cache = new_sessions
+
+    def update_friends(self):
+        Log.debug("updating friend lists")
+        for login_id in self._conns:
+            conn = self._conns[login_id]
+            roster = self._rosters.get(self.authJID.bare)
+            roster.check_update(conn)
 
     def find_session(self, jid, pid):
         if not jid in self._session_cache:
