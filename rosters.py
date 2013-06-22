@@ -383,7 +383,7 @@ class Rosters(Thread):
         Log.debug("updating friend lists")
         for login_id in self._conns:
             conn = self._conns[login_id]
-            roster = self._rosters.get(self.authJID.bare)
+            roster = self._rosters.get(conn.authJID.bare)
             roster.check_update(conn)
 
     def find_session(self, jid, pid):
