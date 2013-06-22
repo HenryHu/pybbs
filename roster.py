@@ -13,6 +13,7 @@ class Roster(object):
     in BBS here."""
 
     def update_all(self, conn):
+        self._items = {}
         for i in range(conn._userinfo.friendsnum):
             friend_uid = conn._userinfo.friends_uid[i]
             friend = UCache.GetUserByUid(friend_uid)
