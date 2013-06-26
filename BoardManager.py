@@ -47,15 +47,6 @@ class BoardManager:
             return None
 
     @staticmethod
-    def GetBoardByParam(svc, params):
-        board = svc.get_str(params, 'board')
-        bo = BoardManager.GetBoard(board)
-        if (bo == None):
-            raise NotFound('board not found')
-        else:
-            return bo
-
-    @staticmethod
     def Init():
         BoardManager.LoadBoards()
 
