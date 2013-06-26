@@ -9,6 +9,7 @@ class BoardManager:
     boards = {}
     s_boards = []
     _iboards = {}
+    last_board_count = 0
     @staticmethod
     def LoadBoards():
         BoardManager.boards = {}
@@ -23,10 +24,11 @@ class BoardManager:
                 BoardManager._iboards[i+1] = board
         BoardManager.s_boards = BoardManager.boards.keys()
         BoardManager.s_boards.sort(key = str.lower)
+        BoardManager.last_board_count = BCache.GetBoardCount()
 
     @staticmethod
     def CheckUpdate():
-        if len(BoardManager.boards) != BCache.GetBoardCount():
+        if BoardManager.last_board_count != BCache.GetBoardCount():
             BoardManager.LoadBoards()
 
     @staticmethod
