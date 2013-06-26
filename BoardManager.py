@@ -26,7 +26,13 @@ class BoardManager:
         return
 
     @staticmethod
+    def CheckUpdate():
+        if len(BoardManager.boards) != BCache.GetBoardCount():
+            BoardManager.LoadBoards()
+
+    @staticmethod
     def GetBoardByIndex(index):
+        BoardManager.CheckUpdate()
         if ((index > 0) and (index <= BCache.GetBoardCount())):
             return BoardManager._iboards[index]
         else:
@@ -34,7 +40,8 @@ class BoardManager:
 
     @staticmethod
     def GetBoard(name):
-        if (BoardManager.boards.has_key(name)):
+        BoardManager.CheckUpdate()
+        if name in BoardManager.boards:
             return BoardManager.boards[name]
         else:
             return None
@@ -51,7 +58,6 @@ class BoardManager:
     @staticmethod
     def Init():
         BoardManager.LoadBoards()
-        return
 
     @staticmethod
     def ListBoards(svc, session, params):
@@ -79,9 +85,9 @@ class BoardManager:
         else:
             raise WrongArgs('invalid arguments')
 
-
     @staticmethod
     def GetBoards(session, start, end):
+        BoardManager.CheckUpdate()
         currcount = 0
         ret = []
         user = session.GetUser()

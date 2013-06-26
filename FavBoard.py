@@ -24,6 +24,14 @@ class FavBoard:
         else:
             self._type = TYPE_BOARD
 
+    def Exists(self):
+        if self._type == TYPE_DIR:
+            return True
+        board = BoardManager.GetBoardByIndex(self._index + 1)
+        if board is None:
+            return False
+        return True
+
     def IsBoard(self):
         return (self._type == TYPE_BOARD)
 
@@ -100,11 +108,12 @@ class FavBoardMgr:
             result = '[\n'
             for index in range(0, fboards._count):
                 fboard = fboards._favboards[index]
-                if (fboard._father == father):
-                    if (not first):
-                        result += ',\n'
-                    first = False
-                    result += fboard.GetInfoJSON(index, session.GetUser())
+                if fboard.Exists():
+                    if (fboard._father == father):
+                        if (not first):
+                            result += ',\n'
+                        first = False
+                        result += fboard.GetInfoJSON(index, session.GetUser())
             result += '\n]'
             svc.writedata(result)
             return

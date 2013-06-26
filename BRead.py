@@ -298,6 +298,9 @@ class BRead:
         if (entry == -1):
             return False
         bh = BCache.BCache.GetBoardHeader(boardname)
+        if bh is None:
+            Log.error("Fail to load boardheader for %s" % boardname)
+            return False
         self._cache[entry]._list[0] = bh.nowid
         self._cache[entry]._list[1] = 0
         self._cache[entry]._changed = 1
