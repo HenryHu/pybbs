@@ -23,7 +23,6 @@ class BoardManager:
                 BoardManager._iboards[i+1] = board
         BoardManager.s_boards = BoardManager.boards.keys()
         BoardManager.s_boards.sort(key = str.lower)
-        return
 
     @staticmethod
     def CheckUpdate():
@@ -82,9 +81,7 @@ class BoardManager:
         currcount = 0
         ret = []
         user = session.GetUser()
-        count = BCache.GetBoardCount()
-        if count != len(BoardManager.s_boards):
-            BoardManager.LoadBoards()
+        count = len(BoardManager.s_boards)
         for i in xrange(count):
             board = BoardManager.boards[BoardManager.s_boards[i]]
             if (board.CheckSeePerm(user)):
