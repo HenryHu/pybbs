@@ -29,13 +29,17 @@ class BoardManager:
     @staticmethod
     def CheckUpdate():
         if BoardManager.last_board_count != BCache.GetBoardCount():
+            Log.info("board configuration changed. reload")
             BoardManager.LoadBoards()
 
     @staticmethod
     def GetBoardByIndex(index):
         BoardManager.CheckUpdate()
         if ((index > 0) and (index <= BCache.GetBoardCount())):
-            return BoardManager._iboards[index]
+            if index in _iboards:
+                return BoardManager._iboards[index]
+            else:
+                return None
         else:
             return None
 
