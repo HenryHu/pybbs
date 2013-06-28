@@ -36,7 +36,7 @@ class BoardManager:
     def GetBoardByIndex(index):
         BoardManager.CheckUpdate()
         if ((index > 0) and (index <= BCache.GetBoardCount())):
-            if index in _iboards:
+            if index in BoardManager._iboards:
                 return BoardManager._iboards[index]
             else:
                 return None
