@@ -72,11 +72,12 @@ class Post:
     def GET(svc, session, params, action):
         if (session == None): raise Unauthorized('login first')
         if not session.CheckScope('bbs'): raise NoPerm("out of scope")
-        bo = BoardManager.GetBoardByParam(svc, params)
-        if (bo == None): raise NotFound('board not found')
+        board = svc.get_str(params, 'board')
+        bo = BoardManager.GetBoard(board)
+        if bo is None: raise NotFound('board not found')
 
         if (not bo.CheckPostPerm(session.GetUser())):
-            raise WrongArgs('permission denied')
+            raise NotFound("board not found")
 
         if (action == 'search'):
             start_id = svc.get_int(params, 'from', 1)
@@ -122,8 +123,11 @@ class Post:
     def POST(svc, session, params, action):
         if (session == None): raise Unauthorized("login first")
         if not session.CheckScope('bbs'): raise NoPerm("out of scope")
-        bo = BoardManager.GetBoardByParam(svc, params)
-        if (bo == None): raise NotFound("no such board")
+        board = svc.get_str(params, 'board')
+        bo = BoardManager.GetBoard(board)
+        if bo is None: raise NotFound('board not found')
+        if (not bo.CheckPostPerm(session.GetUser())):
+            raise NotFound("board not found")
 
         if (action == "new"):
             title = svc.get_str(params, "title").decode('utf-8')

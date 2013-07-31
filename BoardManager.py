@@ -9,6 +9,7 @@ class BoardManager:
     boards = {}
     s_boards = []
     _iboards = {}
+    last_board_count = 0
     @staticmethod
     def LoadBoards():
         BoardManager.boards = {}
@@ -23,35 +24,36 @@ class BoardManager:
                 BoardManager._iboards[i+1] = board
         BoardManager.s_boards = BoardManager.boards.keys()
         BoardManager.s_boards.sort(key = str.lower)
-        return
+        BoardManager.last_board_count = BCache.GetBoardCount()
+
+    @staticmethod
+    def CheckUpdate():
+        if BoardManager.last_board_count != BCache.GetBoardCount():
+            Log.info("board configuration changed. reload")
+            BoardManager.LoadBoards()
 
     @staticmethod
     def GetBoardByIndex(index):
+        BoardManager.CheckUpdate()
         if ((index > 0) and (index <= BCache.GetBoardCount())):
-            return BoardManager._iboards[index]
+            if index in BoardManager._iboards:
+                return BoardManager._iboards[index]
+            else:
+                return None
         else:
             return None
 
     @staticmethod
     def GetBoard(name):
-        if (BoardManager.boards.has_key(name)):
+        BoardManager.CheckUpdate()
+        if name in BoardManager.boards:
             return BoardManager.boards[name]
         else:
             return None
 
     @staticmethod
-    def GetBoardByParam(svc, params):
-        board = svc.get_str(params, 'board')
-        bo = BoardManager.GetBoard(board)
-        if (bo == None):
-            raise NotFound('board not found')
-        else:
-            return bo
-
-    @staticmethod
     def Init():
         BoardManager.LoadBoards()
-        return
 
     @staticmethod
     def ListBoards(svc, session, params):
@@ -79,15 +81,13 @@ class BoardManager:
         else:
             raise WrongArgs('invalid arguments')
 
-
     @staticmethod
     def GetBoards(session, start, end):
+        BoardManager.CheckUpdate()
         currcount = 0
         ret = []
         user = session.GetUser()
-        count = BCache.GetBoardCount()
-        if count != len(BoardManager.s_boards):
-            BoardManager.LoadBoards()
+        count = len(BoardManager.s_boards)
         for i in xrange(count):
             board = BoardManager.boards[BoardManager.s_boards[i]]
             if (board.CheckSeePerm(user)):
