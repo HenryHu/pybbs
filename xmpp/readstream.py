@@ -6,6 +6,7 @@
 from __future__ import absolute_import
 from . import aio
 from .prelude import *
+import errno, time
 
 __all__ = ('ReadStream', )
 
@@ -147,12 +148,18 @@ class ReadStream(object):
         self._reader(chunk)
 
     def _write(self):
+        delay = 0.1
         while self._wb:
             try:
                 sent = self.socket.send(self._wb)
                 if __debug__: log.debug('WROTE: %r', self._wb[:sent])
                 self._wb = self._wb[sent:]
             except aio.SocketError as exc:
+                if exc[0] == errno.EAGAIN:
+                    log.error("SSL write fail, try again")
+                    time.sleep(delay)
+                    if delay < 2: delay *= 2
+                    continue
                 if aio.would_block(exc):
                     break
                 else:
