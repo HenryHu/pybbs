@@ -468,6 +468,7 @@ class Post:
                         # so len(data) must <512
                         data = data[:nullpos]
                         assert len(data) < 512
+                    final = len(data) < 512
                     newline = data.find('\n')
                     while newline != -1:
                         if current >= start and (current < start + count or count == 0):
@@ -477,6 +478,8 @@ class Post:
                         current += 1
                     if current >= start and (current < start + count or count == 0):
                         ret += data
+                    if final:
+                        break
                 return (Util.gbkDec(ret), 0)
         finally:
             postf.close()
