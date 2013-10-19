@@ -439,26 +439,47 @@ class Post:
         return line != "" and line[0] == '\n'
 
     @staticmethod
-    def ReadPostText(path):
+    def ReadPostText(path, start = 0, count = 0):
         try:
             postf = open(path, 'rb')
         except IOError:
             raise ServerError("fail to load post")
         try:
             ret = ''
-            while (True):
-                data = postf.read(512)
-                i = data.find('\0')
-                if (i != -1):
-                    ret = ret + data[:i]
-                    break
-                else:
-                    ret = ret + data
-                    if (len(data) < 512):
+            if (start == 0 and count == 0):
+                while (True):
+                    data = postf.read(512)
+                    i = data.find('\0')
+                    if (i != -1):
+                        ret = ret + data[:i]
                         break
+                    else:
+                        ret = ret + data
+                        if (len(data) < 512):
+                            break
+                return (Util.gbkDec(ret), len(ret))
+            else:
+                current = 0
+                while True:
+                    data = postf.read(512)
+                    nullpos = data.find('\0')
+                    if nullpos != -1:
+                        # this makes data shorter
+                        # so len(data) must <512
+                        data = data[:nullpos]
+                        assert len(data) < 512
+                    newline = data.find('\n')
+                    while newline != -1:
+                        if current >= start and (current < start + count or count == 0):
+                            ret += data[:newline + 1]
+                        data = data[newline + 1:]
+                        newline = data.find('\n')
+                        current += 1
+                    if current >= start and (current < start + count or count == 0):
+                        ret += data
+                return (Util.gbkDec(ret), 0)
         finally:
             postf.close()
-        return (Util.gbkDec(ret), len(ret))
 
     @staticmethod
     def GetAttachLink(session, board, postentry):
