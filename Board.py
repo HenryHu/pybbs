@@ -248,7 +248,7 @@ class Board:
         except Exception:
             return None
 
-    def GetPost(self, svc, session, params, id):
+    def GetPost(self, svc, session, params, id, start, count):
         mode = Util.GetString(params, 'mode', 'normal')
         if (mode == 'junk' or mode == 'deleted'):
             raise NoPerm("invalid mode!")
@@ -258,7 +258,7 @@ class Board:
             post = pe.GetInfo('post')
             post['id'] = id
             postinfo = Post(postpath, pe)
-            post = dict(post.items() + postinfo.GetInfo().items())
+            post = dict(post.items() + postinfo.GetInfo(start, count).items())
             if (post['picattach'] or post['otherattach']):
                 post['attachlink'] = Post.GetAttachLink(session, self, pe)
             svc.writedata(json.dumps(post))

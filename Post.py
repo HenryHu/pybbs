@@ -30,8 +30,8 @@ class Post:
         self.is_mail = is_mail
         self.entry = entry
 
-    def GetContent(self):
-        content = Post.ReadPostText(self.path)
+    def GetContent(self, start, count):
+        content = Post.ReadPostText(self.path, start, count)
         self.textlen = content[1]
         return content[0]
 
@@ -45,9 +45,9 @@ class Post:
     def GetAttachList(self):
         return Post.GetAttachmentList(self.path, self.textlen)
 
-    def GetInfo(self):
+    def GetInfo(self, start, count):
         info = {}
-        info['content'] = self.GetContent()
+        info['content'] = self.GetContent(start, count)
         attachlist = self.GetAttachListByType()
         info['picattach'] = attachlist[0]
         info['otherattach'] = attachlist[1]
@@ -106,7 +106,13 @@ class Post:
         else:
             _id = svc.get_int(params, 'id')
             if (action == 'view'):
-                bo.GetPost(svc, session, params, _id)
+                start = svc.get_int(params, 'start', 0)
+                count = svc.get_int(params, 'count', 0)
+                if start < 0:
+                    raise WrongArgs("start can't be negative")
+                if count < 0:
+                    raise WrongArgs("count can't be negative")
+                bo.GetPost(svc, session, params, _id, start, count)
             elif action == 'nextid':
                 bo.GetNextPostReq(svc, session, params, _id)
             elif action == 'get_attach':
