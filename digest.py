@@ -366,7 +366,7 @@ class Digest:
         result = {}
         result['item'] = item.GetInfoForUser(session.GetUser())
         postinfo = Post.Post(item.realpath(), None)
-        result['content'] = postinfo.GetContent()
+        (result['content'], result['has_end']) = postinfo.GetContent()
         attachlist = postinfo.GetAttachListByType()
         result['picattach'] = attachlist[0]
         result['otherattach'] = attachlist[1]

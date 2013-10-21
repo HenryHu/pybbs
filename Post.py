@@ -33,10 +33,12 @@ class Post:
     def GetContent(self, start, count):
         content = Post.ReadPostText(self.path, start, count)
         self.textlen = content[1]
-        return content[0]
+        has_end = content[2]
+        text = content[0]
+        return (text, has_end)
 
     def GetBody(self):
-        content = self.GetContent()
+        content = self.GetContent()[0]
         return content[content.find('\n\n')+2:]
 
     def GetAttachListByType(self):
@@ -47,7 +49,7 @@ class Post:
 
     def GetInfo(self, start, count):
         info = {}
-        info['content'] = self.GetContent(start, count)
+        (info['content'], info['has_end']) = self.GetContent(start, count)
         attachlist = self.GetAttachListByType()
         info['picattach'] = attachlist[0]
         info['otherattach'] = attachlist[1]
@@ -463,9 +465,10 @@ class Post:
                         ret = ret + data
                         if (len(data) < 512):
                             break
-                return (Util.gbkDec(ret), len(ret))
+                return (Util.gbkDec(ret), len(ret), True)
             else:
                 current = 0
+                has_end = False
                 while True:
                     data = postf.read(512)
                     nullpos = data.find('\0')
@@ -477,16 +480,21 @@ class Post:
                     final = len(data) < 512
                     newline = data.find('\n')
                     while newline != -1:
-                        if current >= start and (current < start + count or count == 0):
+                        if count != 0 and current >= start + count:
+                            break
+                        if current >= start:
                             ret += data[:newline + 1]
                         data = data[newline + 1:]
                         newline = data.find('\n')
                         current += 1
-                    if current >= start and (current < start + count or count == 0):
+                    if count != 0 and current >= start + count:
+                        break
+                    if current >= start:
                         ret += data
                     if final:
+                        has_end = True
                         break
-                return (Util.gbkDec(ret), 0)
+                return (Util.gbkDec(ret), 0, has_end)
         finally:
             postf.close()
 
