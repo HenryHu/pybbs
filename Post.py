@@ -16,7 +16,7 @@ from Log import Log
 import curses.ascii
 
 ATTACHMENT_PAD = '\0\0\0\0\0\0\0\0'
-ATTACHMENT_SIZE = 0
+ATTACHMENT_SIZE = 8
 QUOTELEV = 1
 
 GENERATE_POST_SUFIX = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
