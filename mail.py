@@ -20,7 +20,11 @@ class Mail:
         elif (action == 'view'):
             folder = svc.get_str(params, 'folder', 'inbox')
             index = svc.get_int(params, 'index')
-            svc.writedata(Mail.View(session.GetUser(), folder, index))
+            start = svc.get_int(params, 'start', 0)
+            count = svc.get_int(params, 'count', 0)
+            if start < 0 or count < 0:
+                raise WrongArgs('start or count < 0')
+            svc.writedata(Mail.View(session.GetUser(), folder, index, start, count))
         elif (action == 'check_unread'):
             folder = svc.get_str(params, 'folder', 'inbox')
             index = svc.get_int(params, 'index', 0)
@@ -80,7 +84,7 @@ class Mail:
             raise OutOfRange('out of range')
 
     @staticmethod
-    def View(user, folder, index):
+    def View(user, folder, index, start, count):
         mbox = mailbox.MailBox(user.GetName())
         folder = mbox.get_folder(folder)
 
@@ -91,7 +95,7 @@ class Mail:
         if (post is None):
             raise OutOfRange('out of range')
 
-        info = dict(entry.GetInfo().items() + post.GetInfo().items())
+        info = dict(entry.GetInfo().items() + post.GetInfo(start, count).items())
         info['id'] = index
 
         if not entry.IsRead():
