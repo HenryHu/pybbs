@@ -4,11 +4,13 @@ import BCache
 import BoardManager
 import Config
 import User
+from cstruct import *
 
 import os
 import mmap
 import struct
 import gzip
+
 # BRC!
 
 BRC_CACHE_NUM = 20
@@ -16,54 +18,36 @@ BRC_MAXNUM = 50
 BRC_ITEMSIZE = BRC_MAXNUM * 4
 BRC_FILESIZE = BRC_ITEMSIZE * Config.MAXBOARD
 
-class BrcCacheEntry:
-    parser = struct.Struct('=i%dsi' % (BRC_MAXNUM * 4))
-    parser_bid = struct.Struct('=i')
-    parser_changed = struct.Struct('=i')
-    parser_list = struct.Struct('=%ds' % (BRC_MAXNUM * 4))
-    _fields = ['_bid', ['_list', 2, '=%dI' % BRC_MAXNUM], '_changed']
-    _changed = 0
-    _bid = 0
-    _list = []
+@init_fields
+class BrcCacheEntry(object):
+    _fields = [
+        ['bid', I32()],
+        ['list', Array(U32, BRC_MAXNUM)],
+        ['changed', I32()]
+    ]
     _index = 0
     _parent = None
     def __init__(self, parent, index):
         self._parent = parent
         self._index = index
 
-    @staticmethod
-    def Size():
-        return BRC_ITEMSIZE + 8
+    def read(self, pos, len):
+        start = self.size * self._index + pos
+        return self._parent._cache_map[start : start + len]
 
-    def Update(self, full = True):
-        if (full):
-            self.Load(self._parent._cache_map[BrcCacheEntry.Size() * self._index:BrcCacheEntry.Size() * (self._index+1)])
-        else:
-            sbid = self._parent._cache_map[BrcCacheEntry.Size() * self._index:BrcCacheEntry.Size() * self._index + 4]
-            Util.UnpackX(self, self.parser_bid.unpack(sbid), ['_bid'])
-            schanged = self._parent._cache_map[BrcCacheEntry.Size() * (self._index + 1) - 4:BrcCacheEntry.Size() * (self._index + 1)]
-            Util.UnpackX(self, self.parser_changed.unpack(schanged), ['_changed'])
+    def write(self, pos, data):
+        start = self.size * self._index + pos
+        self._parent._cache_map[start : start + len(data)] = data
 
-    def Commit(self):
-        self._parent._cache_map[BrcCacheEntry.Size() * self._index:BrcCacheEntry.Size() * (self._index+1)] = self.Save()
+    def get_list(self):
+        return self.read(BrcCacheEntry.list._base, BrcCacheEntry.list.size)
 
-    def Load(self, src):
-        Util.Unpack(self, self.parser.unpack(src))
-        self._list = list(self._list)
-
-    def Save(self):
-        return self.parser.pack(*Util.Pack(self))
-
-    def LoadList(self, src):
-        Util.UnpackX(self, self.parser_list.unpack(src), [['_list', 2, '=%dI' % BRC_MAXNUM]])
-        self._list = list(self._list)
-
-    def SaveList(self):
-        ret = self.parser_list.pack(*Util.PackX(self, [['_list', 2, '=%dI' % BRC_MAXNUM]]))
-        return ret
+    def put_list(self, data):
+        assert len(data) == BrcCacheEntry.list.size
+        self.write(BrcCacheEntry.list._base, data)
 
     def Clear(self):
-        self._list = [0] * BRC_MAXNUM
+        self.list = [0] * BRC_MAXNUM
 
 class BRead:
     _userid = ''
@@ -80,7 +64,7 @@ class BRead:
         brcpath = User.User.OwnFile(self._userid, ".boardrc.gz")
         changed = -1
         for i in range(0, BRC_CACHE_NUM):
-            if (self._cache[i]._changed == 1):
+            if (self._cache[i].changed == 1):
                 changed = i
                 break
         if (changed == -1):
@@ -97,11 +81,9 @@ class BRead:
             os.remove(brcpath)
             return
         for i in range(0, BRC_CACHE_NUM):
-            self._cache[i].Update(False)
-            if (self._cache[i]._changed == 1):
-                self._cache[i].Update(True)
+            if (self._cache[i].changed == 1):
 #                Log.debug("entry %d board %d changed, updating" % (i, self._cache[i]._bid))
-                data = data[:(self._cache[i]._bid - 1) * BRC_ITEMSIZE] + self._cache[i].SaveList() + data[self._cache[i]._bid * BRC_ITEMSIZE:]
+                data = data[:(self._cache[i].bid - 1) * BRC_ITEMSIZE] + self._cache[i].get_list() + data[self._cache[i].bid * BRC_ITEMSIZE:]
 #                data = list(data)
 #                data[(self._cache[i]._bid - 1) * BRC_ITEMSIZE:self._cache[i]._bid * BRC_ITEMSIZE] = self._cache[i].Save()
 #                data = ''.join(data)
@@ -112,11 +94,10 @@ class BRead:
 #        Log.debug("GetCache()")
         unchanged = -1
         for i in range(0, BRC_CACHE_NUM):
-            self._cache[i].Update(False)
-            if self._cache[i]._bid == 0:
+            if self._cache[i].bid == 0:
 #                Log.debug("\tsucc(empty) %d" % i)
                 return i
-            if self._cache[i]._changed == 0:
+            if self._cache[i].changed == 0:
                 unchanged = i
         if (unchanged != -1):
 #            Log.debug("\tsucc(unchanged) %d oldbid %d" % (unchanged, self._cache[unchanged]._bid))
@@ -128,15 +109,13 @@ class BRead:
     def FindCacheEntry(self, board):
         entry = -1
         if (board.index in self._bidcache):
-            self._cache[self._bidcache[board.index]].Update(False)
-            if (self._cache[self._bidcache[board.index]]._bid == board.index):
+            if (self._cache[self._bidcache[board.index]].bid == board.index):
 #                Log.debug("Board in brc cache, bidcache ok")
                 return self._bidcache[board.index]
         if (entry == -1):
             for i in range(0, BRC_CACHE_NUM):
-                self._cache[i].Update(False)
 #                Log.debug("bid: %d" % self._cache[i]._bid)
-                if (self._cache[i]._bid == board.index):
+                if (self._cache[i].bid == board.index):
 #                    Log.debug("Board in brc cache, bidcache old")
                     entry = i
                     break
@@ -154,11 +133,10 @@ class BRead:
             return False
         entry = self.FindCacheEntry(board)
         if (entry == -1):
-            Log.warn("cannot find cache entry for unread? %s", boardname)
+            Log.warn("cannot find cache entry for unread? %s" % boardname)
             return False
-        self._cache[entry].Update(True)
         for j in range(0, BRC_MAXNUM):
-            cur = self._cache[entry]._list[j]
+            cur = self._cache[entry].list[j]
 #            Log.debug("read: %d" % cur)
             if (cur == 0):
                 if (j == 0):
@@ -183,10 +161,9 @@ class BRead:
         if (entry == -1):
             return True
         centry = self._cache[entry]
-        centry.Update(True)
         noentry = False
         for i in range(0, BRC_MAXNUM):
-            cur = centry._list[i]
+            cur = centry.list[i]
             if (cur == 0):
                 if (i == 0):
                     noentry = True
@@ -195,23 +172,21 @@ class BRead:
                 return True
             elif (index > cur):
                 for j in range(BRC_MAXNUM - 1, i, -1):
-                    centry._list[j] = centry._list[j-1]
-                centry._list[i] = index
-                centry._changed = 1
-                centry.Commit()
+                    centry.list[j] = centry.list[j-1]
+                centry.list[i] = index
+                centry.changed = 1
                 return True
 
         if (noentry):
-            centry._list[0] = index
-            centry._list[1] = 1
-            centry._list[2] = 0
+            centry.list[0] = index
+            centry.list[1] = 1
+            centry.list[2] = 0
             centry._changed = 1
-            centry.Commit()
         return True
 
     def FreeCache(self):
-        if _cache_map != None:
-            _cache_map.close()
+        if self._cache_map != None:
+            self._cache_map.close()
         return
 
     def Init(self):
@@ -226,7 +201,7 @@ class BRead:
                 os.stat(entrypath)
             except:
 #                Log.debug("no brc cache file for %s, creating" % self._userid)
-                brc = '\0' * BRC_CACHE_NUM * BrcCacheEntry.Size()
+                brc = '\0' * BRC_CACHE_NUM * BrcCacheEntry.size
                 fbrc = os.open(entrypath, os.O_RDWR | os.O_CREAT, 0600)
                 os.write(fbrc, brc)
                 os.close(fbrc)
@@ -234,16 +209,15 @@ class BRead:
             if (fbrc == None):
                 Log.error("cannot init brc cache for %s" % self._userid)
                 return False
-            self._cache_map = mmap.mmap(fbrc.fileno(), BRC_CACHE_NUM * BrcCacheEntry.Size(), prot = mmap.PROT_READ | mmap.PROT_WRITE, flags = mmap.MAP_SHARED)
+            self._cache_map = mmap.mmap(fbrc.fileno(), BRC_CACHE_NUM * BrcCacheEntry.size, prot = mmap.PROT_READ | mmap.PROT_WRITE, flags = mmap.MAP_SHARED)
             fbrc.close()
             if (self._cache_map == None):
-                Log.error("failed to mmap cache file for %s" % self.userid)
+                Log.error("failed to mmap cache file for %s" % self._userid)
                 return False
 
             self._cache = [0] * BRC_CACHE_NUM
             for i in range(0, BRC_CACHE_NUM):
                 self._cache[i] = BrcCacheEntry(self, i)
-                self._cache[i].Load(self._cache_map[BrcCacheEntry.Size() * i:BrcCacheEntry.Size() * (i+1)])
 
         return True
 
@@ -282,10 +256,9 @@ class BRead:
 #        Log.debug("Load board no.: %d" % bindex)
         fbrc.seek((bindex - 1) * BRC_ITEMSIZE);
         board_read = fbrc.read(BRC_ITEMSIZE)
-        self._cache[entry].LoadList(board_read)
-        self._cache[entry]._changed = 0
-        self._cache[entry]._bid = bindex
-        self._cache[entry].Commit()
+        self._cache[entry].put_list(board_read)
+        self._cache[entry].changed = 0
+        self._cache[entry].bid = bindex
         fbrc.close()
         return True
 
@@ -301,10 +274,9 @@ class BRead:
         if bh is None:
             Log.error("Fail to load boardheader for %s" % boardname)
             return False
-        self._cache[entry]._list[0] = bh.nowid
-        self._cache[entry]._list[1] = 0
-        self._cache[entry]._changed = 1
-        self._cache[entry].Commit()
+        self._cache[entry].list[0] = bh.nowid
+        self._cache[entry].list[1] = 0
+        self._cache[entry].changed = 1
         return True
 
     def ClearTo(self, index, boardname):
@@ -316,16 +288,15 @@ class BRead:
         if (entry == -1):
             return False
         n = 0
-        while (n < BRC_MAXNUM and self._cache[entry]._list[n] != 0):
-            if (index >= self._cache[entry]._list[n]):
+        while (n < BRC_MAXNUM and self._cache[entry].list[n] != 0):
+            if (index >= self._cache[entry].list[n]):
                 break
             n = n + 1
-        if (n < BRC_MAXNUM and (self._cache[entry]._list[n] != 0 or n == 0)):
-            self._cache[entry]._list[n] = index
+        if (n < BRC_MAXNUM and (self._cache[entry].list[n] != 0 or n == 0)):
+            self._cache[entry].list[n] = index
             if (n+1 < BRC_MAXNUM):
-                self._cache[entry]._list[n+1] = 0
-            self._cache[entry]._changed = 1
-            self._cache[entry].Commit()
+                self._cache[entry].list[n+1] = 0
+            self._cache[entry].changed = 1
         return True
 
 class BReadMgr:
