@@ -106,6 +106,14 @@ class ArrayWithOwner(object):
     def __setitem__(self, index, val):
         return self.array.children[index].__set__(self.obj, val)
 
+    @property
+    def _base(self):
+        return self.array._base
+
+    @property
+    def size(self):
+        return self.array.size
+
 def init_fields(cls):
     Util.InitFields(cls)
     return cls
