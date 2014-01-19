@@ -33,6 +33,8 @@ class BrcCacheEntry(object):
 
     def read(self, pos, len):
         start = self.size * self._index + pos
+#        Log.debug("reading %d + %d" % (pos, len))
+#        Log.debug("ret: %r" % self._parent._cache_map[start : start + len])
         return self._parent._cache_map[start : start + len]
 
     def write(self, pos, data):
@@ -47,7 +49,8 @@ class BrcCacheEntry(object):
         self.write(BrcCacheEntry.list._base, data)
 
     def Clear(self):
-        self.list = [0] * BRC_MAXNUM
+        for i in xrange(BRC_MAXNUM):
+            self.list[i] = 0
 
 class BRead:
     _userid = ''
@@ -82,6 +85,7 @@ class BRead:
             return
         for i in range(0, BRC_CACHE_NUM):
             if (self._cache[i].changed == 1):
+                self._cache[i].changed = 0
 #                Log.debug("entry %d board %d changed, updating" % (i, self._cache[i]._bid))
                 data = data[:(self._cache[i].bid - 1) * BRC_ITEMSIZE] + self._cache[i].get_list() + data[self._cache[i].bid * BRC_ITEMSIZE:]
 #                data = list(data)
@@ -114,7 +118,7 @@ class BRead:
                 return self._bidcache[board.index]
         if (entry == -1):
             for i in range(0, BRC_CACHE_NUM):
-#                Log.debug("bid: %d" % self._cache[i]._bid)
+#                Log.debug("bid: %d" % self._cache[i].bid)
                 if (self._cache[i].bid == board.index):
 #                    Log.debug("Board in brc cache, bidcache old")
                     entry = i
@@ -152,8 +156,8 @@ class BRead:
                 return False
         return False
 
-    def MarkRead(self, index, board):
-        board = BoardManager.BoardManager.GetBoard(board)
+    def MarkRead(self, index, boardname):
+        board = BoardManager.BoardManager.GetBoard(boardname)
         if (board == None):
             return False
 
@@ -256,6 +260,7 @@ class BRead:
 #        Log.debug("Load board no.: %d" % bindex)
         fbrc.seek((bindex - 1) * BRC_ITEMSIZE);
         board_read = fbrc.read(BRC_ITEMSIZE)
+#        Log.debug("got list: %r" % board_read)
         self._cache[entry].put_list(board_read)
         self._cache[entry].changed = 0
         self._cache[entry].bid = bindex
