@@ -228,21 +228,27 @@ class Util:
 
     @staticmethod
     def LockFile(file, op):
-        lockdata = struct.pack('hhllhh', op, 0, 0, 0, 0, 0)
+        lockdata = struct.pack('hhlll', op, 0, 0, 0, 0)
         ret = fcntl.fcntl(file, fcntl.F_SETLKW, lockdata)
         return (ret != -1)
 
     @staticmethod
     def RLockFile(file):    # file: file descriptor
-        return Util.LockFile(file, fcntl.F_RDLCK)
+        fcntl.lockf(file, fcntl.LOCK_SH)
+        return True
+#        return Util.LockFile(file, fcntl.F_RDLCK)
 
     @staticmethod
     def WLockFile(file):
-        return Util.LockFile(file, fcntl.F_WRLCK)
+        fcntl.lockf(file, fcntl.LOCK_EX)
+        return True
+#        return Util.LockFile(file, fcntl.F_WRLCK)
 
     @staticmethod
     def UnlockFile(file):
-        return Util.LockFile(file, fcntl.F_UNLCK)
+        fcntl.lockf(file, fcntl.LOCK_UN)
+        return True
+#        return Util.LockFile(file, fcntl.F_UNLCK)
 
     @staticmethod
     def SizeGeneral(file):
