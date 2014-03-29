@@ -142,20 +142,24 @@ class SessionManager:
     def Record(session):
         conn = SessionManager.ConnectDB()
 
-        now = datetime.datetime.now()
-        conn.execute("insert into sessions values (?, ?, ?, ?, ?, ?, ?)", (session.sessionid, session.username, now, now, session._fromip, session._fromip, session.GetScopesStr()))
+        try:
+            now = datetime.datetime.now()
+            conn.execute("insert into sessions values (?, ?, ?, ?, ?, ?, ?)", (session.sessionid, session.username, now, now, session._fromip, session._fromip, session.GetScopesStr()))
 
-        conn.commit()
-        conn.close()
+            conn.commit()
+        finally:
+            conn.close()
 
     @staticmethod
     def Update(session):
         conn = SessionManager.ConnectDB()
 
-        now = datetime.datetime.now()
-        conn.execute("update sessions set last_seen = ?, last_ip = ? where id = ?", (now, session._fromip, session.sessionid))
-        conn.commit()
-        conn.close()
+        try:
+            now = datetime.datetime.now()
+            conn.execute("update sessions set last_seen = ?, last_ip = ? where id = ?", (now, session._fromip, session.sessionid))
+            conn.commit()
+        finally:
+            conn.close()
 
     @staticmethod
     def ConnectDB():
