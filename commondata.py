@@ -33,7 +33,7 @@ UNUSED_POS = MAX_WWWGUEST_POS + 4
 PUBLICSHM_SIZE = UNUSED_POS + 1004
 
 @init_fields
-class CommonData:
+class CommonData(object):
     _fields = [
         ['nowtime', I32()],
         ['sysconfimg_version', I32()],
@@ -66,6 +66,7 @@ class CommonData:
 
     @staticmethod
     def Init():
+        Log.info("Attaching commondata shm")
         if (CommonData.publicshm == None):
             try:
                 CommonData.publicshm = SharedMemory(Config.PUBLIC_SHMKEY, size = PUBLICSHM_SIZE)
