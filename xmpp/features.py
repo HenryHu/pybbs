@@ -282,13 +282,20 @@ class Resources(object):
 
         if (jid in self._bound):
             del self._bound[jid]
+        else:
+            log.warn("unbind: jid %r not bounded!" % jid)
         routes = self._routes.get(jid.bare)
         if routes:
-           if jid in routes:
-               if len(routes) > 1:
-                   routes.remove(jid)
-               else:
-                   del self._routes[jid.bare]
+            if jid in routes:
+                if len(routes) > 1:
+                    routes.remove(jid)
+                else:
+                    del self._routes[jid.bare]
+            else:
+                log.warn("unbind: jid %r not in routes!" % jid)
+        else:
+            log.warn("unbind: jid.bare %r in jid %r not in routes!" % (jid.bare, jid))
+         
         return self
 
     def routes(self, jid):

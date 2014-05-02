@@ -312,19 +312,29 @@ class XMPPServer(xmpp.Plugin):
         self.recv_presence(elem)
 
     def send_presence(self, elem):
+        # we want to send a presence
         direct = elem.get('to')
         if not direct:
+            # not sending directly to one JID
+            # send to everyone who is watching me
             self.rosters.broadcast(self, elem)
             if elem.get('type') != 'probe':
+                # if it is not a probe, send a copy to the client also
                 self.recv_presence(elem)
             if not self.probed:
+                # if we have not probed our watch list, probe them
                 self.probed = True
                 self.rosters.probe(self)
+            # check if rosters will handle this 
         elif not self.rosters.send(self, direct, elem):
+            # if not, send it to the JID specified
             self.send(direct, elem)
 
     def recv_presence(self, elem):
+        # we got a precense
+        # check if rosters will handle this
         if not self.rosters.recv(self, elem):
+            # if not, send this to the client
             self.write(elem)
 
     @xmpp.iq('{jabber:iq:roster}query')
