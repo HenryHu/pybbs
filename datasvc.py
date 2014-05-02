@@ -15,6 +15,7 @@ import SocketServer
 import socket
 import re
 import sys
+import threading
 from pwd import getpwnam
 from SocketServer import BaseServer
 from BaseHTTPServer import *
@@ -233,6 +234,7 @@ def main():
         Log.error("Failed to find user 'bbs'!")
         sys.exit(1)
 
+    threading.stack_size(1024*1024) # default stack size: 8M. may exhaust virtual address space
     port = 8080
     server = MyServer(('', port), DataService)
     print 'Starting at port %d...' % port
