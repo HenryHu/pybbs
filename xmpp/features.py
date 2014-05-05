@@ -282,8 +282,10 @@ class Resources(object):
 
         if (jid in self._bound):
             del self._bound[jid]
+            log.debug("unbind: jid %r unbinded" % jid)
         else:
             log.warn("unbind: jid %r not bounded!" % jid)
+            log.debug("current bounds: %r" % self._bound)
         routes = self._routes.get(jid.bare)
         if routes:
             if jid in routes:
@@ -291,10 +293,12 @@ class Resources(object):
                     routes.remove(jid)
                 else:
                     del self._routes[jid.bare]
+                    log.warn("unbind: jid.bare %r derouted" % jid.bare)
             else:
                 log.warn("unbind: jid %r not in routes!" % jid)
         else:
             log.warn("unbind: jid.bare %r in jid %r not in routes!" % (jid.bare, jid))
+            log.debug("current routes: %r" % self._routes)
          
         return self
 
