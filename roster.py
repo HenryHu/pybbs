@@ -47,6 +47,7 @@ class Roster(object):
         if conn.authJID not in self._requests:
             jid = conn.authJID
             self._requests.add(jid)
+            Log.debug("scheduled for forgetting for %r" % jid)
             conn.one(xmpp.StreamClosed, lambda: self.forget(jid))
         return self
 
@@ -69,6 +70,7 @@ class Roster(object):
     def forget(self, jid):
         """A client has disconnected."""
 
+        Log.debug('forgetting %r in roster' % jid)
         self._requests.discard(jid)
         self._last.pop(jid, None)
         return self

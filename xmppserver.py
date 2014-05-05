@@ -306,6 +306,7 @@ class XMPPServer(xmpp.Plugin):
         """Presence information may be sent out from the client or
         received from another account."""
 
+        #Log.warn("handle presence. me: %r elem: %r" % (self.authJID, elem))
         if self.authJID == elem.get('from'):
             if (elem.get('to') == None or (not self.authJID.match_bare(elem.get('to')))):
                 return self.send_presence(elem)
