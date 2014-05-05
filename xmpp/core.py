@@ -32,6 +32,7 @@ class Core(i.CoreInterface):
 
         self.install_features(features)
         self._reset()
+        self.closed = False
 
         self.stream.on_close(self.handle_stream_closed)
 
@@ -103,9 +104,8 @@ class Core(i.CoreInterface):
         self.close()
 
     def handle_stream_closed(self):
-        self.state.trigger(StreamClosed)
-        if (self.resources):
-            self.resources.unbind(self.authJID)
+        if self.closed:
+            return
         self.root = None
         self.close()
 
@@ -193,9 +193,13 @@ class Core(i.CoreInterface):
                         { self.LANG: 'en', 'xmlns': self.ERROR_NS},
                         text
                     ))
-                self.write(elem).close()
+                self.write(elem)
         except:
             log.exception('Exception while reporting stream error.')
+        try:
+            self.close()
+        except:
+            log.exception('Exception while closing')
 
         return self
 
@@ -373,11 +377,12 @@ class Core(i.CoreInterface):
         return self
 
     def _close(self):
+        self.closed = True
         if self.stream:
             ## This causes a segfault when the stream is closed.
             ## self.parser.close()
             try:
-                self.state.trigger(StreamClosed).clear()
+                self.state.trigger(StreamClosed).flush(True).clear()
                 self.stream.shutdown()
             finally:
                 self.stream = None
