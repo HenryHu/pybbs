@@ -7,7 +7,6 @@ from __future__ import absolute_import
 from . import interfaces as i
 from .prelude import *
 import threading
-import logging
 
 __all__ = ('State', )
 
@@ -40,7 +39,7 @@ class State(object):
         return self
 
     def clear(self, clear_events = False):
-        logging.debug("CLEAR %r %r" % (self.core, self))
+        log.debug("CLEAR %r %r" % (self.core, self))
         self.locked = False
         self.schedule.clear()
         if clear_events:
@@ -61,7 +60,7 @@ class State(object):
     ## ---------- Events ----------
 
     def bind(self, kind, callback):
-        logging.debug("BIND core: %r state: %r trigger %r: handlers %r" % (self.core, self, kind, callback))
+        log.debug("BIND core: %r state: %r trigger %r: handlers %r" % (self.core, self, kind, callback))
         self.events[kind].append(callback)
         return self
 
@@ -69,7 +68,7 @@ class State(object):
         return self.bind(kind, Once(callback))
 
     def unbind(self, kind, callback):
-        logging.debug("UNBIND core: %r state: %r trigger %r: handlers %r" % (self.core, self, kind, callback))
+        log.debug("UNBIND core: %r state: %r trigger %r: handlers %r" % (self.core, self, kind, callback))
         if kind in self.events:
             try:
                 self.events[kind].remove(callback)
@@ -79,12 +78,12 @@ class State(object):
 
     def trigger(self, event, *args, **kwargs):
         handlers = self.events.get(event)
-        logging.debug("core: %r state: %r trigger %r: handlers %r" % (self.core, self, event, handlers))
+        log.debug("core: %r state: %r trigger %r: handlers %r" % (self.core, self, event, handlers))
         if handlers:
             idx = 0; lim = len(handlers)
             while idx < lim:
                 handler = handlers[idx]
-                logging.debug("trigger %r: run %r" % (event, handler))
+                log.debug("trigger %r: run %r" % (event, handler))
                 self.run(handler, *args, **kwargs)
                 if isinstance(handler, Once):
                     del handlers[idx]
@@ -142,11 +141,14 @@ class State(object):
         self.rlock.acquire()
         try:
             self.locked = True
+            log.debug("%r %r -> LOCKED" % (self, orig))
             yield self
         finally:
             self.rlock.release()
             self.locked = orig
+            log.debug("%r LOCKED -> %r" % (self, orig))
             if not orig:
+                log.debug("%r UNLOCKED, flushing" % self)
                 self.schedule and self.flush()
 
     def run(self, method, *args, **kwargs):
@@ -158,13 +160,11 @@ class State(object):
             return self
 
         with self.lock():
-            if debug_on:
-                logging.debug("running  method %r" % method)
-                if isinstance(method, partial):
-                    logging.debug("running  method %r" % method.func)
+            log.debug("++++ running  method %r" % method)
+            if isinstance(method, partial):
+                log.debug("    ====> %r" % method.func)
             method(*args, **kwargs)
-            if debug_on:
-                logging.debug("finished method %r" % method)
+            log.debug("---- finished method %r" % method)
         return self
 
     def flush(self, force=False):
@@ -176,14 +176,12 @@ class State(object):
         try:
             self.locked = True
             while self.schedule:
-                if debug_on:
-                    name = "%r" % self.schedule[0]
-                    logging.debug("delayed running  method %s" % name)
-                    if isinstance(self.schedule[0], partial):
-                        logging.debug("delayed running  method %r" % self.schedule[0].func)
+                name = "%r" % self.schedule[0]
+                log.debug("++++ delayed running method %s" % name)
+                if isinstance(self.schedule[0], partial):
+                    log.debug("     ====> %r" % self.schedule[0].func)
                 self.schedule.popleft()()
-                if debug_on:
-                    logging.debug("delayed finished method %s" % name)
+                log.debug("---- delayed finished method %s" % name)
             return self
         finally:
             self.locked = False
