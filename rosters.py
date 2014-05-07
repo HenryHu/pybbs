@@ -384,7 +384,9 @@ class Rosters(Thread):
         for login_id in self._conns:
             conn = self._conns[login_id]
             roster = self._rosters.get(conn.authJID.bare)
-            roster.check_update(conn)
+            # user may have disconnected
+            if roster is not None:
+                roster.check_update(conn)
 
     def find_session(self, jid, pid):
         if not jid in self._session_cache:
