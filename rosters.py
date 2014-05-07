@@ -88,12 +88,14 @@ class Updater(Thread):
                 # maybe we'll know in the future...
 
 #                Log.info("enumerating...")
-                checked = set()
+                msg_start = {}
                 for loginid, conn in self._rosters._conns.items():
-                    if conn.get_uid() not in checked:
+                    uid = conn.get_uid()
+                    if uid not in msg_start:
                         # Log.info("check!")
-                        conn.check_msg()
-                        checked.add(conn.get_uid())
+                        msg_start[uid] = conn.check_msg()
+                    if msg_start[uid] >= 0:
+                        conn.deliver_msg(msg_start[uid])
                 self.new_msgs = False
             except Exception as e:
                 Log.error("Exception caught in rosters.msg_checker: %r" % e)
