@@ -199,13 +199,22 @@ class XMPPServer(xmpp.Plugin):
         if xmpp_read > msg_count:
             xmpp_read = 0
         Log.debug("total: %d xmpp read: %d" % (msg_count, xmpp_read))
+        self.rosters.set_xmpp_read(self._user.GetUID(), msg_count)
+        if xmpp_read < msg_count:
+            return xmpp_read
+        else:
+            return -1
 
-        for i in range(xmpp_read, msg_count):
+    def deliver_msg(self, start):
+        Log.debug("deliver msg to %s" % unicode(self.authJID))
+        msgbox = MsgBox.MsgBox(self._userid)
+        msg_count = msgbox.GetMsgCount(all = False)
+        my_pid = os.getpid()
+        for i in range(start, msg_count):
             msghead = msgbox.LoadMsgHead(i, all = False)
             if msghead.topid == my_pid:
                 msgtext = msgbox.LoadMsgText(msghead)
                 self.recv_msg(self.make_jid(msghead.id), msgtext)
-        self.rosters.set_xmpp_read(self._user.GetUID(), msg_count)
 
     def steal_msg(self):
         Log.debug("stealing msg for %s" % self._userid)
