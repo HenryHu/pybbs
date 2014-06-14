@@ -5,6 +5,7 @@ import json
 from errors import *
 
 DEFAULT_MAIL_VIEW_COUNT = 20
+MAIL_SIZE_UNLIMITED = -1
 
 class Mail:
     @staticmethod
