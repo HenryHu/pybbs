@@ -21,6 +21,7 @@ import BoardManager
 import Post
 import mailbox
 import UserMemo
+import Session
 from Log import Log
 
 PERM_BASIC =     000001
@@ -586,7 +587,7 @@ class User:
 
     @staticmethod
     def IsBadId(username):
-        username = username.tolower()
+        username = username.lower()
         if username == "deliver" or username == "new":
             return True
         for ch in username:
@@ -622,9 +623,13 @@ class User:
             sock.sendall("NEW %s" % username)
             ret = sock.recv(4)
             if len(ret) == 4:
-                return struct.unpack('=i', ret)
+                newid = struct.unpack('=i', ret)[0]
+                Log.debug("new user id: %d" % newid)
+                return newid
+            Log.error("invalid response from miscd for newuser")
             return -1
-        except:
+        except Exception as exc:
+            Log.error("fail to get new user id: %r" % exc)
             return -1
 
     @staticmethod
@@ -645,17 +650,17 @@ class User:
             raise WrongArgs("user exists")
 
         # detailed info
-        nick = svc.get_str(params, 'nick')
+        nick = svc.get_str(params, 'nick').decode('utf-8')
         if len(nick) < 2:
             raise WrongArgs("nick too short")
 
-        email = svc.get_str(params, 'email')
+        email = svc.get_str(params, 'email').decode('utf-8')
         if not Util.IsValidEmail(email):
             raise WrongArgs("invalid email")
-        realname = svc.get_str(params, 'realname')
+        realname = svc.get_str(params, 'realname').decode('utf-8')
         if len(realname) < 2:
             raise WrongArgs("realname too short")
-        address = svc.get_str(params, 'address')
+        address = svc.get_str(params, 'address').decode('utf-8')
         if len(address) < 6:
             raise WrongArgs("address too short")
         birthyear = svc.get_int(params, 'birthyear')
@@ -663,24 +668,27 @@ class User:
         birthday = svc.get_int(params, 'birthday')
         if not Util.IsValidDate(birthyear, birthmonth, birthday):
             raise WrongArgs("invalid birth day")
-        gender = svc.get_str(params, 'gender').toupper()
+        gender = svc.get_str(params, 'gender').upper()
         if gender != "M" and gender != "F":
             raise WrongArgs("invalid sex")
-        selfintro = svc.get_str(params, 'selfintro', '')
+        selfintro = svc.get_str(params, 'selfintro', '').decode('utf-8')
         if len(selfintro) > Config.SELF_INTRO_MAX_LEN:
             # way too long!
             selfintro = selfintro[:Config.SELF_INTRO_MAX_LEN]
         # registry form info
-        phone = svc.get_str(params, 'phone')
-        career = svc.get_str(params, 'career')
+        phone = svc.get_str(params, 'phone').decode('utf-8')
+        career = svc.get_str(params, 'career').decode('utf-8')
 
         # check home directory
         homepath = User.HomePath(username)
-        st = os.stat(homepath)
-        if not stat.S_ISDIR(st.st_mode):
-            raise WrongArgs("fail to create home dir")
-        if time.time() - st.st_ctime < Config.SEC_DELETED_OLDHOME:
-            raise WrongArgs("recently registered")
+        try:
+            st = os.stat(homepath)
+            if not stat.S_ISDIR(st.st_mode):
+                raise WrongArgs("fail to create home dir")
+            if time.time() - st.st_ctime < Config.SEC_DELETED_OLDHOME:
+                raise WrongArgs("recently registered")
+        except OSError:
+            pass
 
         # check for registry form
         try:
@@ -695,6 +703,12 @@ class User:
             raise e
         except:
             pass
+
+        # CHANGE BEGIN
+        try:
+            os.mkdir(User.HomePath(username), 0755)
+        except:
+            raise ServerError("fail to create home dir")
 
         # fill in new user data
         newuser = UCache.CreateUserRecord(username)
@@ -716,9 +730,10 @@ class User:
         newuser.firstlogin = newuser.lastlogin = int(time.time())
 
         # 2nd part: detailed info
-        newuser.username = nick
-
-        # CHANGE BEGIN
+        newuser.username = Util.gbkEnc(nick)
+        # set it to 1, so it will send hello email again
+        newuser.numlogins = 1
+        newuser.lasthost = svc.address_string()
 
         allocid = User.GetNewUserId(username)
         if allocid > Config.MAXUSERS or allocid <= 0:
@@ -738,37 +753,41 @@ class User:
         # TODO: log
 
         # login check part
-        newusermemo.realname = realname
-        newusermemo.address = address
+        newusermemo.realname = Util.gbkEnc(realname)
+        newusermemo.address = Util.gbkEnc(address)
         newusermemo.gender = gender
         newusermemo.birthyear = birthyear - 1900
         newusermemo.birthmonth = birthmonth
         newusermemo.birthday = birthday
-        newusermemo.email = email
+        newusermemo.email = Util.gbkEnc(email)
+        newusermemo.pack()
+        newusermemo.write_data()
+        newusermemo.close()
 
         # TODO: convey ID
         # TODO: SYSOP register
 
         # post newcomers email
-        newmail = Util.gbkEnc("""大家好,\n\n
-我是 %s (%s), 来自 %s\n
-今天%s初来此站报到, 请大家多多指教。\n"""
-% (username, nick, svc.address_string(), "小弟" if gender == 'M' else "小女子"))
+        newmail = u"""大家好,\n
+我是 %s (%s), 来自 %s
+今天%s初来此站报到, 请大家多多指教。
+""" % (username, nick, svc.address_string(), u"小弟" if gender == 'M' else u"小女子")
         if selfintro:
-            newmail += Util.gbkEnc("\n\n自我介绍:\n\n%s" % selfintro)
+            newmail += u"\n\n自我介绍:\n\n%s" % selfintro
         newboard = BoardManager.BoardManager.GetBoard("newcomers")
-        title = "新手上路: %s" % username
-        newboard.PostArticle(username, title, newmail, None, 0, False, False,
-                svc.GetSession(), None)
+        title = u"新手上路: %s" % nick
+        fakesession = Session.BasicSession(svc.address_string())
+        newboard.PostArticle(newuserobj, title, newmail, None, 0, False, False,
+                fakesession, None, True)
 
         # add new registry form
         with open(os.path.join(Config.BBS_ROOT, "new_register"), 'a') as regf:
             regf.write("usernum: %d, %s\n" % (allocid, time.ctime()))
-            regf.write("userid: %s\n", username)
-            regf.write(Util.gbkEnc("realname: %s\n" % realname))
-            regf.write(Util.gbkEnc("career: %s\n" % career))
-            regf.write(Util.gbkEnc("addr: %s\n" % address))
-            regf.write(Util.gbkEnc("phone: %s\n" % phone))
+            regf.write("userid: %s\n" % username)
+            regf.write(Util.gbkEnc(u"realname: %s\n" % realname))
+            regf.write(Util.gbkEnc(u"career: %s\n" % career))
+            regf.write(Util.gbkEnc(u"addr: %s\n" % address))
+            regf.write(Util.gbkEnc(u"phone: %s\n" % phone))
             regf.write("birth: %d-%d-%d\n" % (
                 birthyear - 1900, birthmonth, birthday))
             regf.write("----\n")
