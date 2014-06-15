@@ -26,7 +26,7 @@ class UserMemo:
 
         try:
             os.stat(fname)
-        except IOError:
+        except OSError as exc:
             data = self.read()
             if (data is None):
                 raise ServerError("can't load usermemo for %s" % self._name)
@@ -56,6 +56,8 @@ class UserMemo:
                 return f.read(self.size)
         except IOError:
             try:
+                if not hasattr(self, '__reserved'):
+                    Util.InitStruct(self)
                 self.userid = self._name
                 data = self.pack(False)
                 with open(datafile, "wb") as f:
@@ -66,15 +68,25 @@ class UserMemo:
 
     def unpack(self, data = None):
         if (data is None):
+            self._memo.seek(0)
             Util.Unpack(self, self.parser.unpack(self._memo.read(self.size)))
         else:
             Util.Unpack(self, self.parser.unpack(data))
 
     def pack(self, write = True):
         if (write):
+            self._memo.seek(0)
             self._memo.write(self.parser.pack(*Util.Pack(self)))
         else:
             return self.parser.pack(*Util.Pack(self))
+
+    def close(self):
+        self._memo.close()
+
+    def write_data(self):
+        datafile = User.User.OwnFile(self._name, ".userdata")
+        with open(datafile, 'w') as dataf:
+            dataf.write(self.pack(False))
 
     def GetInfo(self):
         info = {}
