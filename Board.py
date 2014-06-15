@@ -405,7 +405,7 @@ class Board:
             return False
 
         if (not user.HasPerm(User.PERM_POST)):
-            if (user.userid == 'guest'):
+            if (user.name == 'guest'):
                 return False
             if (self.name == "BBShelp"):
                 return True # not exist here
