@@ -237,4 +237,8 @@ class SessionManager:
             result['status'] = "ok"
             svc.writedata(json.dumps(result))
 
+class BasicSession(object):
+    def __init__(self, fromip):
+        self._fromip = fromip
+
 from UserManager import UserManager
