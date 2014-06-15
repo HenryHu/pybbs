@@ -57,15 +57,27 @@ class UserRecord(object):
     ]
     def __init__(self, uid):
         self.uid = uid - 1 # 0 internal
+        if uid == 0:
+            self.buf = '\0' * self.size
 
     def read(self, pos, len):
-        return UCache.uidshm.read(len, PASSWD_POS + self.size * self.uid + pos)
+        if self.uid == -1:
+            return self.buf[pos:pos+len]
+        else:
+            return UCache.uidshm.read(len, PASSWD_POS + self.size * self.uid + pos)
 
     def write(self, pos, data):
-        UCache.uidshm.write(data, PASSWD_POS + self.size * self.uid + pos)
+        if self.uid == -1:
+            self.buf[pos:pos+len(data)] = data
+        else:
+            UCache.uidshm.write(data, PASSWD_POS + self.size * self.uid + pos)
 
     def GetUID(self):
         return self.uid + 1
+
+    def Allocate(self, uid):
+        self.uid = uid - 1
+        self.write(0, self.buf)
 
 class UCache:
     uidshm = None
@@ -205,4 +217,9 @@ class UCache:
         if (userec == None):
             return jid
         return "%s@%s" % (userec.userid, left)
- 
+
+    @staticmethod
+    def CreateUserRecord(username):
+        userec = UserRecord(0)
+        userec.userid = username
+        return userec

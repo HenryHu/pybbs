@@ -1,8 +1,13 @@
 #!/usr/bin/env python
+# coding=utf8
 
 import json
 import time
 import random
+import os
+import stat
+import socket
+import struct
 
 import Config
 import modes
@@ -15,6 +20,7 @@ import mail
 import BoardManager
 import Post
 import mailbox
+import UserMemo
 
 PERM_BASIC =     000001
 PERM_CHAT =      000002
@@ -123,6 +129,8 @@ class User:
 
             raise NoPerm("normal login disabled, please use OAuth")
             UserManager.UserManager.HandleLogin(svc, params['name'], params['pass'])
+        elif action == 'register':
+            User.Register(svc, params)
         else:
             raise WrongArgs("unknown action")
 
@@ -159,14 +167,19 @@ class User:
 
     @staticmethod
     def OwnFile(userid, str):
-        return "%s/home/%s/%s/%s" % (Config.BBS_ROOT, userid[0].upper(), userid, str)
+        return os.path.join(User.HomePath(userid), str)
 
     def MyFile(self, str):
         return User.OwnFile(self.name, str)
 
     @staticmethod
     def CacheFile(userid, str):
-        return "%s/cache/home/%s/%s/%s" % (Config.BBS_ROOT, userid[0].upper(), userid, str)
+        return os.path.join(Config.BBS_ROOT, "cache", "home", userid[0].upper(),
+                userid, str)
+
+    @staticmethod
+    def HomePath(userid):
+        return os.path.join(Config.BBS_ROOT, "home", userid[0].upper(), userid)
 
     def Authorize(self, password):
         return (Util.HashGen(password, self.name) == self.userec.md5passwd and
@@ -221,6 +234,12 @@ class User:
         if (self.userec.userdef[User.DefinePos(value)] & value != 0):
             return True
         return False
+
+    def Define(self, value):
+        self.userec.userdef[User.DefinePos(value)] |= value
+
+    def Undef(self, value):
+        self.userec.userdef[User.DefinePos(value)] &= ~value
 
     def CanReadClub(self, clubnum):
         idx = clubnum - 1
@@ -559,4 +578,197 @@ class User:
             if self.mbox.full():
                 return True
         return False
+
+    @staticmethod
+    def IsInvalidId(username):
+        return not username.isalpha()
+
+    @staticmethod
+    def IsBadId(username):
+        username = username.tolower()
+        if username == "deliver" or username == "new":
+            return True
+        for ch in username:
+            if not ch.isalnum() and ch != '_':
+                return True
+        if len(username) < 2:
+            return True
+        try:
+            with open(os.path.join(Config.BBS_ROOT, '.badname'), 'r') as badf:
+                line = badf.readline()
+                while line:
+                    line = line.strip()
+                    if line[:1] != '#':
+                        parts = line.split()
+                        if len(parts) == 1 and parts[0] == username:
+                            return True
+                        if len(parts) == 2 and parts[0] == username:
+                            if time.time() - int(parts[1]) <= 24 * 30 * 3600:
+                                return True
+
+                    line = badf.readline()
+        except:
+            pass
+        return False
+
+    def SetPasswd(self, passwd):
+        self.userec.md5passwd = Util.HashGen(passwd, self.name)
+
+    @staticmethod
+    def GetNewUserId(username):
+        try:
+            sock = socket.create_connection(('127.0.0.1', 60001))
+            sock.sendall("NEW %s" % username)
+            ret = sock.recv(4)
+            if len(ret) == 4:
+                return struct.unpack('=i', ret)
+            return -1
+        except:
+            return -1
+
+    @staticmethod
+    def Register(svc, params):
+        username = svc.get_str(params, 'username')
+        password = svc.get_str(params, 'password')
+        if len(password) < 4:
+            raise WrongArgs("password too short")
+        if password == username:
+            raise WrongArgs("password equals to username")
+        if User.IsInvalidId(username):
+            raise WrongArgs("invalid id")
+        if len(username) < 2:
+            raise WrongArgs("id too short")
+        if User.IsBadId(username):
+            raise WrongArgs("bad id")
+        if UCache.SearchUser(username) != 0:
+            raise WrongArgs("user exists")
+
+        # detailed info
+        nick = svc.get_str(params, 'nick')
+        if len(nick) < 2:
+            raise WrongArgs("nick too short")
+
+        email = svc.get_str(params, 'email')
+        if not Util.IsValidEmail(email):
+            raise WrongArgs("invalid email")
+        realname = svc.get_str(params, 'realname')
+        if len(realname) < 2:
+            raise WrongArgs("realname too short")
+        address = svc.get_str(params, 'address')
+        if len(address) < 6:
+            raise WrongArgs("address too short")
+        birthyear = svc.get_int(params, 'birthyear')
+        birthmonth = svc.get_int(params, 'birthmonth')
+        birthday = svc.get_int(params, 'birthday')
+        if not Util.IsValidDate(birthyear, birthmonth, birthday):
+            raise WrongArgs("invalid birth day")
+        gender = svc.get_str(params, 'gender').toupper()
+        if gender != "M" and gender != "F":
+            raise WrongArgs("invalid sex")
+        selfintro = svc.get_str(params, 'selfintro', '')
+        if len(selfintro) > Config.SELF_INTRO_MAX_LEN:
+            # way too long!
+            selfintro = selfintro[:Config.SELF_INTRO_MAX_LEN]
+        # registry form info
+        phone = svc.get_str(params, 'phone')
+        career = svc.get_str(params, 'career')
+
+        # check home directory
+        homepath = User.HomePath(username)
+        st = os.stat(homepath)
+        if not stat.S_ISDIR(st.st_mode):
+            raise WrongArgs("fail to create home dir")
+        if time.time() - st.st_ctime < Config.SEC_DELETED_OLDHOME:
+            raise WrongArgs("recently registered")
+
+        # check for registry form
+        try:
+            with open(os.path.join(Config.BBS_ROOT, "new_register"), "r") as forms:
+                line = forms.readline()
+                while line:
+                    line = line.strip()
+                    if line == "userid: " + username:
+                        raise WrongArgs("registry form exists")
+                    line = forms.readline()
+        except WrongArgs as e:
+            raise e
+        except:
+            pass
+
+        # fill in new user data
+        newuser = UCache.CreateUserRecord(username)
+        newusermemo = UserMemo.UserMemo(username)
+        newuserobj = User(username, newuser, newusermemo)
+
+        newuser.firstlogin = newuser.lastlogin = int(time.time() - 13 * 60 *24)
+        newuserobj.SetPasswd(password)
+        # set new user's level to 0, so he can't login
+        newuser.userlevel = 0
+        newuser.userdef[0] = -1
+        newuser.userdef[1] = -1
+        newuserobj.Undef(DEF_NOTMSGFRIEND)
+        newuser.notemode = -1
+        newuser.exittime = int(time.time() - 100)
+        newuser.flags = CURSOR_FLAG | PAGER_FLAG
+        newuser.title = 0
+        # ????
+        newuser.firstlogin = newuser.lastlogin = int(time.time())
+
+        # 2nd part: detailed info
+        newuser.username = nick
+
+        # CHANGE BEGIN
+
+        allocid = User.GetNewUserId(username)
+        if allocid > Config.MAXUSERS or allocid <= 0:
+            raise ServerError("no more users")
+        newuser.Allocate(allocid)
+
+        if UCache.SearchUser(username) == 0:
+            raise ServerError("failed to create user")
+
+        # clear old cache
+        cachepath = User.CacheFile(username, "entry")
+        try:
+            os.remove(cachepath)
+        except:
+            pass
+
+        # TODO: log
+
+        # login check part
+        newusermemo.realname = realname
+        newusermemo.address = address
+        newusermemo.gender = gender
+        newusermemo.birthyear = birthyear - 1900
+        newusermemo.birthmonth = birthmonth
+        newusermemo.birthday = birthday
+        newusermemo.email = email
+
+        # TODO: convey ID
+        # TODO: SYSOP register
+
+        # post newcomers email
+        newmail = Util.gbkEnc("""大家好,\n\n
+我是 %s (%s), 来自 %s\n
+今天%s初来此站报到, 请大家多多指教。\n"""
+% (username, nick, svc.address_string(), "小弟" if gender == 'M' else "小女子"))
+        if selfintro:
+            newmail += Util.gbkEnc("\n\n自我介绍:\n\n%s" % selfintro)
+        newboard = BoardManager.BoardManager.GetBoard("newcomers")
+        title = "新手上路: %s" % username
+        newboard.PostArticle(username, title, newmail, None, 0, False, False,
+                svc.GetSession(), None)
+
+        # add new registry form
+        with open(os.path.join(Config.BBS_ROOT, "new_register"), 'a') as regf:
+            regf.write("usernum: %d, %s\n" % (allocid, time.ctime()))
+            regf.write("userid: %s\n", username)
+            regf.write(Util.gbkEnc("realname: %s\n" % realname))
+            regf.write(Util.gbkEnc("career: %s\n" % career))
+            regf.write(Util.gbkEnc("addr: %s\n" % address))
+            regf.write(Util.gbkEnc("phone: %s\n" % phone))
+            regf.write("birth: %d-%d-%d\n" % (
+                birthyear - 1900, birthmonth, birthday))
+            regf.write("----\n")
 

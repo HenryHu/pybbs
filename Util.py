@@ -12,6 +12,9 @@ import string
 import re
 import hashlib
 import Defs
+import datetime
+
+BAD_EMAILS = ("root@", "gopher@", "bbs@", "guest@")
 
 class Util:
     gbkDecoder = codecs.getdecoder('gbk')
@@ -433,6 +436,21 @@ class Util:
                 cur_len += my_len
             i += 1
         return buf
+
+    @staticmethod
+    def IsValidEmail(email):
+        for bad_email in BAD_EMAILS:
+            if bad_email in email:
+                return False
+        return re.match('[^@]+@[^@]+\.[^@]+', email)
+
+    @staticmethod
+    def IsValidDate(y, m, d):
+        try:
+            datetime.datetime(y, m, d)
+            return True
+        except:
+            return False
 
 def fixterm_handler(exc):
     fixterm_debug = False
