@@ -14,13 +14,14 @@ import modes
 from UCache import UCache
 from Friend import Friend
 from Util import Util
-from errors import *
+from errors import WrongArgs, NoPerm, Unauthorized, NotFound, ServerError
 import UserManager
 import mail
 import BoardManager
 import Post
 import mailbox
 import UserMemo
+from Log import Log
 
 PERM_BASIC =     000001
 PERM_CHAT =      000002
@@ -771,4 +772,6 @@ class User:
             regf.write("birth: %d-%d-%d\n" % (
                 birthyear - 1900, birthmonth, birthday))
             regf.write("----\n")
+
+        svc.writedata(json.dumps({"result": "ok"}))
 
