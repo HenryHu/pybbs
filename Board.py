@@ -565,9 +565,10 @@ class Board:
 
         return may_anony
 
-    def PostArticle(self, user, title, content, refile, signature_id, anony, mailback, session, attach):
+    def PostArticle(self, user, title, content, refile, signature_id, anony, mailback, session, attach, ignoreperm = False):
         # check permission
-        self.PreparePostArticle(user, refile, anony, attach)
+        if not ignoreperm:
+            self.PreparePostArticle(user, refile, anony, attach)
 
         # filter title: 'Re: ' and '\ESC'
 #        title = title.replace('\033', ' ')
