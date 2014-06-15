@@ -67,8 +67,11 @@ class UserRecord(object):
             return UCache.uidshm.read(len, PASSWD_POS + self.size * self.uid + pos)
 
     def write(self, pos, data):
+        assert pos >= 0
+        assert pos < self.size
+        assert pos + len(data) <= self.size
         if self.uid == -1:
-            self.buf[pos:pos+len(data)] = data
+            self.buf = self.buf[:pos] + data + self.buf[pos+len(data):]
         else:
             UCache.uidshm.write(data, PASSWD_POS + self.size * self.uid + pos)
 
