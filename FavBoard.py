@@ -45,6 +45,8 @@ class FavBoard:
         if not session.CheckScope('bbs'): raise NoPerm("out of scope")
         if (action == "list"):
             FavBoardMgr.ListFavBoards(svc, session, params)
+        elif action == "dirnames":
+            FavBoardMgr.Dirnames(svc, session, params)
         else:
             raise WrongArgs("unknown action")
 
@@ -119,6 +121,34 @@ class FavBoardMgr:
             return
         else:
             raise WrongArgs('invalid arguments')
+
+    @staticmethod
+    def Dirnames(svc, session, params):
+        idx = svc.get_int(params, 'index')
+
+        fboards = FavBoardMgr.LoadFavBoards(session.GetUser().name)
+        if fboards is None:
+            raise ServerError("failed to load fav boards")
+
+        fboards.LoadFavBoards()
+
+        if idx < 0 or idx >= fboards._count:
+            raise OutOfRange('index out of range')
+
+        fboard = fboards._favboards[idx]
+        if not fboard.Exists():
+            raise WrongArgs("fav board does not exist")
+
+        result = [fboard.GetInfoJSON(idx, session.GetUser())]
+        while fboard._father != -1:
+            idx = fboard._father
+            fboard = fboards._favboards[idx]
+            if not fboard.Exists():
+                raise ServerError("dir on the path does not exist")
+
+            result += fboard.GetInfoJSON(idx, session.GetUser())
+
+        svc.writedata(json.dumps(result))
 
 class FavBoards:
     def __init__(self, userid):
