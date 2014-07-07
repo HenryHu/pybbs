@@ -10,6 +10,7 @@ import os
 import json
 import sqlite3
 import datetime
+import UserManager
 from Log import Log
 from errors import *
 
@@ -50,7 +51,7 @@ class Session:
         else:
             self.sessionid = _sessionid
             self.created = _created
-        self.user = UserManager.LoadUser(user.name)
+        self.user = UserManager.UserManager.LoadUser(user.name)
         self._userinfo = None
         self.utmpent = -1
         self._fromip = fromip
@@ -205,7 +206,7 @@ class SessionManager:
             try:
                 for row in conn.execute("select * from sessions where id = ?", (id, )):
                     username = row['username']
-                    user = UserManager.LoadUser(username)
+                    user = UserManager.UserManager.LoadUser(username)
                     if (user is None):
                         continue
                     created = row['created']
@@ -241,4 +242,3 @@ class BasicSession(object):
     def __init__(self, fromip):
         self._fromip = fromip
 
-from UserManager import UserManager
