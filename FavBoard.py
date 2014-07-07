@@ -140,14 +140,14 @@ class FavBoardMgr(object):
         if not fboard.Exists():
             raise WrongArgs("fav board does not exist")
 
-        result = [fboard.GetInfoJSON(idx, session.GetUser())]
+        result = [fboard.GetInfo(idx, session.GetUser())]
         while fboard._father != -1:
             idx = fboard._father
             fboard = fboards._favboards[idx]
             if not fboard.Exists():
                 raise ServerError("dir on the path does not exist")
 
-            result += fboard.GetInfoJSON(idx, session.GetUser())
+            result += fboard.GetInfo(idx, session.GetUser())
 
         svc.writedata(json.dumps(result))
 
