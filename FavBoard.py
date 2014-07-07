@@ -147,7 +147,7 @@ class FavBoardMgr(object):
             if not fboard.Exists():
                 raise ServerError("dir on the path does not exist")
 
-            result += fboard.GetInfo(idx, session.GetUser())
+            result.append(fboard.GetInfo(idx, session.GetUser()))
 
         svc.writedata(json.dumps(result))
 
