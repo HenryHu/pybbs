@@ -99,7 +99,10 @@ class PostEntry(CStruct):
         self.accessed[-1] = int(time.time()) / (3600 * 24) % 100;
 
     def GetPostTime(self):
-        return int(self.filename.split('.')[1])
+        if '.' in self.filename:
+            return int(self.filename.split('.')[1])
+        else:
+            return 0
 
     def CanBeDeleted(self, user, board):
         return user.IsOwner(self) or user.IsSysop() or board.IsMyBM(user)
