@@ -17,7 +17,8 @@ class State(object):
         self.locks = {}
 
 class IndexBoardInfo(object):
-    def __init__(self, last_idx):
+    def __init__(self, board, last_idx):
+        self.board = board
         self.last_idx = last_idx
 
 class FastIndexer(threading.Thread):
@@ -28,6 +29,7 @@ class FastIndexer(threading.Thread):
                 detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
         self.conn.row_factory = sqlite3.Row
         self.board_info = {}
+        self.load_idx_status()
         self.state = state
         try:
             self.index_boards()
@@ -51,6 +53,28 @@ class FastIndexer(threading.Thread):
         self.conn.execute("create table %s("\
                 "id int, xid int, tid int, rid int, time int"\
                 ")" % self.table_name(board))
+        self.conn.commit()
+
+    def load_idx_status(self):
+        self.conn.execute("create table if not exists status("\
+                "board text, last_idx int)")
+        self.conn.commit()
+        try:
+            for row in self.conn.execute("select * from status"):
+                idx_info = IndexBoardInfo(**row)
+                self.board_info[idx_info.board] = idx_info
+        except:
+            Log.info("Index info not present")
+
+    def insert_idx_status(self, idx_obj):
+        self.conn.execute("insert into status values (?, ?)",
+                (idx_obj.board, idx_obj.last_idx))
+        self.conn.commit()
+
+    def remove_idx_status(self, idx_obj):
+        self.conn.execute("delete from status where board=?",
+                (idx_obj.board, ))
+        self.conn.commit()
 
     def index_boards(self):
         boards = BoardManager.BoardManager.boards.keys()
@@ -70,7 +94,7 @@ class FastIndexer(threading.Thread):
         if board in self.board_info:
             idx_obj = self.board_info[board]
         else:
-            idx_obj = IndexBoardInfo(0)
+            idx_obj = IndexBoardInfo(board, 0)
             self.board_info[board] = idx_obj
 
         bdir_path = boardobj.GetDirPath()
@@ -87,12 +111,14 @@ class FastIndexer(threading.Thread):
 
                 self.state.locks[board].acquire()
                 try:
+                    self.remove_idx_status(idx_obj)
                     self.init_db(board)
                     for idx in xrange(st.st_size / PostEntry.PostEntry.size):
                         pe = PostEntry.PostEntry(
                                 bdir.read(PostEntry.PostEntry.size))
                         self.insert_entry(board, pe, idx)
                     idx_obj.last_idx = st.st_mtime
+                    self.insert_idx_status(idx_obj)
                 finally:
                     self.state.locks[board].release()
             finally:
@@ -102,6 +128,7 @@ class FastIndexer(threading.Thread):
         self.conn.execute("insert into %s values (?, ?, ?, ?, ?)"
                 % self.table_name(board),
                 (idx, pe.id, pe.groupid, pe.reid, pe.GetPostTime()))
+        # batch commit later
 
     def table_name(self, board):
         return "idx_" + board
