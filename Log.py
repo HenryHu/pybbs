@@ -1,5 +1,6 @@
 import time
 import sys
+import traceback
 
 class Log:
     HEADER = '\033[95m'
@@ -25,6 +26,10 @@ class Log:
     def error(msg):
         if (Log._error):
             print Log.FAIL, "%s [ERROR]" % time.ctime(), msg.encode('utf-8'), Log.ENDC
+            exc_info = sys.exc_info()
+            if exc_info[0] is not None:
+                # handling exception
+                traceback.print_exc()
             sys.stdout.flush()
 
     @staticmethod
