@@ -48,11 +48,12 @@ class FastIndexer(threading.Thread):
 
             time.sleep(INDEX_INTERVAL)
 
-    def init_db(self, board):
-        self.conn.execute("drop table if exists %s" % self.table_name(board))
+    def init_buf(self, board):
+        self.conn.execute("drop table if exists %s"
+                % self.buf_table_name(board))
         self.conn.execute("create table %s("\
                 "id int, xid int, tid int, rid int, time int"\
-                ")" % self.table_name(board))
+                ")" % self.buf_table_name(board))
         self.conn.commit()
 
     def load_idx_status(self):
@@ -86,6 +87,7 @@ class FastIndexer(threading.Thread):
                         % (board, exc))
 
     def index_board(self, board):
+        """ Index one board (name: board)"""
         boardobj = BoardManager.BoardManager.GetBoard(board)
         if not boardobj:
             Log.error("Error loading board %s" % board)
@@ -109,14 +111,19 @@ class FastIndexer(threading.Thread):
                 if not board in self.state.locks:
                     self.state.locks[board] = threading.Lock()
 
+                # index into buffer table
+                self.init_buf(board)
+                for idx in xrange(st.st_size / PostEntry.PostEntry.size):
+                    pe = PostEntry.PostEntry(
+                            bdir.read(PostEntry.PostEntry.size))
+                    self.insert_entry(board, pe, idx)
+                self.conn.commit()
+
+                # commit buffer table
                 self.state.locks[board].acquire()
                 try:
                     self.remove_idx_status(idx_obj)
-                    self.init_db(board)
-                    for idx in xrange(st.st_size / PostEntry.PostEntry.size):
-                        pe = PostEntry.PostEntry(
-                                bdir.read(PostEntry.PostEntry.size))
-                        self.insert_entry(board, pe, idx)
+                    self.commit_buf(board)
                     idx_obj.last_idx = st.st_mtime
                     self.insert_idx_status(idx_obj)
                 finally:
@@ -125,11 +132,24 @@ class FastIndexer(threading.Thread):
                 Util.FUnlock(bdir)
 
     def insert_entry(self, board, pe, idx):
+        """ Insert into the buffer board """
         self.conn.execute("insert into %s values (?, ?, ?, ?, ?)"
-                % self.table_name(board),
+                % self.buf_table_name(board),
                 (idx, pe.id, pe.groupid, pe.reid, pe.GetPostTime()))
         # batch commit later
 
+    def commit_buf(self, board):
+        """ Rename the temporary table to final table """
+        self.conn.execute("drop table if exists %s" % self.table_name(board))
+        self.conn.execute("alter table %s rename to %s" %
+                (self.buf_table_name(board), self.table_name(board)))
+        self.conn.commit()
+
     def table_name(self, board):
+        """ Table name for board 'board' """
         return "idx_" + board
+
+    def buf_table_name(self, board):
+        """ Temporary table name for board 'board' """
+        return "tmp_idx_" + board
 
