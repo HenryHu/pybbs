@@ -12,6 +12,10 @@ from Util import Util
 INDEX_INTERVAL = 15
 INDEX_DB = "index.db"
 
+class State(object):
+    def __init__(self):
+        self.locks = {}
+
 class IndexBoardInfo(object):
     def __init__(self, last_idx):
         self.last_idx = last_idx
@@ -25,7 +29,6 @@ class FastIndexer(threading.Thread):
         self.conn.row_factory = sqlite3.Row
         self.board_info = {}
         self.state = state
-        self.state.locks = {}
         try:
             self.index_boards()
         except Exception as exc:
@@ -44,10 +47,10 @@ class FastIndexer(threading.Thread):
             time.sleep(INDEX_INTERVAL)
 
     def init_db(self, board):
-        self.conn.execute("drop table if exists %s" % board)
+        self.conn.execute("drop table if exists %s" % self.table_name(board))
         self.conn.execute("create table %s("\
                 "id int, xid int, tid int, rid int, time int"\
-                ")" % board)
+                ")" % self.table_name(board))
 
     def index_boards(self):
         boards = BoardManager.BoardManager.boards.keys()
@@ -70,7 +73,7 @@ class FastIndexer(threading.Thread):
             idx_obj = IndexBoardInfo(0)
             self.board_info[board] = idx_obj
 
-        bdir_path = board.GetDirPath()
+        bdir_path = boardobj.GetDirPath()
         with open(bdir_path, 'rb') as bdir:
             Util.FLock(bdir, shared=True)
             try:
@@ -96,6 +99,10 @@ class FastIndexer(threading.Thread):
                 Util.FUnlock(bdir)
 
     def insert_entry(self, board, pe, idx):
-        self.conn.execute("insert into %s values (?, ?, ?, ?, ?)" % board,
+        self.conn.execute("insert into %s values (?, ?, ?, ?, ?)"
+                % self.table_name(board),
                 (idx, pe.id, pe.groupid, pe.reid, pe.GetPostTime()))
+
+    def table_name(self, board):
+        return "idx_" + board
 
