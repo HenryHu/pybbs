@@ -153,6 +153,7 @@ class FastIndexer(threading.Thread):
                 try:
                     self.remove_idx_status(idx_obj)
                     self.commit_buf(board)
+                    self.create_db_index(board)
                     idx_obj.last_idx = status.st_mtime
                     self.insert_idx_status(idx_obj)
                 finally:
@@ -175,6 +176,14 @@ class FastIndexer(threading.Thread):
         self.conn.execute("drop table if exists %s" % table_name(board))
         self.conn.execute("alter table %s rename to %s" %
                 (buf_table_name(board), table_name(board)))
+        self.conn.commit()
+
+    def create_db_index(self, board):
+        """ Create database index for faster query. """
+        idx_name = "idx_tid_%s" % board
+        self.conn.execute("drop index if exists %s" % idx_name)
+        self.conn.execute("create index %s on %s ( tid )" %
+                (idx_name, table_name(board)))
         self.conn.commit()
 
 def query_by_tid(state, board, tid, start, count):
