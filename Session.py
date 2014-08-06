@@ -176,6 +176,7 @@ class SessionManager:
     @staticmethod
     def InitDB(conn):
         conn.execute("create table sessions(id text, username text, created timestamp, last_seen timestamp, login_ip text, last_ip text, scopes text)")
+        conn.execute("create index if not exists idx_id_sessions on sessions ( id )")
         conn.commit()
 
     @staticmethod
