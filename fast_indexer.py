@@ -122,8 +122,8 @@ class FastIndexer(threading.Thread):
                 if not board in self.state.locks:
                     self.state.locks[board] = threading.Lock()
 
-                st = os.stat(bdir_path)
-                if st.st_mtime <= idx_obj.last_idx:
+                status = os.stat(bdir_path)
+                if status.st_mtime <= idx_obj.last_idx:
                     # why <? anyway...
                     return
 
@@ -131,10 +131,10 @@ class FastIndexer(threading.Thread):
 
                 # index into buffer table
                 self.init_buf(board)
-                for idx in xrange(st.st_size / PostEntry.PostEntry.size):
-                    pe = PostEntry.PostEntry(
+                for idx in xrange(status.st_size / PostEntry.PostEntry.size):
+                    post_entry = PostEntry.PostEntry(
                             bdir.read(PostEntry.PostEntry.size))
-                    self.insert_entry(board, pe, idx)
+                    self.insert_entry(board, post_entry, idx)
                 self.conn.commit()
 
                 # commit buffer table
@@ -142,7 +142,7 @@ class FastIndexer(threading.Thread):
                 try:
                     self.remove_idx_status(idx_obj)
                     self.commit_buf(board)
-                    idx_obj.last_idx = st.st_mtime
+                    idx_obj.last_idx = status.st_mtime
                     self.insert_idx_status(idx_obj)
                 finally:
                     self.state.locks[board].release()
@@ -151,11 +151,12 @@ class FastIndexer(threading.Thread):
             finally:
                 Util.FUnlock(bdir)
 
-    def insert_entry(self, board, pe, idx):
+    def insert_entry(self, board, post_entry, idx):
         """ Insert into the buffer board """
         self.conn.execute("insert into %s values (?, ?, ?, ?, ?)"
                 % buf_table_name(board),
-                (idx, pe.id, pe.groupid, pe.reid, pe.GetPostTime()))
+                (idx, post_entry.id, post_entry.groupid,
+                    post_entry.reid, post_entry.GetPostTime()))
         # batch commit later
 
     def commit_buf(self, board):
