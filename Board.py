@@ -1194,14 +1194,14 @@ class Board:
                 'idonly': only return id and xid
                 'compact': return post info
                 'detailed': also return post content, return at most
-                    'max_length' characters for each post
+                    'max_lines' lines for each post
             Return a list of posts. """
 
         start = svc.get_int(param, 'start', 0)
         count = svc.get_int(param, 'count', 10)
         tid = svc.get_int(param, 'tid')
         mode = svc.get_str(param, 'mode', 'idonly')
-        content_len = svc.get_str(param, 'max_length', 200)
+        content_len = svc.get_str(param, 'max_lines', 25)
 
         result = fast_indexer.query_by_tid(svc.server.fast_indexer_state,
                 self.name, tid, start, count)
