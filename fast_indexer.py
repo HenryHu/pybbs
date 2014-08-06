@@ -1,3 +1,6 @@
+""" Fast indexer
+    Supports fast query of posts from a certain thread.
+"""
 import threading
 import os
 import time
@@ -13,15 +16,18 @@ INDEX_INTERVAL = 15
 INDEX_DB = "index.db"
 
 class State(object):
+    """ FastIndexer's shared state """
     def __init__(self):
         self.locks = {}
 
 class IndexBoardInfo(object):
+    """ Indexing status of one board """
     def __init__(self, board, last_idx):
         self.board = board
         self.last_idx = last_idx
 
 class FastIndexer(threading.Thread):
+    """ The Fast Indexer """
     def __init__(self, state):
         threading.Thread.__init__(self)
         self.stopped = False
@@ -65,6 +71,7 @@ class FastIndexer(threading.Thread):
         self.close_conn()
 
     def init_buf(self, board):
+        """ Initialize buffer table. """
         self.conn.execute("drop table if exists %s"
                 % buf_table_name(board))
         self.conn.execute("create table %s("\
@@ -73,6 +80,7 @@ class FastIndexer(threading.Thread):
         self.conn.commit()
 
     def load_idx_status(self):
+        """ Load latest indexing status. """
         self.conn.execute("create table if not exists status("\
                 "board text, last_idx int)")
         self.conn.commit()
@@ -84,16 +92,19 @@ class FastIndexer(threading.Thread):
             Log.info("Index info not present")
 
     def insert_idx_status(self, idx_obj):
+        """ Insert new indexing status for 'idx_obj'. """
         self.conn.execute("insert into status values (?, ?)",
                 (idx_obj.board, idx_obj.last_idx))
         self.conn.commit()
 
     def remove_idx_status(self, idx_obj):
+        """ Remove indexing status for 'idx_obj'. """
         self.conn.execute("delete from status where board=?",
                 (idx_obj.board, ))
         self.conn.commit()
 
     def index_boards(self):
+        """ Index all the boards. """
         boards = BoardManager.BoardManager.boards.keys()
         for board in boards:
             try:
