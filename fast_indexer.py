@@ -25,10 +25,10 @@ class FastIndexer(threading.Thread):
     def __init__(self, state):
         threading.Thread.__init__(self)
         self.stopped = False
-        self.conn = sqlite3.connect(os.path.join(Config.BBS_ROOT, INDEX_DB),
-                detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
-        self.conn.row_factory = sqlite3.Row
         self.board_info = {}
+        self.conn = None
+
+        self.init_conn()
         self.load_idx_status()
         self.state = state
         Log.info("FastIndexer init...")
@@ -38,9 +38,21 @@ class FastIndexer(threading.Thread):
             Log.error("Exception caught initializing FastIndexer: %r" % exc)
             raise exc
         Log.info("FastIndexer inited")
+        self.close_conn()
+
+    def init_conn(self):
+        """ Initialize database connection """
+        self.conn = sqlite3.connect(os.path.join(Config.BBS_ROOT, INDEX_DB),
+                detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
+        self.conn.row_factory = sqlite3.Row
+
+    def close_conn(self):
+        """ Close database connection """
+        self.conn.close()
 
     def run(self):
         Log.info("FastIndexer start")
+        self.init_conn()
         while True:
             if self.stopped:
                 break
@@ -50,6 +62,7 @@ class FastIndexer(threading.Thread):
                 Log.error("Exception caught in FastIndexer: %r" % exc)
 
             time.sleep(INDEX_INTERVAL)
+        self.close_conn()
 
     def init_buf(self, board):
         self.conn.execute("drop table if exists %s"
