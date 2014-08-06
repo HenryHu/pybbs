@@ -40,6 +40,7 @@ import mail
 import commondata
 import clientdb
 import resource
+import fast_indexer
 from errors import *
 
 class DataService(BaseHTTPRequestHandler):
@@ -223,6 +224,10 @@ class MyServer(SocketServer.ThreadingMixIn, HTTPServer):
         BoardManager.Init()
         UCache.Init()
         commondata.CommonData.Init()
+        self.fast_indexer_state = fast_indexer.State()
+        self.fast_indexer = fast_indexer.FastIndexer(fast_indexer_state)
+        self.fast_indexer.daemon = True
+        self.fast_indexer.start()
 
     pass
 

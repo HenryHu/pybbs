@@ -25,6 +25,7 @@ import digest
 import store
 import mmap
 import searchquery
+import fast_indexer
 
 DEFAULT_GET_POST_COUNT = 20
 
@@ -110,17 +111,19 @@ class Board:
             if (not bo.CheckReadPerm(session.GetUser())):
                 raise NoPerm("permission denied")
 
-        if (action == 'post_list'):
-            if (bo == None):
-                raise WrongArgs("lack of board name")
-            bo.GetPostList(svc, session, params)
-        elif (action == 'list'):
+        if action == 'list':
             BoardManager.BoardManager.ListBoards(svc, session, params)
-        elif (action == 'note' or action == 'secnote'):
-            if (bo == None):
-                raise WrongArgs("lack of board name")
+
+        if bo == None:
+            raise WrongArgs("lack of board name")
+
+        if action == 'post_list':
+            bo.GetPostList(svc, session, params)
+        elif action == 'note' or action == 'secnote':
             result = {'content' : bo.GetNote((action == 'secnote'))}
             svc.writedata(json.dumps(result))
+        elif action == 'thread_list':
+            bo.GetThreadList(svc, session, params)
         else:
             raise WrongArgs("unknown action")
 
@@ -1182,6 +1185,20 @@ class Board:
             else:
                 curr_id -= 1
         return result
+
+    def GetThreadList(self, svc, session, param):
+        start = svc.get_int(params, 'start', 0)
+        count = svc.get_int(params, 'count', 10)
+        tid = svc.get_int(params, 'tid')
+
+        result = fast_indexer.query_by_tid(svc.server.fast_indexer_state,
+                self.name, tid, start, count)
+
+        ret = []
+        for (post_id, post_xid) in result:
+            ret.append({'id': post_id, 'xid': post_xid})
+
+        svc.writedata(json.dumps({'result': 'ok', 'list': ret}))
 
 from Post import Post
 
