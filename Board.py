@@ -1187,16 +1187,51 @@ class Board:
         return result
 
     def GetThreadList(self, svc, session, param):
+        """ handle board/thread_list
+            List posts in the thread 'tid'.
+            From the 'start'th post in the thread, return 'count' results.
+            If mode is:
+                'idonly': only return id and xid
+                'compact': return post info
+                'detailed': also return post content, return at most
+                    'max_length' characters for each post
+            Return a list of posts. """
+
         start = svc.get_int(param, 'start', 0)
         count = svc.get_int(param, 'count', 10)
         tid = svc.get_int(param, 'tid')
+        mode = svc.get_str(param, 'mode', 'idonly')
+        content_len = svc.get_str(param, 'max_length', 200)
 
         result = fast_indexer.query_by_tid(svc.server.fast_indexer_state,
                 self.name, tid, start, count)
 
         ret = []
         for (post_id, post_xid) in result:
-            ret.append({'id': post_id, 'xid': post_xid})
+            if mode == 'idonly':
+                ret.append({'id': post_id, 'xid': post_xid})
+            else:
+                (post_entry, cur_post_id) = self.FindPost(
+                        post_id, post_xid, 'normal')
+                if post_entry is None:
+                    # deleted after last index?
+                    continue
+                post_info = post_entry.GetInfoExtended(session.GetUser(), self)
+                post_info['id'] = cur_post_id
+                if mode == 'detailed':
+                    postpath = self.GetBoardPath() + post_entry.filename
+                    postobj = Post(postpath, post_entry)
+                    post_info = dict(post_info.items()
+                            + postobj.GetInfo(0, content_len).items())
+                    if (post_info['picattach'] or post_info['otherattach']):
+                        post_info['attachlink'] = Post.GetAttachLink(
+                                session, self, post_entry)
+                    # mark the post as read
+                    # only in detailed mode
+                    bread = BRead.BReadMgr.LoadBRead(session.GetUser().name)
+                    bread.Load(self.name)
+                    bread.MarkRead(post_xid, self.name)
+                ret.append(post_info)
 
         svc.writedata(json.dumps({'result': 'ok', 'list': ret}))
 
