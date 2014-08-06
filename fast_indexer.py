@@ -31,13 +31,16 @@ class FastIndexer(threading.Thread):
         self.board_info = {}
         self.load_idx_status()
         self.state = state
+        Log.info("FastIndexer init...")
         try:
             self.index_boards()
         except Exception as exc:
             Log.error("Exception caught initializing FastIndexer: %r" % exc)
             raise exc
+        Log.info("FastIndexer inited")
 
     def run(self):
+        Log.info("FastIndexer start")
         while True:
             if self.stopped:
                 break
@@ -50,10 +53,10 @@ class FastIndexer(threading.Thread):
 
     def init_buf(self, board):
         self.conn.execute("drop table if exists %s"
-                % self.buf_table_name(board))
+                % buf_table_name(board))
         self.conn.execute("create table %s("\
                 "id int, xid int, tid int, rid int, time int"\
-                ")" % self.buf_table_name(board))
+                ")" % buf_table_name(board))
         self.conn.commit()
 
     def load_idx_status(self):
@@ -108,6 +111,8 @@ class FastIndexer(threading.Thread):
                     # why <? anyway...
                     return
 
+                Log.debug("Board %s updated. Indexing..." % board)
+
                 if not board in self.state.locks:
                     self.state.locks[board] = threading.Lock()
 
@@ -128,28 +133,50 @@ class FastIndexer(threading.Thread):
                     self.insert_idx_status(idx_obj)
                 finally:
                     self.state.locks[board].release()
+
+                Log.debug("Board %s indexed." % board)
             finally:
                 Util.FUnlock(bdir)
 
     def insert_entry(self, board, pe, idx):
         """ Insert into the buffer board """
         self.conn.execute("insert into %s values (?, ?, ?, ?, ?)"
-                % self.buf_table_name(board),
+                % buf_table_name(board),
                 (idx, pe.id, pe.groupid, pe.reid, pe.GetPostTime()))
         # batch commit later
 
     def commit_buf(self, board):
         """ Rename the temporary table to final table """
-        self.conn.execute("drop table if exists %s" % self.table_name(board))
+        self.conn.execute("drop table if exists %s" % table_name(board))
         self.conn.execute("alter table %s rename to %s" %
-                (self.buf_table_name(board), self.table_name(board)))
+                (buf_table_name(board), table_name(board)))
         self.conn.commit()
 
-    def table_name(self, board):
-        """ Table name for board 'board' """
-        return "idx_" + board
+def query_by_tid(state, board, tid, start, count):
+    """ Query in the index of board 'board' for all threads with tid 'tid'
+            starting from 'start', return 'count' results """
+    conn = sqlite3.connect(os.path.join(Config.BBS_ROOT, INDEX_DB),
+            detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
+    conn.row_factory = sqlite3.Row
+    state.locks[board].acquire()
 
-    def buf_table_name(self, board):
-        """ Temporary table name for board 'board' """
-        return "tmp_idx_" + board
+    try:
+        result = []
+        for row in conn.execute(
+                "select id, xid from %s where tid=? order by id limit %d offset %d"
+                % (table_name(board), count - start, start), (tid, )):
+            result.append((row['id'], row['xid']))
+    finally:
+        state.locks[board].release()
+        conn.close()
+
+    return result
+
+def table_name(board):
+    """ Table name for board 'board' """
+    return "idx_" + board
+
+def buf_table_name(board):
+    """ Temporary table name for board 'board' """
+    return "tmp_idx_" + board
 
