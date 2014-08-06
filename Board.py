@@ -18,7 +18,6 @@ import fcntl
 import time
 import os
 import re
-import random
 import binascii
 from errors import *
 import digest
@@ -186,6 +185,11 @@ class Board:
             return 0
 
     def GetPostList(self, svc, session, params):
+        """ handle board/post_list
+            List posts in this board in mode 'mode'.
+            Start listing from post #'start', till post #'end',
+                return at most 'count' posts.
+        """
         mode = Util.GetString(params, 'mode', 'normal')
         start = Util.GetInt(params, 'start')
         end = Util.GetInt(params, 'end')
@@ -343,6 +347,7 @@ class Board:
             raise OutOfRange("invalid post id")
 
     def GetInfo(self):
+        """ Get information of this board. """
         rboard = {}
         rboard['name'] = self.name
         title = self.GetTitle()
@@ -364,17 +369,21 @@ class Board:
         return rboard
 
     def GetInfoWithUser(self, user):
+        """ Get information of this board, including user-specific parts. """
         rboard = self.GetInfo()
         rboard['read'] = not self.GetUnread(user)
         return rboard
 
     def GetInfoWithUserJSON(self, user):
+        """ Get information in JSON form, including user-specific parts. """
         return json.dumps(self.GetInfoWithUser(user))
 
     def GetInfoJSON(self):
+        """ Get information in JSON form. """
         return json.dumps(self.GetInfo())
 
     def CheckReadPerm(self, user):
+        """ Check if user 'user' can read this board. """
         if (self.header == None):
             return False
 
@@ -396,11 +405,13 @@ class Board:
         return False
 
     def CheckFlag(self, flag):
+        """ Check whether this board has flag 'flag'. """
         if (self.header.flag & flag != 0):
             return True
         return False;
 
     def CheckPostPerm(self, user):
+        """ Check if user 'user' can post on this board. """
         if (self.header == None):
             return False
 
@@ -433,6 +444,7 @@ class Board:
             return False
 
     def CheckSeePerm(self, user):
+        """ Check if user 'user' can see this board. """
         if (self.header == None):
             return False
         if (user == None):
@@ -455,9 +467,11 @@ class Board:
         return False
 
     def GetTitle(self):
+        """ Get this board's title. """
         return Util.gbkDec(self.header.title)
 
     def GetBM(self):
+        """ Get this board's list of BMs. """
         return self.header.BM
 
     def GetTotal(self):
