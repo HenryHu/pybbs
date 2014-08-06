@@ -318,7 +318,9 @@ class Digest:
             return
         elif (action == "view"):
             route = svc.get_str(params, 'route')
-            Digest.View(svc, basenode, route, session, has_perm)
+            start = svc.get_int(params, 'start', 0)
+            count = svc.get_int(params, 'count', 0)
+            Digest.View(svc, basenode, route, session, has_perm, start, count)
             return
         else:
             raise WrongArgs('unknown action %s' % action)
@@ -356,7 +358,7 @@ class Digest:
         svc.writedata(json.dumps(result))
 
     @staticmethod
-    def View(svc, basenode, route, session, has_perm):
+    def View(svc, basenode, route, session, has_perm, start, count):
         route_array = Digest.ParseRoute(route)
         item = basenode.GetItem(session.GetUser(), route_array, has_perm)
         if (not item):
@@ -366,7 +368,7 @@ class Digest:
         result = {}
         result['item'] = item.GetInfoForUser(session.GetUser())
         postinfo = Post.Post(item.realpath(), None)
-        (result['content'], result['has_end']) = postinfo.GetContent()
+        (result['content'], result['has_end']) = postinfo.GetContent(start, count)
         attachlist = postinfo.GetAttachListByType()
         result['picattach'] = attachlist[0]
         result['otherattach'] = attachlist[1]
