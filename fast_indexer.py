@@ -106,15 +106,15 @@ class FastIndexer(threading.Thread):
         with open(bdir_path, 'rb') as bdir:
             Util.FLock(bdir, shared=True)
             try:
+                if not board in self.state.locks:
+                    self.state.locks[board] = threading.Lock()
+
                 st = os.stat(bdir_path)
                 if st.st_mtime <= idx_obj.last_idx:
                     # why <? anyway...
                     return
 
                 Log.debug("Board %s updated. Indexing..." % board)
-
-                if not board in self.state.locks:
-                    self.state.locks[board] = threading.Lock()
 
                 # index into buffer table
                 self.init_buf(board)
@@ -164,8 +164,8 @@ def query_by_tid(state, board, tid, start, count):
         result = []
         for row in conn.execute(
                 "select id, xid from %s where tid=? order by id limit %d offset %d"
-                % (table_name(board), count - start, start), (tid, )):
-            result.append((row['id'], row['xid']))
+                % (table_name(board), count, start), (tid, )):
+            result.append((row['id'] + 1, row['xid']))
     finally:
         state.locks[board].release()
         conn.close()
