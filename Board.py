@@ -1187,9 +1187,9 @@ class Board:
         return result
 
     def GetThreadList(self, svc, session, param):
-        start = svc.get_int(params, 'start', 0)
-        count = svc.get_int(params, 'count', 10)
-        tid = svc.get_int(params, 'tid')
+        start = svc.get_int(param, 'start', 0)
+        count = svc.get_int(param, 'count', 10)
+        tid = svc.get_int(param, 'tid')
 
         result = fast_indexer.query_by_tid(svc.server.fast_indexer_state,
                 self.name, tid, start, count)

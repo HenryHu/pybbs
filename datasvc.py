@@ -225,7 +225,7 @@ class MyServer(SocketServer.ThreadingMixIn, HTTPServer):
         UCache.Init()
         commondata.CommonData.Init()
         self.fast_indexer_state = fast_indexer.State()
-        self.fast_indexer = fast_indexer.FastIndexer(fast_indexer_state)
+        self.fast_indexer = fast_indexer.FastIndexer(self.fast_indexer_state)
         self.fast_indexer.daemon = True
         self.fast_indexer.start()
 
