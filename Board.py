@@ -112,6 +112,7 @@ class Board:
 
         if action == 'list':
             BoardManager.BoardManager.ListBoards(svc, session, params)
+            return
 
         if bo == None:
             raise WrongArgs("lack of board name")
