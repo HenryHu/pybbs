@@ -1201,7 +1201,7 @@ class Board:
         count = svc.get_int(param, 'count', 10)
         tid = svc.get_int(param, 'tid')
         mode = svc.get_str(param, 'mode', 'idonly')
-        content_len = svc.get_str(param, 'max_lines', 25)
+        content_len = svc.get_int(param, 'max_lines', 25)
 
         result = fast_indexer.query_by_tid(svc.server.fast_indexer_state,
                 self.name, tid, start, count)
