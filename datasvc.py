@@ -216,8 +216,9 @@ class MyServer(SocketServer.ThreadingMixIn, HTTPServer):
 #        ctx.use_privatekey_file(fpem)
 #        ctx.use_certificate_chain_file(fpem)
 #        self.socket = SSL.Connection(ctx, socket.socket(self.address_family, self.socket_type))
-        self.socket = ssl.wrap_socket(
-                socket.socket(self.address_family, self.socket_type),
+        self.base_socket = socket.socket(self.address_family, self.socket_type)
+        self.base_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        self.socket = ssl.wrap_socket(self.base_socket,
                 certfile=fpem, server_side=True)
         self.server_bind()
         self.server_activate()
