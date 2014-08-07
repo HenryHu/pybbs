@@ -67,6 +67,9 @@ class DataService(BaseHTTPRequestHandler):
         else:
             raise exception()
 
+    def setup(self):
+        self.wbufsize = 16384
+        BaseHTTPRequestHandler.setup(self)
 #    def setup(self):
 #        self.connection = self.request
 #        self.rfile = socket._fileobject(self.request, "rb", self.rbufsize)
@@ -98,6 +101,7 @@ class DataService(BaseHTTPRequestHandler):
 
             self.end_headers()
             self.wfile.write(data)
+            self.wfile.flush()
         except:
             pass
 
@@ -107,6 +111,7 @@ class DataService(BaseHTTPRequestHandler):
         self.send_header("Content-Length", len(data))
         self.end_headers()
         self.wfile.write(data)
+        self.wfile.flush()
 
     def do_POST(self):
         url_tuple = urlparse.urlsplit(self.path)
@@ -181,6 +186,7 @@ class DataService(BaseHTTPRequestHandler):
 
             self.end_headers()
             self.wfile.write(data)
+            self.wfile.flush()
         except:
             pass
 
@@ -217,7 +223,7 @@ class MyServer(SocketServer.ThreadingMixIn, HTTPServer):
 #        ctx.use_certificate_chain_file(fpem)
 #        self.socket = SSL.Connection(ctx, socket.socket(self.address_family, self.socket_type))
         self.base_socket = socket.socket(self.address_family, self.socket_type)
-        self.base_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+#        self.base_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         self.socket = ssl.wrap_socket(self.base_socket,
                 certfile=fpem, server_side=True)
         self.server_bind()
