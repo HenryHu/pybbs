@@ -212,10 +212,13 @@ class MyServer(SocketServer.ThreadingMixIn, HTTPServer):
         self.Init()
 
 #        ctx = SSL.Context(SSL.SSLv23_METHOD)
-#        fpem = Config.GetString('BBS_DATASVC_CERT', 'server.pem')
+        fpem = Config.GetString('BBS_DATASVC_CERT', 'server.pem')
 #        ctx.use_privatekey_file(fpem)
 #        ctx.use_certificate_chain_file(fpem)
 #        self.socket = SSL.Connection(ctx, socket.socket(self.address_family, self.socket_type))
+        self.socket = ssl.wrap_socket(
+                socket.socket(self.address_family, self.socket_type),
+                certfile=fpem, server_side=True)
         self.server_bind()
         self.server_activate()
 
@@ -241,8 +244,6 @@ def main():
     threading.stack_size(1024*1024) # default stack size: 8M. may exhaust virtual address space
     port = 8080
     server = MyServer(('', port), DataService)
-    fpem = Config.GetString('BBS_DATASVC_CERT', 'server.pem')
-    server.socket = ssl.wrap_socket(server.socket, certfile=fpem, server_side=True)
     print 'Starting at port %d...' % port
     try:
         server.serve_forever()
