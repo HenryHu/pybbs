@@ -187,7 +187,7 @@ class DataService(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.flush()
         except:
-            pass
+            Log.error("Error handling OPTIONS")
 
     def get_bool(self, params, name, defval = None):
         val = self.get_str(params, name, defval)
