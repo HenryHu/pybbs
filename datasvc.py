@@ -19,7 +19,8 @@ import threading
 from pwd import getpwnam
 from SocketServer import BaseServer
 from BaseHTTPServer import *
-from OpenSSL import SSL
+#from OpenSSL import SSL
+import ssl
 from Post import Post
 from Board import Board
 from Session import Session
@@ -66,10 +67,10 @@ class DataService(BaseHTTPRequestHandler):
         else:
             raise exception()
 
-    def setup(self):
-        self.connection = self.request
-        self.rfile = socket._fileobject(self.request, "rb", self.rbufsize)
-        self.wfile = socket._fileobject(self.request, "wb", self.wbufsize)
+#    def setup(self):
+#        self.connection = self.request
+#        self.rfile = socket._fileobject(self.request, "rb", self.rbufsize)
+#        self.wfile = socket._fileobject(self.request, "wb", self.wbufsize)
 
     def address_string(self):
         try:
@@ -210,11 +211,12 @@ class MyServer(SocketServer.ThreadingMixIn, HTTPServer):
         BaseServer.__init__(self, server_address, HandlerClass)
         self.Init()
 
-        ctx = SSL.Context(SSL.SSLv23_METHOD)
+#        ctx = SSL.Context(SSL.SSLv23_METHOD)
         fpem = Config.GetString('BBS_DATASVC_CERT', 'server.pem')
-        ctx.use_privatekey_file(fpem)
-        ctx.use_certificate_chain_file(fpem)
-        self.socket = SSL.Connection(ctx, socket.socket(self.address_family, self.socket_type))
+#        ctx.use_privatekey_file(fpem)
+#        ctx.use_certificate_chain_file(fpem)
+#        self.socket = SSL.Connection(ctx, socket.socket(self.address_family, self.socket_type))
+        self.socket = ssl.wrap_socket(self.socket, certfile=fpem, server_side=True)
         self.server_bind()
         self.server_activate()
 
@@ -228,8 +230,6 @@ class MyServer(SocketServer.ThreadingMixIn, HTTPServer):
         self.fast_indexer = fast_indexer.FastIndexer(self.fast_indexer_state)
         self.fast_indexer.daemon = True
         self.fast_indexer.start()
-
-    pass
 
 def main():
     try:
