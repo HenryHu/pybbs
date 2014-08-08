@@ -59,6 +59,7 @@ class DataService(BaseHTTPRequestHandler):
               }
     classes_keys = classes.keys()
     protocol_version = 'HTTP/1.1'
+    wbufsize = 16384
 
     def parse_req(self, req):
         m = re.search("^/([^/]*)/(.*)$", req)
@@ -67,9 +68,6 @@ class DataService(BaseHTTPRequestHandler):
         else:
             raise exception()
 
-    def setup(self):
-        self.wbufsize = 16384
-        BaseHTTPRequestHandler.setup(self)
 #    def setup(self):
 #        self.connection = self.request
 #        self.rfile = socket._fileobject(self.request, "rb", self.rbufsize)
@@ -103,7 +101,7 @@ class DataService(BaseHTTPRequestHandler):
             self.wfile.write(data)
             self.wfile.flush()
         except:
-            pass
+            Log.error("Error writing data out")
 
     def return_error(self, code, reason, data = ''):
         self.send_response(code, reason)
