@@ -140,6 +140,7 @@ class Auth:
         svc.send_header('Location', rduri + '?error=%s' % error)
         svc.send_header('Content-Length', 0)
         svc.end_headers()
+        svc.wfile.flush()
         return
 
     @staticmethod
@@ -237,6 +238,7 @@ class Auth:
                 svc.send_header('Location', target_uri)
                 svc.send_header('Content-Length', 0)
                 svc.end_headers()
+                svc.wfile.flush()
             else:
                 raise AuthError(rduri, 'access_denied')
         finally:
