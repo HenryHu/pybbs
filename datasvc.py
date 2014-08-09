@@ -222,7 +222,7 @@ class MyServer(SocketServer.ThreadingMixIn, HTTPServer):
         self.base_socket = socket.socket(self.address_family, self.socket_type)
 #        self.base_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         self.socket = ssl.wrap_socket(self.base_socket,
-                certfile=fpem, server_side=True)
+                certfile=fpem, server_side=True, do_handshake_on_connect=False)
         self.server_bind()
         self.server_activate()
 
@@ -236,6 +236,11 @@ class MyServer(SocketServer.ThreadingMixIn, HTTPServer):
         self.fast_indexer = fast_indexer.FastIndexer(self.fast_indexer_state)
         self.fast_indexer.daemon = True
         self.fast_indexer.start()
+
+    def finish_request(self, request, client_address):
+        """ OverrideBaseServer.finish_request """
+        request.do_handshake()
+        self.RequestHandlerClass(request, client_address, self)
 
 def main():
     try:
