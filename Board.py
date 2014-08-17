@@ -285,7 +285,7 @@ class Board:
             bfwd = False
         # idonly / compact / detailed
         mode = svc.get_str(params, 'mode', 'idonly')
-        content_len = svc.get_int(params, 'length', 25)
+        content_len = svc.get_int(params, 'max_lines', 25)
 
         last_one = bool(svc.get_int(params, 'last_one', 0))
         only_new = bool(svc.get_int(params, 'only_new', 0))
