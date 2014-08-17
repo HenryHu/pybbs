@@ -283,21 +283,42 @@ class Board:
         bfwd = True
         if (direction == 'backward'):
             bfwd = False
+        # idonly / compact / detailed
+        mode = svc.get_str(params, 'mode', 'idonly')
+        content_len = svc.get_int(params, 'length', 25)
 
         last_one = bool(svc.get_int(params, 'last_one', 0))
         only_new = bool(svc.get_int(params, 'only_new', 0))
         
-        next_id = self.GetNextPost(id, bfwd, last_one, only_new, session.GetUser())
+        (next_id, next_xid) = self.GetNextPost(id, bfwd, last_one, only_new,
+                session.GetUser())
         if next_id < 1:
             raise ServerError("fail to get next post")
         else:
-            nextinfo = {}
-            nextinfo['nextid'] = next_id
-            svc.writedata(json.dumps(nextinfo))
+            if mode == 'idonly':
+                nextinfo = {}
+                nextinfo['nextid'] = next_id
+                svc.writedata(json.dumps(nextinfo))
+            else:
+                post_info = self.ObtainPost(session, next_id, next_xid,
+                        mode, content_len)
+                retry = 0
+                while post_info is None and retry < 5:
+                    (next_id, next_xid) = self.GetNextPost(id, bfwd, last_one,
+                            only_new, session.GetUser())
+                    if next_id < 1:
+                        raise ServerError("fail to get next post")
+                    post_info = self.ObtainPost(session, next_id, next_xid,
+                            mode, content_len)
+                    retry += 1
+                if post_info is None:
+                    raise ServerError("fail to get next post, retry exhausted")
+                svc.writedata(json.dumps(post_info))
 
     def GetNextPost(self, id, forward, last_one, only_new, user):
         if ((id >= 1) and (id <= self.status.total)):
             last_post = -1
+            last_xid = -1
             dirf = open(self.GetDirPath("normal"), 'rb')
             if (dirf == None):
                 raise ServerError("fail to load post")
@@ -314,9 +335,10 @@ class Board:
                     if ((only_new and bread.QueryUnread(pxe.id, self.name)) or (not only_new)):
                         if (not last_one):
                             dirf.close()
-                            return i
+                            return (i, pxe.id)
                         else:
                             last_post = i
+                            last_xid = pxe.id
                     if (pxe.groupid == pxe.id): # original post
                         break
                 if (forward):
@@ -326,7 +348,7 @@ class Board:
             dirf.close()
             if (last_one):
                 if (last_post != -1):
-                    return last_post
+                    return (last_post, last_xid)
                 else:
                     raise NotFound("post not found")
             else:
@@ -1226,29 +1248,36 @@ class Board:
             if mode == 'idonly':
                 ret.append({'id': post_id, 'xid': post_xid})
             else:
-                (post_entry, cur_post_id) = self.FindPost(
-                        post_id, post_xid, 'normal')
-                if post_entry is None:
+                post_info = self.ObtainPost(session, post_id, post_xid,
+                        mode, content_len)
+                if post_info is None:
                     # deleted after last index?
                     continue
-                post_info = post_entry.GetInfoExtended(session.GetUser(), self)
-                post_info['id'] = cur_post_id
-                if mode == 'detailed':
-                    postpath = self.GetBoardPath() + post_entry.filename
-                    postobj = Post(postpath, post_entry)
-                    post_info = dict(post_info.items()
-                            + postobj.GetInfo(0, content_len).items())
-                    if (post_info['picattach'] or post_info['otherattach']):
-                        post_info['attachlink'] = Post.GetAttachLink(
-                                session, self, post_entry)
-                    # mark the post as read
-                    # only in detailed mode
-                    bread = BRead.BReadMgr.LoadBRead(session.GetUser().name)
-                    bread.Load(self.name)
-                    bread.MarkRead(post_xid, self.name)
                 ret.append(post_info)
 
         svc.writedata(json.dumps({'result': 'ok', 'list': ret}))
+
+    def ObtainPost(self, session, post_id, post_xid, mode, content_len):
+        (post_entry, cur_post_id) = self.FindPost(
+                post_id, post_xid, 'normal')
+        if post_entry is None:
+            return None
+        post_info = post_entry.GetInfoExtended(session.GetUser(), self)
+        post_info['id'] = cur_post_id
+        if mode == 'detailed':
+            postpath = self.GetBoardPath() + post_entry.filename
+            postobj = Post(postpath, post_entry)
+            post_info = dict(post_info.items()
+                    + postobj.GetInfo(0, content_len).items())
+            if (post_info['picattach'] or post_info['otherattach']):
+                post_info['attachlink'] = Post.GetAttachLink(
+                        session, self, post_entry)
+            # mark the post as read
+            # only in detailed mode
+            bread = BRead.BReadMgr.LoadBRead(session.GetUser().name)
+            bread.Load(self.name)
+            bread.MarkRead(post_xid, self.name)
+        return post_info
 
 from Post import Post
 
