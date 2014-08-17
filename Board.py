@@ -298,6 +298,7 @@ class Board:
             if mode == 'idonly':
                 nextinfo = {}
                 nextinfo['nextid'] = next_id
+                nextinfo['nextxid'] = next_xid
                 svc.writedata(json.dumps(nextinfo))
             else:
                 post_info = self.ObtainPost(session, next_id, next_xid,
