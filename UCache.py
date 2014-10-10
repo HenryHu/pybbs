@@ -100,6 +100,8 @@ class UCache:
 
     @staticmethod
     def SearchUser(name):
+        if name == "":
+            return 0
         i = UCache.GetHashHead(UCache.Hash(name))
         while (i):
             if (name.lower() == UserRecord(i).userid.lower()):
