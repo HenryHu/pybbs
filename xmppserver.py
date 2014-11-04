@@ -20,6 +20,9 @@ __vcard_ns__ = 'vcard-temp'
 
 STEAL_AFTER_SEEN = 3
 
+def elem_to_str(elem):
+    return "<%r %r>%r</>" % (elem.tag, elem.attrib, elem.text)
+
 class XMPPServer(xmpp.Plugin):
     """XMPP server for the BBS"""
 
@@ -315,13 +318,14 @@ class XMPPServer(xmpp.Plugin):
         """Presence information may be sent out from the client or
         received from another account."""
 
-        #Log.warn("handle presence. me: %r elem: %r" % (self.authJID, elem))
+        Log.warn("handle presence. me: %r elem: %r" % (self.authJID, elem_to_str(elem)))
         if self.authJID == elem.get('from'):
             if (elem.get('to') == None or (not self.authJID.match_bare(elem.get('to')))):
                 return self.send_presence(elem)
         self.recv_presence(elem)
 
     def send_presence(self, elem):
+        Log.warn("send_presence me: %r elem: %r" % (self.authJID, elem_to_str(elem)))
         # we want to send a presence
         direct = elem.get('to')
         if not direct:
@@ -341,10 +345,12 @@ class XMPPServer(xmpp.Plugin):
             self.send(direct, elem)
 
     def recv_presence(self, elem):
+        Log.warn("recv_presence me: %r elem: %r" % (self.authJID, elem_to_str(elem)))
         # we got a precense
         # check if rosters will handle this
         if not self.rosters.recv(self, elem):
             # if not, send this to the client
+            Log.warn("\tsending it to client")
             self.write(elem)
 
     @xmpp.iq('{jabber:iq:roster}query')

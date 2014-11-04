@@ -8,6 +8,8 @@ import traceback
 from xmpp import xml
 from xmpp.features import NoRoute
 
+from pympler import muppy, summary
+
 import os
 import modes
 import roster
@@ -121,6 +123,7 @@ class Rosters(Thread):
         self.term_read = {}
         self.term_stealed = {}
         self.update_sessions()
+        self.mem_sum = summary.summarize(muppy.get_objects())
 
         signal.signal(signal.SIGUSR2, self.handle_signal_message)
         signal.signal(signal.SIGABRT, self.handle_signal_abort)
@@ -134,6 +137,13 @@ class Rosters(Thread):
 
     def handle_signal_abort(self, signum, frame):
         Log.warn("Someone want to kill me! But I'll not die now! Hahahaha!")
+        s = summary.summarize(muppy.get_objects())
+        Log.debug("Current memory usage:")
+        summary.print_(s)
+        diff = summary.get_diff(self.mem_sum, s)
+        self.mem_sum = s
+        Log.debug("New memory usage:")
+        summary.print_(diff)
 
     def handle_signal_message(self, signum, frame):
         Log.info("Someone has sent me a message...")
@@ -208,7 +218,9 @@ class Rosters(Thread):
         elem = conn.E.presence({'from': unicode(conn.authJID), 'type': 'probe'})
         sender = UserManager.UserManager.LoadUser(conn._userid)
         for jid in roster.watching():
+            Log.debug("probing %r" % (jid))
             if (jid in self._rosters):
+                Log.debug("probing XMPP jid %r" % jid)
                 try:
                     conn.send(jid, elem)
                 except Exception as e:
@@ -216,6 +228,7 @@ class Rosters(Thread):
                     Log.error(traceback.format_exc())
 #            if (jid != conn.authJID.bare): # bug somewhere, if they are equal..
             for session_info in self.get_bbs_online(jid):
+                Log.debug("probing session %s" % session_info.get_res())
                 if (not sender.CanSee(session_info._userinfo)):
                     continue
                 show = session_info.get_show(self.get_user(conn.authJID.bare))
