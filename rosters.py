@@ -272,9 +272,11 @@ class Rosters(Thread):
         newly subscribed JID."""
 
         for last in roster.last():
-            last = copy.deepcopy(last)
-            last.set('to', jid)
-            conn.send(jid, last)
+            # don't send your own presence back
+            if last.get('from') != jid:
+                last = copy.deepcopy(last)
+                last.set('to', jid)
+                conn.send(jid, last)
         return conn
 
     def recv(self, conn, elem):
