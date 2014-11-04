@@ -215,12 +215,13 @@ class Rosters(Thread):
 
         Log.debug("probing friends from %s" % conn.authJID.full)
         roster = self.get(conn)
-        elem = conn.E.presence({'from': unicode(conn.authJID), 'type': 'probe'})
         sender = UserManager.UserManager.LoadUser(conn._userid)
         for jid in roster.watching():
             Log.debug("probing %r" % (jid))
             if (jid in self._rosters):
                 Log.debug("probing XMPP jid %r" % jid)
+                elem = conn.E.presence({'from': unicode(conn.authJID),
+                    'type': 'probe'})
                 try:
                     conn.send(jid, elem)
                 except Exception as e:
@@ -232,15 +233,15 @@ class Rosters(Thread):
                 if (not sender.CanSee(session_info._userinfo)):
                     continue
                 show = session_info.get_show(self.get_user(conn.authJID.bare))
-                elem = conn.E.presence(
+                sess_elem = conn.E.presence(
                     {'from' : '%s/%s' % (jid, session_info.get_res()),
                      'to' : conn.authJID.bare},
                     conn.E.status(session_info.get_status()),
                     conn.E.priority(session_info.get_priority()))
                 if (show != None):
-                    elem.append(conn.E.show(show))
+                    sess_elem.append(conn.E.show(show))
                 try:
-                    conn.send(conn.authJID, elem)
+                    conn.send(conn.authJID, sess_elem)
                 except Exception as e:
                     Log.error("Exception caught when faking response from %s/%s to %r" % (jid, session_info.get_res(), conn.authJID.bare))
                     Log.error(traceback.format_exc())
