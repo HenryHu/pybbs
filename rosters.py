@@ -273,10 +273,10 @@ class Rosters(Thread):
 
         for last in roster.last():
             # don't send your own presence back
-            if last.get('from') != jid:
-                last = copy.deepcopy(last)
-                last.set('to', jid)
-                conn.send(jid, last)
+            #if last.get('from') != jid:
+            last = copy.deepcopy(last)
+            last.set('to', jid)
+            conn.send(jid, last)
         return conn
 
     def recv(self, conn, elem):

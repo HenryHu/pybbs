@@ -59,7 +59,9 @@ class Roster(object):
     def presence(self, jid, presense):
         """Update the last presence sent from a client."""
 
-        self._last[jid] = presense
+        # don't save 'probe's
+        if presense.get('type') != 'probe':
+            self._last[jid] = presense
         return self
 
     def last(self):
