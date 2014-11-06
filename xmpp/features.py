@@ -218,9 +218,16 @@ class Bind(plugin.Feature):
 
     def new_binding(self, iq):
         assert iq.get('type') == 'set'
-        self.jid = self.resources.bind(self.get_resource(iq), self)
-        self.iq('result', iq, self.E.bind(self.E.jid(unicode(self.jid))))
-        return self.trigger(StreamBound)
+        if self.jid is None:
+            self.jid = self.resources.bind(self.get_resource(iq), self)
+            self.iq('result', iq, self.E.bind(self.E.jid(unicode(self.jid))))
+            return self.trigger(StreamBound)
+        else:
+            # already bound
+            # shall we return an error?
+            log.warn("Bind: already bound: %r" % self.jid)
+            self.iq('result', iq, self.E.bind(self.E.jid(unicode(self.jid))))
+            return self
 
     ### ---------- Client ----------
 
