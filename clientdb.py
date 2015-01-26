@@ -98,9 +98,17 @@ class ClientInfo:
     def check_user(self, user):
         return self.user == user
 
+    def parse_base_uri(self, uri):
+        if uri.startswith('http://'):
+            uri = uri[7:]
+        if uri.startswith('https://'):
+            uri = uri[8:]
+        return uri.rstrip('/#')
+
     def check_redirect_uri(self, redirect_uri):
+        base_uri = self.parse_base_uri(redirect_uri)
         for allowed_uri in self.redirect_uri:
-            if allowed_uri == redirect_uri:
+            if self.parse_base_uri(allowed_uri) == base_uri:
                 return True
         return False
 
