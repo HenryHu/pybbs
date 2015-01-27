@@ -220,7 +220,7 @@ class UCache:
                 except:
                     pass
         if userinfo.currentboard:
-            board = BoardManager.BoardManager.GetBoard(userinfo.currentboard)
+            board = BoardManager.BoardManager.GetBoardByIndex(userinfo.currentboard)
             if board is not None:
                 board.ModCurrentUsers(-1)
             else:
