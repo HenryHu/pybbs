@@ -213,8 +213,8 @@ class Utmp:
     @staticmethod
     def Clear2(uent):
         userinfo = UserInfo(uent)
-        
-#        Log.debug("clearing user %s uid %d loginid %d" % (userinfo.userid, userinfo.uid, uent))
+
+        Log.debug("clearing user %s uid %d loginid %d" % (userinfo.userid, userinfo.uid, uent))
         user = UCache.GetUserByUid(userinfo.uid)
         UCache.DoAfterLogout(user, userinfo, uent, 0)
 

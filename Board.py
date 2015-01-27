@@ -504,6 +504,9 @@ class Board:
     def GetCurrentUsers(self):
         return self.status.currentusers
 
+    def ModCurrentUsers(self, mod):
+        self.status.currentusers += mod
+
     def GetLastPostId(self):
         return self.status.lastpost
 

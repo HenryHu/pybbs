@@ -1,7 +1,9 @@
+import shutil
 import struct
 from Util import Util
 from Log import Log
 import Config
+import BoardManager
 from sysv_ipc import SharedMemory, ExistentialError
 from cstruct import *
 
@@ -209,7 +211,20 @@ class UCache:
 
     @staticmethod
     def DoAfterLogout(user, userinfo, uent, mode):
-        pass
+        if mode == 0:
+            # no TMPFS
+            if userinfo.pid > 1:
+                tmp_path = "tmp/%d/%s/" % (userinfo.pid, userinfo.userid)
+                try:
+                    shutil.rmtree(tmp_path)
+                except:
+                    pass
+        if userinfo.currentboard:
+            board = BoardManager.BoardManager.GetBoard(userinfo.currentboard)
+            if board is not None:
+                board.ModCurrentUsers(-1)
+            else:
+                Log.e("Fail to modify user count of board '%r'" % userinfo.currentboard)
 
     @staticmethod
     def formalize_jid(jid):
