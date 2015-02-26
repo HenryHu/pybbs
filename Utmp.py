@@ -225,6 +225,7 @@ class Utmp:
         if (userinfo.active):
             UtmpHead.DecNumber()
 
+        Log.debug("zeroing utmp %d" % uent)
         zeroinfo = UserInfo()
         zeroinfo.SetIndex(uent)
         zeroinfo.save()

@@ -99,6 +99,7 @@ class Session:
         if (self.utmpent == -1):
             return None
 
+        Log.debug("assigned utmp %d to new user" % self.utmpent)
         self.user.GetFriends(userinfo)
         userinfo.save()
 
