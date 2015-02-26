@@ -5,7 +5,7 @@ import random
 import time
 import signal
 import User
-from UCache import UCache
+import UCache
 from sysv_ipc import *
 from UtmpHead import UtmpHead
 from commondata import CommonData
@@ -48,7 +48,7 @@ class Utmp:
 
     @staticmethod
     def Hash(userid):
-        hash = UCache.Hash(userid)
+        hash = UCache.UCache.Hash(userid)
         if (hash == 0):
             return 0
         hash = (hash / 3) % Config.UTMP_HASHSIZE
@@ -215,8 +215,8 @@ class Utmp:
         userinfo = UserInfo(uent)
 
         Log.debug("clearing user %s uid %d loginid %d" % (userinfo.userid, userinfo.uid, uent))
-        user = UCache.GetUserByUid(userinfo.uid)
-        UCache.DoAfterLogout(user, userinfo, uent, 0)
+        user = UCache.UCache.GetUserByUid(userinfo.uid)
+        UCache.UCache.DoAfterLogout(user, userinfo, uent, 0)
 
         login = Login.Login(uent)
         login.hash_remove()
