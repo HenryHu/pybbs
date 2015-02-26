@@ -11,7 +11,7 @@ import struct
 
 import Config
 import modes
-from UCache import UCache
+import UCache
 from Friend import Friend
 from Util import Util
 from errors import WrongArgs, NoPerm, Unauthorized, NotFound, ServerError
@@ -265,7 +265,7 @@ class User:
         if (userinfo.AcceptMsg() or self.HasPerm(PERM_SYSOP)):
             return True
         if (userinfo.AcceptMsg(True)):
-            return userinfo.HasFriend(UCache.SearchUser(self.userec.userid))[0]
+            return userinfo.HasFriend(UCache.UCache.SearchUser(self.userec.userid))[0]
         return False
 
     @staticmethod
@@ -289,8 +289,8 @@ class User:
         while (True):
             if (i >= numFriends):
                 break
-#            Log.debug("checking %d %s %d" % (i, friends[i].id, -1 if User.InvalidId(friends[i].id) else UCache.SearchUser(friends[i].id)))
-            if (User.InvalidId(friends[i].id) or UCache.SearchUser(friends[i].id) == 0):
+#            Log.debug("checking %d %s %d" % (i, friends[i].id, -1 if User.InvalidId(friends[i].id) else UCache.UCache.SearchUser(friends[i].id)))
+            if (User.InvalidId(friends[i].id) or UCache.UCache.SearchUser(friends[i].id) == 0):
 #                Log.debug("removing %d %s" % (i, friends[i].id))
                 friends[i] = friends[numFriends - 1]
                 numFriends = numFriends - 1
@@ -305,7 +305,7 @@ class User:
         userinfo.friends_nick = []
         for i in range(numFriends):
 #            Log.debug("friend %d %s" % (i, friends[i].id))
-            userinfo.friends_uid[i] = UCache.SearchUser(friends[i].id)
+            userinfo.friends_uid[i] = UCache.UCache.SearchUser(friends[i].id)
             userinfo.friends_nick.append(friends[i].exp)
 
         userinfo.friendsnum = numFriends
@@ -646,7 +646,7 @@ class User:
             raise WrongArgs("id too short")
         if User.IsBadId(username):
             raise WrongArgs("bad id")
-        if UCache.SearchUser(username) != 0:
+        if UCache.UCache.SearchUser(username) != 0:
             raise WrongArgs("user exists")
 
         # detailed info
@@ -711,7 +711,7 @@ class User:
             raise ServerError("fail to create home dir")
 
         # fill in new user data
-        newuser = UCache.CreateUserRecord(username)
+        newuser = UCache.UCache.CreateUserRecord(username)
         newusermemo = UserMemo.UserMemo(username)
         newuserobj = User(username, newuser, newusermemo)
 
@@ -740,7 +740,7 @@ class User:
             raise ServerError("no more users")
         newuser.Allocate(allocid)
 
-        if UCache.SearchUser(username) == 0:
+        if UCache.UCache.SearchUser(username) == 0:
             raise ServerError("failed to create user")
 
         # clear old cache
