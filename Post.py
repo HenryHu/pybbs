@@ -13,6 +13,7 @@ import json
 import random
 from errors import *
 from Log import Log
+import BoardManager
 import curses.ascii
 
 ATTACHMENT_PAD = '\0\0\0\0\0\0\0\0'
@@ -75,7 +76,7 @@ class Post:
         if (session == None): raise Unauthorized('login first')
         if not session.CheckScope('bbs'): raise NoPerm("out of scope")
         board = svc.get_str(params, 'board')
-        bo = BoardManager.GetBoard(board)
+        bo = BoardManager.BoardManager.GetBoard(board)
         if bo is None: raise NotFound('board not found')
 
         if (not bo.CheckPostPerm(session.GetUser())):
@@ -132,7 +133,7 @@ class Post:
         if (session == None): raise Unauthorized("login first")
         if not session.CheckScope('bbs'): raise NoPerm("out of scope")
         board = svc.get_str(params, 'board')
-        bo = BoardManager.GetBoard(board)
+        bo = BoardManager.BoardManager.GetBoard(board)
         if bo is None: raise NotFound('board not found')
         if (not bo.CheckPostPerm(session.GetUser())):
             raise NotFound("board not found")
@@ -674,4 +675,3 @@ class Post:
                 return filename
         return None
 
-from BoardManager import BoardManager
