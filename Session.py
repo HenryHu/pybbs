@@ -4,7 +4,7 @@ from Util import Util
 import Utmp
 import modes
 import User
-from UCache import UCache
+import UCache
 import time
 import os
 import json
@@ -44,7 +44,7 @@ class Session:
 
     def __init__(self, user, fromip, _sessionid = None, _created = None, scopes = ['auth']):
         self.username = user.name
-        self.uid = UCache.SearchUser(self.username)
+        self.uid = UCache.UCache.SearchUser(self.username)
         if (_sessionid is None):
             self.sessionid = Util.RandomStr(SESSIONID_LEN)
             self.created = datetime.datetime.now()
