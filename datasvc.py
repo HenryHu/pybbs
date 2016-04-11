@@ -211,6 +211,7 @@ class DataService(BaseHTTPRequestHandler):
 
 class MyServer(SocketServer.ThreadingMixIn, HTTPServer):
     def __init__(self, server_address, HandlerClass):
+        self.address_family = socket.AF_INET6
         BaseServer.__init__(self, server_address, HandlerClass)
         self.Init()
 
@@ -253,7 +254,7 @@ def main():
 
     threading.stack_size(1024*1024) # default stack size: 8M. may exhaust virtual address space
     port = 8080
-    server = MyServer(('', port), DataService)
+    server = MyServer(('::', port), DataService)
     print 'Starting at port %d...' % port
     try:
         server.serve_forever()
