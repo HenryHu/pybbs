@@ -34,16 +34,17 @@ BOARD_NOZAPFLAG = 0x2
 BOARD_READONLY = 0x4
 BOARD_JUNK = 0x8
 BOARD_ANNONY = 0x10
-BOARD_OUTFLAG = 0x20  #    /* for outgo boards */
-BOARD_CLUB_READ =  0x40 # /*限制读的俱乐部*/
-BOARD_CLUB_WRITE = 0x80 # /*限制写的俱乐部*/
-BOARD_CLUB_HIDE = 0x100 # /*隐藏俱乐部*/
-BOARD_ATTACH = 0x200# /*可以使用附件的版面*/
-BOARD_GROUP = 0x400  # /*目录*/
-BOARD_EMAILPOST = 0x800# /* Email 发文 */
-BOARD_POSTSTAT = 0x1000# /* 不统计十大 */
-BOARD_NOREPLY = 0x2000 #/* 不可re文 */
-BOARD_ANONYREPLY = 0x4000 #/* cannot reply anonymously */
+BOARD_OUTFLAG = 0x20       # /* for outgo boards */
+BOARD_CLUB_READ = 0x40     # /*限制读的俱乐部*/
+BOARD_CLUB_WRITE = 0x80    # /*限制写的俱乐部*/
+BOARD_CLUB_HIDE = 0x100    # /*隐藏俱乐部*/
+BOARD_ATTACH = 0x200       # /*可以使用附件的版面*/
+BOARD_GROUP = 0x400        # /*目录*/
+BOARD_EMAILPOST = 0x800    # /* Email 发文 */
+BOARD_POSTSTAT = 0x1000    # /* 不统计十大 */
+BOARD_NOREPLY = 0x2000     # /* 不可re文 */
+BOARD_ANONYREPLY = 0x4000  # /* cannot reply anonymously */
+
 
 class PostLog(CStruct):
     # what the hell! this is board name, not id! why IDLEN+6!
@@ -54,17 +55,19 @@ class PostLog(CStruct):
     _fields = [['board', 1], 'groupid', 'date', 'number']
     size = parser.size
 
+
 class PostLogNew(CStruct):
     parser = struct.Struct('=%ds%dsIii' % (Config.IDLEN + 6, Config.IDLEN + 6))
     _fields = [['userid', 1], ['board', 1], 'groupid', 'date', 'number']
     size = parser.size
+
 
 class WriteDirArg:
     def __init__(self):
         self.filename = None
         self.fileptr = None
         self.ent = -1
-        self.fd = None #fd: file object
+        self.fd = None  # fd: file object
         self.size = -1
         self.needclosefd = False
         self.needlock = True
@@ -89,6 +92,7 @@ class WriteDirArg:
             self.fileptr.close()
             self.fileptr = None
 
+
 class Board:
 
     def __init__(self, bh, bs, idx):
@@ -100,13 +104,15 @@ class Board:
 
     @staticmethod
     def GET(svc, session, params, action):
-        if (session == None): raise Unauthorized('login first')
-        if not session.CheckScope('bbs'): raise NoPerm("out of scope")
+        if session is None:
+            raise Unauthorized('login first')
+        if not session.CheckScope('bbs'):
+            raise NoPerm("out of scope")
         bo = None
-        if (params.has_key('name')):
+        if 'name' in params:
             name = params['name']
             bo = BoardManager.BoardManager.GetBoard(name)
-            if (bo == None):
+            if bo is None:
                 raise NotFound("board not found")
             if (not bo.CheckReadPerm(session.GetUser())):
                 raise NoPerm("permission denied")
@@ -115,13 +121,13 @@ class Board:
             BoardManager.BoardManager.ListBoards(svc, session, params)
             return
 
-        if bo == None:
+        if bo is None:
             raise WrongArgs("lack of board name")
 
         if action == 'post_list':
             bo.GetPostList(svc, session, params)
         elif action == 'note' or action == 'secnote':
-            result = {'content' : bo.GetNote((action == 'secnote'))}
+            result = {'content': bo.GetNote((action == 'secnote'))}
             svc.writedata(json.dumps(result))
         elif action == 'thread_list':
             bo.GetThreadList(svc, session, params)
@@ -130,18 +136,20 @@ class Board:
 
     @staticmethod
     def POST(svc, session, params, action):
-        if (session == None): raise Unauthorized('login first')
-        if not session.CheckScope('bbs'): raise NoPerm("out of scope")
+        if session is None:
+            raise Unauthorized('login first')
+        if not session.CheckScope('bbs'):
+            raise NoPerm("out of scope")
         bo = None
-        if (params.has_key('name')):
+        if 'name' in params:
             name = params['name']
             bo = BoardManager.BoardManager.GetBoard(name)
-            if (bo == None):
+            if bo is None:
                 raise NotFound("board %s not found" % name)
             if (not bo.CheckReadPerm(session.GetUser())):
                 raise NoPerm("permission denied")
         if (action == 'clear_unread'):
-            if (bo == None):
+            if (bo is None):
                 Board.ClearUnreadAll(session.GetUser())
             else:
                 to = svc.get_int(params, 'to', 0)
@@ -151,10 +159,10 @@ class Board:
         else:
             raise WrongArgs("unknown action")
 
-    def GetBoardPath(self, filename = ""):
+    def GetBoardPath(self, filename=""):
         return Config.BBS_ROOT + 'boards/%s/%s' % (self.name, filename)
 
-    def GetDirPath(self, mode = 'normal'):
+    def GetDirPath(self, mode='normal'):
         if (mode == 'normal'):
             return self.GetBoardPath() + '.DIR'
         if (mode == 'digest'):
@@ -175,10 +183,10 @@ class Board:
     @staticmethod
     def IsSortedMode(mode):
         return (mode == 'normal' or mode == 'thread' or mode == 'mark' or
-                mode == 'origin' or mode == 'author' or mode == 'title'
-                or mode == 'superfilter')
+                mode == 'origin' or mode == 'author' or mode == 'title' or
+                mode == 'superfilter')
 
-    def PostCount(self, mode = 'normal'):
+    def PostCount(self, mode='normal'):
         dir_path = self.GetDirPath(mode)
         try:
             st = os.stat(dir_path)
@@ -207,9 +215,10 @@ class Board:
         start, end = Util.CheckRange(start, end, count, DEFAULT_GET_POST_COUNT, total)
         if ((start <= end) and (start >= 1) and (end <= total)):
             bread = BRead.BReadMgr.LoadBRead(session.GetUser().name)
-            if (bread != None):
+            if (bread is not None):
                 bread.Load(self.name)
-            if (mode == 'normal' or mode == 'digest' or mode == 'mark' or mode == 'sticky' or mode == 'thread' or mode == 'origin'):
+            if (mode == 'normal' or mode == 'digest' or mode == 'mark' or
+                    mode == 'sticky' or mode == 'thread' or mode == 'origin'):
                 dirf = open(self.GetDirPath(mode), 'rb')
                 post = {}
                 first = True
@@ -224,7 +233,7 @@ class Board:
                     post = pe.GetInfoExtended(session.GetUser(), self, 'post')
                     post['id'] = i + 1
                     read = True
-                    if (bread != None):
+                    if (bread is not None):
                         read = not bread.QueryUnread(pe.id, self.name)
                     post['read'] = read
 #                    post['filename'] = pe.filename
@@ -240,12 +249,12 @@ class Board:
 
         return
 
-    def GetPostEntry(self, postid, mode = 'normal', fd = None):
+    def GetPostEntry(self, postid, mode='normal', fd=None):
         pe = None
         if (postid < 0):
             return None
         try:
-            if (fd == None):
+            if (fd is None):
                 dirf = open(self.GetDirPath(mode), 'rb')
                 dirf.seek(postid * PostEntry.PostEntry.size)
                 pe = PostEntry.PostEntry(dirf.read(PostEntry.PostEntry.size))
@@ -292,7 +301,7 @@ class Board:
         only_new = bool(svc.get_int(params, 'only_new', 0))
 
         (next_id, next_xid) = self.GetNextPost(id, bfwd, last_one, only_new,
-                session.GetUser())
+                                               session.GetUser())
         if next_id < 1:
             raise ServerError("fail to get next post")
         else:
@@ -303,15 +312,15 @@ class Board:
                 svc.writedata(json.dumps(nextinfo))
             else:
                 post_info = self.ObtainPost(session, next_id, next_xid,
-                        mode, content_len)
+                                            mode, content_len)
                 retry = 0
                 while post_info is None and retry < 5:
                     (next_id, next_xid) = self.GetNextPost(id, bfwd, last_one,
-                            only_new, session.GetUser())
+                                                           only_new, session.GetUser())
                     if next_id < 1:
                         raise ServerError("fail to get next post")
                     post_info = self.ObtainPost(session, next_id, next_xid,
-                            mode, content_len)
+                                                mode, content_len)
                     retry += 1
                 if post_info is None:
                     raise ServerError("fail to get next post, retry exhausted")
@@ -322,7 +331,7 @@ class Board:
             last_post = -1
             last_xid = -1
             dirf = open(self.GetDirPath("normal"), 'rb')
-            if (dirf == None):
+            if (dirf is None):
                 raise ServerError("fail to load post")
             pe = self.GetPostEntry(id - 1, "normal", dirf)
             if (forward):
@@ -334,14 +343,15 @@ class Board:
             while ((i >= 1) and (i <= self.status.total)):
                 pxe = self.GetPostEntry(i - 1, "normal", dirf)
                 if (pxe.groupid == pe.groupid):
-                    if ((only_new and bread.QueryUnread(pxe.id, self.name)) or (not only_new)):
+                    if ((only_new and bread.QueryUnread(pxe.id, self.name)) or
+                            (not only_new)):
                         if (not last_one):
                             dirf.close()
                             return (i, pxe.id)
                         else:
                             last_post = i
                             last_xid = pxe.id
-                    if (pxe.groupid == pxe.id): # original post
+                    if (pxe.groupid == pxe.id):  # original post
                         break
                 if (forward):
                     i = i + 1
@@ -366,7 +376,7 @@ class Board:
         if ((id >= 1) and (id <= self.status.total)):
             pe = self.GetPostEntry(id - 1, mode)
             attach = Post.Post.ReadAttachment(self.GetBoardPath() + pe.filename, offset)
-            attach = {'name' : attach[0], 'content' : base64.b64encode(attach[1])}
+            attach = {'name': attach[0], 'content': base64.b64encode(attach[1])}
             svc.writedata(json.dumps(attach))
         else:
             raise OutOfRange("invalid post id")
@@ -409,7 +419,7 @@ class Board:
 
     def CheckReadPerm(self, user):
         """ Check if user 'user' can read this board. """
-        if (self.header == None):
+        if (self.header is None):
             return False
 
         level = self.header.level
@@ -433,11 +443,11 @@ class Board:
         """ Check whether this board has flag 'flag'. """
         if (self.header.flag & flag != 0):
             return True
-        return False;
+        return False
 
     def CheckPostPerm(self, user):
         """ Check if user 'user' can post on this board. """
-        if (self.header == None):
+        if (self.header is None):
             return False
 
         if (self.CheckFlag(BOARD_GROUP)):
@@ -447,15 +457,15 @@ class Board:
             if (user.name == 'guest'):
                 return False
             if (self.name == "BBShelp"):
-                return True # not exist here
+                return True  # not exist here
             if (not user.HasPerm(User.PERM_LOGINOK)):
                 return False
             if (self.name == "Complain"):
-                return True # not exist here
+                return True  # not exist here
             if (self.name == "sysop"):
                 return True
             if (self.name == "Arbitration"):
-                return True # not exist here
+                return True  # not exist here
             return False
 
         if (self.header.level == 0 or user.HasPerm(self.header.level & ~User.PERM_NOZAP & ~User.PERM_POSTMASK)):
@@ -470,22 +480,26 @@ class Board:
 
     def CheckSeePerm(self, user):
         """ Check if user 'user' can see this board. """
-        if (self.header == None):
+        if (self.header is None):
             return False
-        if (user == None):
+        if (user is None):
             if (self.header.title_level != 0):
                 return False
         else:
-            if (not user.HasPerm(User.PERM_OBOARDS) and self.header.title_level != 0 and self.header.title_level != user.GetTitle()):
+            if (not user.HasPerm(User.PERM_OBOARDS) and
+                self.header.title_level != 0 and
+                self.header.title_level != user.GetTitle()):
                 return False
             level = self.header.level
-            if (level & User.PERM_POSTMASK != 0
-                    or (user == None and level == 0)
-                    or (user != None and user.HasPerm(level))
-                    or (level & User.PERM_NOZAP != 0)):
+            if (level & User.PERM_POSTMASK != 0 or
+                (user is None and level == 0) or
+                (user is not None and user.HasPerm(level)) or
+                (level & User.PERM_NOZAP != 0)):
                 if (self.CheckFlag(BOARD_CLUB_HIDE)):
-                    if (user == None): return False
-                    if (user.HasPerm(User.PERM_OBOARDS)): return True
+                    if (user is None):
+                        return False
+                    if (user.HasPerm(User.PERM_OBOARDS)):
+                        return True
                     return self.CheckReadPerm(user)
                 return True
 
@@ -513,7 +527,7 @@ class Board:
 
     def LoadBReadFor(self, user):
         bread = BRead.BReadMgr.LoadBRead(user.name)
-        if (bread == None):
+        if (bread is None):
             return None
         succ = bread.Load(self.name)
         if (not succ):
@@ -526,7 +540,7 @@ class Board:
             return True
         return bread.QueryUnread(self.GetLastPostId(), self.name)
 
-    def ClearUnread(self, user, to = 0):
+    def ClearUnread(self, user, to=0):
         bread = self.LoadBReadFor(user)
         if (bread is None):
             return True
@@ -568,7 +582,7 @@ class Board:
 
     def PreparePostArticle(self, user, refile, anony, attach):
         detail = {}
-        if (refile != None):
+        if (refile is not None):
             if (self.CheckNoReply()):
                 raise NoPerm("can't reply in this board")
             if (refile.CannotReply()):
@@ -598,7 +612,7 @@ class Board:
         mycrc = (~binascii.crc32(user.name, 0xffffffff)) & 0xffffffff
 
         may_anony = False
-        if (refile == None): # not in reply mode
+        if (refile is None):  # not in reply mode
             if (self.CanAnonyPost()):
                 may_anony = True
         else:
@@ -610,7 +624,8 @@ class Board:
 
         return may_anony
 
-    def PostArticle(self, user, title, content, refile, signature_id, anony, mailback, session, attach, ignoreperm = False):
+    def PostArticle(self, user, title, content, refile, signature_id, anony, mailback,
+                    session, attach, ignoreperm=False):
         # check permission
         if not ignoreperm:
             self.PreparePostArticle(user, refile, anony, attach)
@@ -618,7 +633,7 @@ class Board:
         # filter title: 'Re: ' and '\ESC'
 #        title = title.replace('\033', ' ')
         title = re.sub('[\x00-\x19]', ' ', title)
-        if (refile == None):
+        if (refile is None):
             while (title[:4] == "Re: "):
                 title = title[4:]
 
@@ -657,7 +672,7 @@ class Board:
 
         post_file.eff_size = len(content_encoded)
 
-        if (refile != None):
+        if (refile is not None):
             post_file.rootcrc = refile.rootcrc
             if (refile.IsRootPostAnonymous()):
                 post_file.SetRootPostAnonymous(True)
@@ -697,7 +712,8 @@ class Board:
 
                     tmpfile = store.Store.path_from_id(tmpfile)
 
-                    Post.Post.AddAttach(self.GetBoardPath(post_file.filename), filename, tmpfile)
+                    Post.Post.AddAttach(self.GetBoardPath(post_file.filename),
+                                        filename, tmpfile)
             except:
                 pass
 
@@ -717,14 +733,14 @@ class Board:
                     if (nowid < 0):
                         raise IOError()
                     post_file.id = nowid
-                    if (re_file == None):
+                    if (re_file is None):
                         post_file.groupid = nowid
                         post_file.reid = nowid
                     else:
                         post_file.groupid = re_file.groupid
                         post_file.reid = re_file.id
 
-                    post_file.posttime = 0 # not used
+                    post_file.posttime = 0  # not used
                     # no seek: append mode
                     bdirf.write(post_file.pack())
                 finally:
@@ -738,20 +754,20 @@ class Board:
         self.UpdateLastPost()
 
         bread = BRead.BReadMgr.LoadBRead(user.name)
-        if (bread != None):
+        if (bread is not None):
             bread.Load(self.name)
             bread.MarkRead(post_file.id, self.name)
 
-        if (re_file != None):
+        if (re_file is not None):
             if (re_file.NeedMailBack()):
                 # mail back, not implemented
                 pass
 
-        if (user != None and anony):
+        if (user is not None and anony):
             # ANONYDIR: not used, ignore it
             pass
 
-        if (user != None and not anony):
+        if (user is not None and not anony):
             self.WritePosts(user, post_file.groupid)
 
         if (post_file.id == post_file.groupid):
@@ -799,7 +815,9 @@ class Board:
         bh = self.header
         ret = True
         while (ret):
-            ret = not (bh.level & User.PERM_SYSOP) and not (bh.flag & BOARD_CLUB_HIDE) and not (bh.flag & BOARD_CLUB_READ)
+            ret = (not (bh.level & User.PERM_SYSOP) and
+                   not (bh.flag & BOARD_CLUB_HIDE) and
+                   not (bh.flag & BOARD_CLUB_READ))
             if (bh.title_level != 0):
                 ret = False
             if (not ret or (bh.group == 0)):
@@ -809,7 +827,8 @@ class Board:
         return ret
 
     def WritePosts(self, user, groupid):
-        if (self.name != Config.BLESS_BOARD and (self.DontStat() or (not self.IsNormalBoard()))):
+        if (self.name != Config.BLESS_BOARD and
+            (self.DontStat() or (not self.IsNormalBoard()))):
             return 0
         now = time.time()
 
@@ -935,7 +954,7 @@ class Board:
         if (index_mode == 'junk' or index_mode == 'deleted'):
             raise NoPerm("invalid index_mode!")
         (post, _) = self.FindPost(post_id, xid, index_mode)
-        if (post == None):
+        if (post is None):
             raise NotFound("referred post not found")
         quote = Post.Post.DoQuote(include_mode, self.GetBoardPath(post.filename), True)
         if (post.title[:3] == "Re:"):
@@ -951,7 +970,7 @@ class Board:
         quote_obj['content'] = Util.gbkDec(quote)
         svc.writedata(json.dumps(quote_obj))
 
-    def GetNote(self, secret = False):
+    def GetNote(self, secret=False):
         if (not secret):
             notes_path = "%s/vote/%s/notes" % (Config.BBS_ROOT, self.name)
         else:
@@ -988,12 +1007,12 @@ class Board:
     def GetChildCount(self):
         if not self.IsDir():
             return 0
-        return self.header.adv_club # it's a union, in fact
+        return self.header.adv_club  # it's a union, in fact
 
     def GetGroup(self):
         return self.header.group
 
-    def DelPost(self, user, post_id, post_xid, mode = 'normal'):
+    def DelPost(self, user, post_id, post_xid, mode='normal'):
         # from del_post()
         if post_id > self.PostCount(mode):
             raise WrongArgs("out of range")
@@ -1025,17 +1044,21 @@ class Board:
         self.UpdateLastPost()
         if post_entry.IsMarked():
             self.SetUpdate('mark', True)
-        if mode == 'normal' and not (post_entry.IsMarked() and post_entry.CannotReply() and post_entry.IsForwarded()) and not self.IsJunkBoard():
+        if (mode == 'normal' and
+            not (post_entry.IsMarked() and
+                 post_entry.CannotReply() and
+                 post_entry.IsForwarded()) and
+            not self.IsJunkBoard()):
             if owned:
                 user.DecNumPosts()
-            elif not "." in post_entry.owner and Config.BMDEL_DECREASE:
+            elif "." not in post_entry.owner and Config.BMDEL_DECREASE:
                 user = UserManager.UserManager.LoadUser(post_entry.owner)
                 if user is not None and not self.IsSysmailBoard():
                     user.DecNumPosts()
 
         arg.free()
 
-    def PrepareWriteDir(self, arg, mode = 'normal', post_entry = None):
+    def PrepareWriteDir(self, arg, mode='normal', post_entry=None):
         if not arg.map_dir():
             return False
         if arg.needlock:
@@ -1055,7 +1078,7 @@ class Board:
         fileptr[dst_pos:new_size] = fileptr[src_pos:size]
         os.ftruncate(fd.fileno(), new_size)
 
-    def UpdatePostEntry(self, post_entry, post_id = 0, mode = 'normal'):
+    def UpdatePostEntry(self, post_entry, post_id=0, mode='normal'):
         arg = WriteDirArg()
         arg.filename = self.GetDirPath(mode)
         succ = self.PrepareWriteDir(arg, mode, post_entry)
@@ -1107,14 +1130,13 @@ class Board:
 
         return True
 
-    def EditPost(self, session, post_xid, post_id = 0, new_title = None,
-            content = None, mode = 'normal', attach_to_remove = set(),
-            add_attach_list = []):
+    def EditPost(self, session, post_xid, post_id=0, new_title=None,
+                 content=None, mode='normal', attach_to_remove=set(),
+                 add_attach_list=[]):
         (post_entry, post_id) = self.FindPost(post_id, post_xid, mode)
         if post_entry is None:
             raise NotFound("post not found")
-        if (self.name == "syssecurity" or self.name == "junk"
-                or self.name == "deleted"):
+        if (self.name == "syssecurity" or self.name == "junk" or self.name == "deleted"):
             raise WrongArgs("can't edit post in board %s" % self.name)
         if mode == "junk" or mode == "deleted":
             raise WrongArgs("can't edit post in mode %s" % mode)
@@ -1126,7 +1148,7 @@ class Board:
         if self.DeniedUser(user):
             raise NoPerm("you can't edit on board %s" % self.name)
 
-        post_path = self.GetBoardPath(post_entry.filename);
+        post_path = self.GetBoardPath(post_entry.filename)
         post = Post.Post(post_path, post_entry)
 
         if content is None:
@@ -1159,7 +1181,7 @@ class Board:
                     # copy original attachments
                     orig_attach_id = 0
                     for attach_entry in attach_list:
-                        if not orig_attach_id in attach_to_remove:
+                        if orig_attach_id not in attach_to_remove:
                             try:
                                 attach_pos = newpost.AppendAttachFrom(post, attach_entry)
                                 if first_attach_pos == 0:
@@ -1202,7 +1224,7 @@ class Board:
             if not self.UpdatePostEntry(post_entry, post_id, mode):
                 Log.warn("fail to update post entry!")
 
-    def SearchPost(self, user, start_id, forward, query_expr, count = 1):
+    def SearchPost(self, user, start_id, forward, query_expr, count=1):
         if count > Config.SEARCH_COUNT_LIMIT:
             count = Config.SEARCH_COUNT_LIMIT
         result = []
@@ -1246,7 +1268,7 @@ class Board:
         content_len = svc.get_int(param, 'max_lines', 25)
 
         result = fast_indexer.query_by_tid(svc.server.fast_indexer_state,
-                self.name, tid, start, count)
+                                           self.name, tid, start, count)
 
         ret = []
         for (post_id, post_xid) in result:
@@ -1254,7 +1276,7 @@ class Board:
                 ret.append({'id': post_id, 'xid': post_xid})
             else:
                 post_info = self.ObtainPost(session, post_id, post_xid,
-                        mode, content_len)
+                                            mode, content_len)
                 if post_info is None:
                     # deleted after last index?
                     continue
@@ -1272,8 +1294,7 @@ class Board:
         if mode == 'detailed':
             postpath = self.GetBoardPath() + post_entry.filename
             postobj = Post.Post(postpath, post_entry)
-            post_info = dict(post_info.items()
-                    + postobj.GetInfo(0, content_len).items())
+            post_info = dict(post_info.items() + postobj.GetInfo(0, content_len).items())
             if (post_info['picattach'] or post_info['otherattach']):
                 post_info['attachlink'] = Post.Post.GetAttachLink(
                         session, self, post_entry)
@@ -1283,4 +1304,3 @@ class Board:
             bread.Load(self.name)
             bread.MarkRead(post_xid, self.name)
         return post_info
-
