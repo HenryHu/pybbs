@@ -950,21 +950,27 @@ class Board:
 
         return (None, 0)
 
-    def QuotePost(self, svc, post_id, xid, include_mode, index_mode):
+    def QuotePost(self, svc, post_id, xid, include_mode, index_mode, include_data):
         if (index_mode == 'junk' or index_mode == 'deleted'):
             raise NoPerm("invalid index_mode!")
         (post, _) = self.FindPost(post_id, xid, index_mode)
         if (post is None):
             raise NotFound("referred post not found")
-        quote = Post.Post.DoQuote(include_mode, self.GetBoardPath(post.filename), True)
+        quote = Post.Post.DoQuote(include_mode, self.GetBoardPath(post.filename), True, include_data)
+        orig_title = ''
         if (post.title[:3] == "Re:"):
-            quote_title = post.title
+            # Re: <title>
+            orig_title = post.title[4:]
         elif (post.title[:3] == u"├ ".encode('gbk')):
-            quote_title = "Re: " + post.title[3:]
+            orig_title = post.title[3:]
         elif (post.title[:3] == u"└ ".encode('gbk')):
-            quote_title = "Re: " + post.title[3:]
+            orig_title = post.title[3:]
         else:
-            quote_title = "Re: " + post.title
+            orig_title = post.title
+        if include_mode == 'C':
+            quote_title = orig_title
+        else:
+            quote_title = "Re: " + orig_title
         quote_obj = {}
         quote_obj['title'] = Util.gbkDec(quote_title)
         quote_obj['content'] = Util.gbkDec(quote)

@@ -23,8 +23,9 @@ QUOTELEV = 1
 GENERATE_POST_SUFIX = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 GENERATE_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 
+
 class Post:
-    def __init__(self, path, entry, is_mail = False):
+    def __init__(self, path, entry, is_mail=False):
         self.path = path
         self.textlen = 0
         self.file = None
@@ -73,12 +74,14 @@ class Post:
 
     @staticmethod
     def GET(svc, session, params, action):
-        if (session == None): raise Unauthorized('login first')
-        if not session.CheckScope('bbs'): raise NoPerm("out of scope")
+        if (session is None):
+            raise Unauthorized('login first')
+        if not session.CheckScope('bbs'):
+            raise NoPerm("out of scope")
         board = svc.get_str(params, 'board')
         bo = BoardManager.BoardManager.GetBoard(board)
-        if bo is None: raise NotFound('board not found')
-
+        if bo is None:
+            raise NotFound('board not found')
         if (not bo.CheckPostPerm(session.GetUser())):
             raise NotFound("board not found")
 
@@ -87,7 +90,8 @@ class Post:
             forward = svc.get_bool(params, 'forward', True)
             query_expr = json.loads(svc.get_str(params, 'query').decode('utf-8'))
             count = svc.get_int(params, 'count', 1)
-            result = bo.SearchPost(session.GetUser(), start_id, forward, query_expr, count)
+            result = bo.SearchPost(session.GetUser(), start_id,
+                                   forward, query_expr, count)
             response = {'result': 'ok', 'content': result}
             svc.writedata(json.dumps(response))
         elif action == 'prepare':
@@ -102,7 +106,7 @@ class Post:
                     attach = None
 
                 detail = bo.PreparePostArticle(user, refile, anony, attach)
-                result = {"error": detail, "signature_id" : user.GetSigID()}
+                result = {"error": detail, "signature_id": user.GetSigID()}
                 svc.writedata(json.dumps(result))
             else:
                 raise WrongArgs("unknown action to prepare")
@@ -124,17 +128,24 @@ class Post:
                 xid = svc.get_int(params, 'xid')
                 index_mode = svc.get_str(params, 'index_mode', 'normal')
                 include_mode = svc.get_str(params, 'mode', 'S')
-                bo.QuotePost(svc, _id, xid, include_mode, index_mode)
+                try:
+                    include_data = json.loads(svc.get_str(params, 'data', ''))
+                except:
+                    include_data = None
+                bo.QuotePost(svc, _id, xid, include_mode, index_mode, include_data)
             else:
                 raise WrongArgs("unknown action")
 
     @staticmethod
     def POST(svc, session, params, action):
-        if (session == None): raise Unauthorized("login first")
-        if not session.CheckScope('bbs'): raise NoPerm("out of scope")
+        if (session is None):
+            raise Unauthorized("login first")
+        if not session.CheckScope('bbs'):
+            raise NoPerm("out of scope")
         board = svc.get_str(params, 'board')
         bo = BoardManager.BoardManager.GetBoard(board)
-        if bo is None: raise NotFound('board not found')
+        if bo is None:
+            raise NotFound('board not found')
         if (not bo.CheckPostPerm(session.GetUser())):
             raise NotFound("board not found")
 
@@ -150,8 +161,8 @@ class Post:
             except:
                 attach = None
 
-            bo.PostArticle(session.GetUser(), title,
-                    content, re_file, signature_id, anony, mailback, session, attach)
+            bo.PostArticle(session.GetUser(), title, content, re_file,
+                           signature_id, anony, mailback, session, attach)
             svc.writedata('{"result": "ok"}')
         elif action == "delete":
             post_id = svc.get_int(params, "id", 0)
@@ -180,13 +191,13 @@ class Post:
             except:
                 del_attach = set()
             bo.EditPost(session, post_xid, post_id, title, content, mode,
-                    del_attach, add_attach)
+                        del_attach, add_attach)
             svc.writedata('{"result": "ok"}')
         else:
             raise WrongArgs("unknown action")
 
     @staticmethod
-    def GetAttachmentListByType(path, base = 0):
+    def GetAttachmentListByType(path, base=0):
         attachlist = Post.GetAttachmentList(path, base)
         picturelist = []
         otherlist = []
@@ -198,7 +209,7 @@ class Post:
         return (picturelist, otherlist)
 
     @staticmethod
-    def GetAttachmentList(path, base = 0):
+    def GetAttachmentList(path, base=0):
         try:
             fp = open(path, 'rb')
         except IOError:
@@ -218,7 +229,7 @@ class Post:
                 size = struct.unpack('!I', s)[0]   # big endian
                 start = fp.tell() + size
 
-                #seek to next attachment
+                # seek to next attachment
                 offset = Post.SeekAttachment(fp, start)
 
         finally:
@@ -234,7 +245,7 @@ class Post:
     def SeekAttachment(fp, start):
         fp.seek(start)
         offset = start
-        zcount = 0;
+        zcount = 0
         while (zcount < 8):
             c = fp.read(1)
             if (c == ''):
@@ -287,7 +298,9 @@ class Post:
                 else:
                     fp.write('\n--\n')
 
-                lastline = u'\n\033[m\033[1;%2dm※ 来源:·%s %s·[FROM: %s]\033[m\n' % (color, Config.Config.GetString("BBS_FULL_NAME", "Python BBS"), Config.Config.GetString("NAME_BBS_ENGLISH", "PyBBS"), from_str)
+                lastline = u'\n\033[m\033[1;%2dm※ 来源:·%s %s·[FROM: %s]\033[m\n' % (
+                    color, Config.Config.GetString("BBS_FULL_NAME", "Python BBS"),
+                    Config.Config.GetString("NAME_BBS_ENGLISH", "PyBBS"), from_str)
                 fp.write(lastline.encode('gbk'))
 
         except IOError:
@@ -317,7 +330,9 @@ class Post:
         else:
             if (anony):
                 pid = (binascii.crc32(session.GetID()) % 0xffffffff) % (200000 - 1000) + 1000
-                result += u'发信人: %s (%s%d), 信区: %s\n' % (bname, Config.Config.GetString('NAME_ANONYMOUS', 'Anonymous'), pid, bname)
+                result += u'发信人: %s (%s%d), 信区: %s\n' % (
+                    bname, Config.Config.GetString('NAME_ANONYMOUS', 'Anonymous'),
+                    pid, bname)
             else:
                 result += u'发信人: %s (%s), 信区: %s\n' % (uid, uname, bname)
 
@@ -340,11 +355,19 @@ class Post:
         fp.write(sig_content)
 
     @staticmethod
-    def DoQuote(include_mode, quote_file, for_post):
+    def DoQuote(include_mode, quote_file, for_post, include_data=None):
+        """ Quote modes:
+            R: full text
+            C: full text, add comment
+            N: empty
+            S: short quote, limited lines
+            A: full quote
+            """
+
         if (quote_file == ""):
-            return "";
+            return ""
         if (include_mode == 'N'):
-            return "\n";
+            return "\n"
         quser = ""
         result = ""
         with open(quote_file, "rb") as inf:
@@ -352,7 +375,7 @@ class Post:
             match_user = re.match('[^:]*: *(.*\))[^)]*$', buf)
             if (match_user):
                 quser = match_user.group(1)
-            if (include_mode != 'R'):
+            if include_mode != 'R' and include_mode != 'C':
                 if (for_post):
                     result = result + (u"\n【 在 %s 的大作中提到: 】\n".encode('gbk') % quser)
                 else:
@@ -360,24 +383,35 @@ class Post:
             if (include_mode == 'A'):
                 while (True):
                     buf = Post.SkipAttachFgets(inf)
-                    if (buf == ""): break
+                    if (buf == ""):
+                        break
                     result += ": %s" % buf
             else:
                 # skip header
                 while (True):
                     buf = Post.SkipAttachFgets(inf)
-                    if (buf == "" or buf[0] == '\n'): break
-                if (include_mode == 'R'):
+                    if (buf == "" or buf[0] == '\n'):
+                        break
+                if include_mode == 'R':
                     while (True):
                         buf = Post.SkipAttachFgets(inf)
-                        if (buf == ""): break
+                        if (buf == ""):
+                            break
                         if (not Post.IsOriginLine(buf)):
+                            result += buf
+                elif include_mode == 'C':
+                    while True:
+                        buf = Post.SkipAttachFgets(inf)
+                        if buf == "" or buf == "--\n":
+                            break
+                        if not Post.IsOriginLine(buf):
                             result += buf
                 else:
                     line_count = 0
                     while (True):
                         buf = Post.SkipAttachFgets(inf)
-                        if (buf == "" or buf == "--\n"): break
+                        if (buf == "" or buf == "--\n"):
+                            break
                         if (len(buf) > 250):
                             buf = Util.CutLine(buf, 250) + "\n"
                         if (not Post.IsGarbageLine(buf)):
@@ -387,6 +421,11 @@ class Post:
                                 if (line_count >= Config.QUOTED_LINES):
                                     result += ": ..................."
                                     break
+        if include_mode == 'C' and include_data is not None:
+            try:
+                result += include_data['comment']
+            except:
+                pass
         result += "\n"
         return result
 
@@ -396,7 +435,8 @@ class Post:
         matchpos = 0
         while (True):
             ch = f.read(1)
-            if (ch == ""): break
+            if (ch == ""):
+                break
             if (ch == ATTACHMENT_PAD[matchpos]):
                 matchpos += 1
                 if (matchpos == ATTACHMENT_SIZE):
@@ -440,15 +480,15 @@ class Post:
             line = line[1:]
 
         if (qlevel >= QUOTELEV):
-            if (u"提到:\n".encode('gbk') in line
-                or u": 】\n".encode('gbk') in line
-                or line[:3] == "==>"
-                or u"的文章 说".encode('gbk') in line):
+            if (u"提到:\n".encode('gbk') in line or
+                u": 】\n".encode('gbk') in line or
+                line[:3] == "==>" or
+                u"的文章 说".encode('gbk') in line):
                 return True
         return line != "" and line[0] == '\n'
 
     @staticmethod
-    def ReadPostText(path, start = 0, count = 0):
+    def ReadPostText(path, start=0, count=0):
         try:
             postf = open(path, 'rb')
         except IOError:
@@ -501,7 +541,9 @@ class Post:
 
     @staticmethod
     def GetAttachLink(session, board, postentry):
-        return "http://%s/bbscon.php?b=%s&f=%s" % (session.GetMirror(Config.Config.GetInt('ATTACHMENT_PORT', 80)), board.name, postentry.filename)
+        return "http://%s/bbscon.php?b=%s&f=%s" % (
+            session.GetMirror(Config.Config.GetInt('ATTACHMENT_PORT', 80)),
+            board.name, postentry.filename)
 
     @staticmethod
     def GetSanAttachName(attach_name):
@@ -536,10 +578,10 @@ class Post:
             attach_stat = os.stat(attach_file)
             if (attach_stat.st_size > Config.MAX_ATTACHSIZE):
                 raise WrongArgs("attachment too large: %d > %d" %
-                        (attach_stat.st_size, Config.MAX_ATTACHSIZE))
+                                (attach_stat.st_size, Config.MAX_ATTACHSIZE))
             with open(attach_file, "rb") as attachf:
                 return Post.AddAttachFrom(self.file, attach_name, attachf,
-                        attach_stat.st_size)
+                                          attach_stat.st_size)
         finally:
             try:
                 os.unlink(attach_file)
@@ -556,7 +598,7 @@ class Post:
                 with open(attach_file, "rb") as attachf:
                     with open(postfile_name, "ab") as postf:
                         Post.AddAttachFrom(postf, attach_name, attachf,
-                                attach_stat.st_size)
+                                           attach_stat.st_size)
 
                 return attach_stat.st_size
             except Exception as e:
@@ -641,7 +683,7 @@ class Post:
 
             return Post.AddAttachFrom(self.file, attach_entry['name'], fp, size)
 
-    def open(self, mode = ""):
+    def open(self, mode=""):
         if not mode:
             if os.path.isfile(self.path):
                 mode = 'r+b'
@@ -661,17 +703,20 @@ class Post:
         filename = None
         now = int(time.time())
         xlen = len(GENERATE_POST_SUFIX)
-        pid = random.randint(1000, 200000) # wrong, but why care?
+        pid = random.randint(1000, 200000)  # wrong, but why care?
         for i in range(0, 10):
             if (use_subdir):
                 rn = int(xlen * random.random())
-                filename = "%c/M.%lu.%c%c" % (GENERATE_ALPHABET[rn], now, GENERATE_POST_SUFIX[(pid + i) % 62], GENERATE_POST_SUFIX[(pid * i) % 62])
+                filename = "%c/M.%lu.%c%c" % (
+                    GENERATE_ALPHABET[rn], now, GENERATE_POST_SUFIX[(pid + i) % 62],
+                    GENERATE_POST_SUFIX[(pid * i) % 62])
             else:
-                filename = "M.%lu.%c%c" % (now, GENERATE_POST_SUFIX[(pid + i) % 62], GENERATE_POST_SUFIX[(pid * i) % 62])
+                filename = "M.%lu.%c%c" % (
+                    now, GENERATE_POST_SUFIX[(pid + i) % 62],
+                    GENERATE_POST_SUFIX[(pid * i) % 62])
             fname = "%s/%s" % (directory, filename)
             fd = os.open(fname, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0644)
             if (fd >= 0):
                 os.close(fd)
                 return filename
         return None
-
