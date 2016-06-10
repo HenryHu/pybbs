@@ -25,6 +25,7 @@ import store
 import mmap
 import searchquery
 import fast_indexer
+import Post
 
 DEFAULT_GET_POST_COUNT = 20
 
@@ -265,10 +266,10 @@ class Board:
             postpath = self.GetBoardPath() + pe.filename
             post = pe.GetInfo('post')
             post['id'] = id
-            postinfo = Post(postpath, pe)
+            postinfo = Post.Post(postpath, pe)
             post = dict(post.items() + postinfo.GetInfo(start, count).items())
             if (post['picattach'] or post['otherattach']):
-                post['attachlink'] = Post.GetAttachLink(session, self, pe)
+                post['attachlink'] = Post.Post.GetAttachLink(session, self, pe)
             svc.writedata(json.dumps(post))
             bread = BRead.BReadMgr.LoadBRead(session.GetUser().name)
             bread.Load(self.name)
@@ -364,7 +365,7 @@ class Board:
             raise WrongArgs("invalid or lacking offset")
         if ((id >= 1) and (id <= self.status.total)):
             pe = self.GetPostEntry(id - 1, mode)
-            attach = Post.ReadAttachment(self.GetBoardPath() + pe.filename, offset)
+            attach = Post.Post.ReadAttachment(self.GetBoardPath() + pe.filename, offset)
             attach = {'name' : attach[0], 'content' : base64.b64encode(attach[1])}
             svc.writedata(json.dumps(attach))
         else:
@@ -645,10 +646,10 @@ class Board:
         content_encoded = Util.gbkEnc(content)
         try:
             with open(self.GetBoardPath() + post_file.filename, "ab") as f:
-                Post.WriteHeader(f, user, False, self, title, anony, 0, session)
+                Post.Post.WriteHeader(f, user, False, self, title, anony, 0, session)
                 f.write(content_encoded)
                 if (not anony):
-                    Post.AddSig(f, user, signature_id)
+                    Post.Post.AddSig(f, user, signature_id)
         except IOError:
             Log.error("PostArticle: write post failed!")
             os.unlink(self.GetBoardPath() + post_file.filename)
@@ -670,7 +671,7 @@ class Board:
             has_sig = False
         else:
             has_sig = True
-        Post.AddLogInfo(self.GetBoardPath(post_file.filename), user, session, anony, has_sig)
+        Post.Post.AddLogInfo(self.GetBoardPath(post_file.filename), user, session, anony, has_sig)
 
         post_file.title = Util.gbkEnc(title)
         # TODO: outpost ('SS')
@@ -696,7 +697,7 @@ class Board:
 
                     tmpfile = store.Store.path_from_id(tmpfile)
 
-                    Post.AddAttach(self.GetBoardPath(post_file.filename), filename, tmpfile)
+                    Post.Post.AddAttach(self.GetBoardPath(post_file.filename), filename, tmpfile)
             except:
                 pass
 
@@ -888,7 +889,7 @@ class Board:
         return True
 
     def GetPostFilename(self, use_subdir):
-        return Post.GetPostFilename(self.GetBoardPath(), use_subdir)
+        return Post.Post.GetPostFilename(self.GetBoardPath(), use_subdir)
 
     def DeniedUser(self, user):
         if (Util.SeekInFile(self.GetBoardPath() + "deny_users", user.name)):
@@ -936,7 +937,7 @@ class Board:
         (post, _) = self.FindPost(post_id, xid, index_mode)
         if (post == None):
             raise NotFound("referred post not found")
-        quote = Post.DoQuote(include_mode, self.GetBoardPath(post.filename), True)
+        quote = Post.Post.DoQuote(include_mode, self.GetBoardPath(post.filename), True)
         if (post.title[:3] == "Re:"):
             quote_title = post.title
         elif (post.title[:3] == u"├ ".encode('gbk')):
@@ -1126,7 +1127,7 @@ class Board:
             raise NoPerm("you can't edit on board %s" % self.name)
 
         post_path = self.GetBoardPath(post_entry.filename);
-        post = Post(post_path, post_entry)
+        post = Post.Post(post_path, post_entry)
 
         if content is None:
             content = post.GetBody()
@@ -1144,7 +1145,7 @@ class Board:
             try:
                 attach_list = post.GetAttachList()
 
-                newpost = Post(new_post_path, post_entry)
+                newpost = Post.Post(new_post_path, post_entry)
                 newpost.open()
                 try:
                     newpost.EditHeaderFrom(post, new_title)
@@ -1270,11 +1271,11 @@ class Board:
         post_info['id'] = cur_post_id
         if mode == 'detailed':
             postpath = self.GetBoardPath() + post_entry.filename
-            postobj = Post(postpath, post_entry)
+            postobj = Post.Post(postpath, post_entry)
             post_info = dict(post_info.items()
                     + postobj.GetInfo(0, content_len).items())
             if (post_info['picattach'] or post_info['otherattach']):
-                post_info['attachlink'] = Post.GetAttachLink(
+                post_info['attachlink'] = Post.Post.GetAttachLink(
                         session, self, post_entry)
             # mark the post as read
             # only in detailed mode
@@ -1282,6 +1283,4 @@ class Board:
             bread.Load(self.name)
             bread.MarkRead(post_xid, self.name)
         return post_info
-
-from Post import Post
 
