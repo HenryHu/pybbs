@@ -100,7 +100,7 @@ class Post:
                     attach = json.loads(svc.get_str(params, 'attachments'))
                 except:
                     attach = None
-                
+
                 detail = bo.PreparePostArticle(user, refile, anony, attach)
                 result = {"error": detail, "signature_id" : user.GetSigID()}
                 svc.writedata(json.dumps(result))
@@ -229,7 +229,7 @@ class Post:
     def IsPictureAttach(name):
         ext = string.lower(os.path.splitext(name)[1])  # get the ext
         return (ext in ['.bmp', '.gif', '.jpg', '.jpeg', '.png'])
-    
+
     @staticmethod
     def SeekAttachment(fp, start):
         fp.seek(start)
@@ -254,7 +254,7 @@ class Post:
         fp = open(filename, "rb")
         try:
             fp.seek(offset-8)
-    
+
             # check if is an atachment
             if (fp.read(8) != '\0\0\0\0\0\0\0\0'):
                 raise IOError

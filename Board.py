@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# vim: set fileencoding=utf-8 : 
+# vim: set fileencoding=utf-8 :
 from Util import Util
 import Config
 import struct
@@ -237,7 +237,7 @@ class Board:
                 svc.writedata('[]')
             else:
                 raise OutOfRange('out of range')
-            
+
         return
 
     def GetPostEntry(self, postid, mode = 'normal', fd = None):
@@ -290,7 +290,7 @@ class Board:
 
         last_one = bool(svc.get_int(params, 'last_one', 0))
         only_new = bool(svc.get_int(params, 'only_new', 0))
-        
+
         (next_id, next_xid) = self.GetNextPost(id, bfwd, last_one, only_new,
                 session.GetUser())
         if next_id < 1:
@@ -479,7 +479,7 @@ class Board:
             if (not user.HasPerm(User.PERM_OBOARDS) and self.header.title_level != 0 and self.header.title_level != user.GetTitle()):
                 return False
             level = self.header.level
-            if (level & User.PERM_POSTMASK != 0 
+            if (level & User.PERM_POSTMASK != 0
                     or (user == None and level == 0)
                     or (user != None and user.HasPerm(level))
                     or (level & User.PERM_NOZAP != 0)):
