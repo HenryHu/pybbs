@@ -422,10 +422,7 @@ class Post:
                                     result += ": ..................."
                                     break
         if include_mode == 'C' and include_data is not None:
-            try:
-                result += include_data['comment']
-            except:
-                pass
+            result += Util.gbkEnc(include_data['comment'])
         result += "\n"
         return result
 
