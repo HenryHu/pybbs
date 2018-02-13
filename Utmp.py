@@ -34,17 +34,24 @@ class Utmp:
                 Utmp.utmpshm = SharedMemory(Config.Config.GetInt("UTMP_SHMKEY", 3699), size = UTMPFILE_SIZE, flags = IPC_CREAT, mode = 0660, init_character='\0')
                 Log.info("Creating UTMPHEAD shared memory")
                 UtmpHead.utmphead = SharedMemory(Config.Config.GetInt("UTMPHEAD_SHMKEY", 3698), size = UTMPHEAD_SIZE, flags = IPC_CREAT, mode = 0660, init_character='\0')
-                Log.info("Initializing UTMPHEAD shared memory")
-                fd = Utmp.Lock()
-                UtmpHead.SetNumber(0)
-                UtmpHead.SetHashHead(0, 1)
-                for i in range(Config.USHM_SIZE - 1):
-                    UtmpHead.SetNext(i, i+2)
-                UtmpHead.SetNext(Config.USHM_SIZE - 1, 0)
-                Utmp.Unlock(fd)
+                Utmp.ResetUtmp()
             Log.info("Utmp initialization finished")
         else:
             Log.info("Utmp already initialized")
+
+    @staticmethod
+    def ResetUtmp(locked=False):
+        Log.info("Initializing UTMPHEAD shared memory")
+        if not locked:
+            fd = Utmp.Lock()
+        UtmpHead.SetNumber(0)
+        UtmpHead.SetHashHead(0, 1)
+        UtmpHead.SetListHead(0)
+        for i in range(Config.USHM_SIZE - 1):
+            UtmpHead.SetNext(i, i+2)
+        UtmpHead.SetNext(Config.USHM_SIZE - 1, 0)
+        if not locked:
+            Utmp.Unlock(fd)
 
     @staticmethod
     def Hash(userid):
@@ -232,5 +239,62 @@ class Utmp:
 
     @staticmethod
     def RebuildList():
-        pass
+        lock = Utmp.Lock()
+        try:
+            entries = []
+            hashes = {}
+            active = set()
+            for i in xrange(Config.USHM_SIZE):
+                userinfo = UserInfo(i + 1)
+                if userinfo.active == 1:
+                    entries.append((i, userinfo.userid))
+                    hash = Utmp.Hash(userinfo.userid)
+                    hashes[hash] = hashes.get(hash, []) + [i]
+                    active.add(i)
+
+            if entries == []:
+                Log.info("NO USER! RESET!")
+                Utmp.ResetUtmp(locked=True)
+            else:
+                cnt = len(entries)
+                Log.info("Rebuild Utmp with %d entries" % cnt)
+                entries.sort(key=lambda entry: entry[1])
+                UtmpHead.SetReadOnly(0)
+
+                # rebuild list
+                UtmpHead.SetListHead(entries[0][0] + 1)
+                for i in xrange(len(entries)):
+                    pos = entries[i][0]
+                    next = entries[(i + 1) % cnt][0]
+                    prev = entries[(i - 1 + cnt) % cnt][0]
+                    UtmpHead.SetListNext(pos, next + 1)
+                    UtmpHead.SetListPrev(pos, prev + 1)
+                    print pos, "prev", prev, "next", next
+
+                # rebuild hash
+                for hash in hashes:
+                    cnt = len(hashes[hash])
+                    UtmpHead.SetHashHead(hash, hashes[hash][0] + 1)
+                    print "hash", hash, "head", hashes[hash][0]
+                    for i in xrange(cnt):
+                        pos = hashes[hash][i]
+                        if i < cnt - 1:
+                            next = hashes[hash][i + 1]
+                        else:
+                            next = -1
+                        UtmpHead.SetNext(pos, next + 1)
+                        print "next", pos, next
+                for i in xrange(Config.UTMP_HASHSIZE):
+                    if i != 0 and UtmpHead.GetHashHead(i) != 0 and not i in hashes:
+                        UtmpHead.SetHashHead(i, 0)
+                        print "reset", i
+
+                # TODO: rebuild free list at hash[0]
+
+                #if min(active) > 0:
+                #    UtmpHead.SetHashHead(0, 1)
+
+                UtmpHead.SetReadOnly(1)
+        finally:
+            Utmp.Unlock(lock)
 
