@@ -29,6 +29,9 @@ class UserInfo:
 
     #struct user_info
     size = _parser.size
+    
+    def __repr__(self):
+        return "Idx: %d Active: %s UID: %d User: %s" % (self._index, self.active, self.uid, self.userid)
 
     def load(self):
         if (self._index < 0):
